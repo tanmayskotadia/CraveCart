@@ -60,8 +60,7 @@
                       "type": "object",
                       "properties": {
                         "ordering": {
-                          "type": "boolean",
-                          "const": false
+                          "type": "boolean"
                         },
                         "authentication": {
                           "type": "boolean"

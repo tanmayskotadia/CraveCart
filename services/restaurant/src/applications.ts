@@ -253,7 +253,7 @@ export function installApplications(app: Express, ctx: DomainContext) {
       });
     });
   const internal = express.Router();
-  internal.use(internalOnly(ctx, ['admin']));
+  internal.use('/applications', internalOnly(ctx, ['admin']));
   internal.post('/applications/list', async (req, res) => {
     await ready();
     const body = z.object({ applicationId: z.string().uuid().optional() }).strict().parse(req.body);

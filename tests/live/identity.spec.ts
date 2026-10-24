@@ -251,7 +251,54 @@ test('real accounts, documents, MFA and both partner approvals', async ({
           .getByRole('button', { name: 'Increase Browser Test Biryani', exact: true })
           .click();
         await expect(page.locator('.subtotal-row')).toContainText('₹340');
-        await expect(page.getByRole('button', { name: 'Checkout opens soon' })).toBeDisabled();
+        await page.getByRole('link', { name: 'Proceed to checkout', exact: true }).click();
+        await page.getByRole('button', { name: 'Review final total', exact: true }).click();
+        await expect(page.getByText('Development checkout', { exact: false })).toBeVisible();
+        if (testInfo.project.name === 'mobile')
+          await page.getByLabel('Stripe', { exact: true }).check();
+        await page.getByRole('button', { name: /Continue to payment ·/ }).click();
+        await expect(page).toHaveURL(/\/orders\/[a-f0-9-]{36}$/);
+        await page.getByRole('button', { name: /Continue payment with/ }).click();
+        await page.getByRole('button', { name: 'Simulate declined payment', exact: true }).click();
+        await expect(page.getByText('DEVELOPMENT_PAYMENT_DECLINED', { exact: true })).toBeVisible();
+        await page
+          .getByRole('button', { name: 'Simulate successful payment', exact: true })
+          .click();
+        await expect(page.locator('.commerce-status')).toContainText('PLACED · CAPTURED');
+        await page.reload();
+        await expect(page.locator('.commerce-status')).toContainText('PLACED · CAPTURED');
+        await mkdir('.local/qa', { recursive: true });
+        await page.screenshot({
+          path: `.local/qa/receipt-${testInfo.project.name}.png`,
+          animations: 'disabled',
+          fullPage: true,
+        });
+        await page.getByRole('button', { name: 'Review cancellation', exact: true }).click();
+        await page
+          .getByLabel('Cancellation reason', { exact: true })
+          .fill('Browser test cancellation');
+        await page.getByRole('button', { name: 'Confirm cancellation', exact: true }).click();
+        await expect(page.locator('.commerce-status')).toContainText('CANCELLED');
+        await expect(page.locator('.commerce-status')).toContainText('REFUNDED', {
+          timeout: 30000,
+        });
+        await admin.goto('/admin/finance');
+        await expect(
+          admin.getByRole('heading', { name: 'Finance & reconciliation', exact: true }),
+        ).toBeVisible();
+        await expect(admin.getByText('Missing postings: 0', { exact: false })).toBeVisible();
+        await expect(
+          admin.getByRole('heading', { name: 'Pricing policy', exact: true }),
+        ).toBeVisible();
+        await admin.screenshot({
+          path: `.local/qa/finance-${testInfo.project.name}.png`,
+          animations: 'disabled',
+          fullPage: true,
+        });
+        await page.goto('/orders');
+        await expect(
+          page.getByRole('heading', { name: `${prefix} Kitchen`, exact: true }),
+        ).toBeVisible();
         expect(
           await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
         ).toBe(true);
@@ -296,6 +343,19 @@ test('real accounts, documents, MFA and both partner approvals', async ({
     const commerce = mongo.db('cravecart_restaurant');
     for (const name of ['restaurants', 'favorites'])
       await commerce.collection(name).deleteMany({ userId: { $in: ids } });
+    const testOrders = await commerce
+      .collection('orders')
+      .find({ userId: { $in: ids } })
+      .toArray();
+    const orderIds = testOrders.map((order) => String(order._id));
+    const utils = mongo.db('cravecart_utils');
+    for (const name of ['payment_attempts', 'captures', 'refunds'])
+      await utils.collection(name).deleteMany({ userId: { $in: ids } });
+    await utils.collection('ledger').deleteMany({ orderId: { $in: orderIds } });
+    await utils.collection('outbox').deleteMany({ 'event.data.orderId': { $in: orderIds } });
+    for (const name of ['orders', 'quotes', 'refund_intents'])
+      await commerce.collection(name).deleteMany({ userId: { $in: ids } });
+    await commerce.collection('outbox').deleteMany({ 'event.data.orderId': { $in: orderIds } });
     await commerce.collection('carts').deleteMany({ _id: { $in: ids } as never });
     for (const name of ['menu_items', 'offers'])
       await commerce.collection(name).deleteMany({ restaurantId: { $in: applicationIds } });

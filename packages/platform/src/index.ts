@@ -34,6 +34,7 @@ import {
   RabbitBroker,
   ensurePersistence,
   dispatchOutbox,
+  consumeOnce,
 } from '@cravecart/persistence';
 
 export type RuntimeName = ServiceName | 'gateway';
@@ -164,6 +165,7 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
   );
   // Provider webhook routes will register raw-body parsing before JSON parsing when implemented.
   app.use('/api/v1/uploads', express.raw({ type: 'application/octet-stream', limit: '5mb' }));
+  app.use('/api/v1/webhooks', express.raw({ type: 'application/json', limit: '256kb' }));
   app.use('/api/v1/cart', express.json({ limit: '128kb' }));
   app.use(express.json({ limit: '32kb' }));
   if (name === 'admin') {
@@ -228,6 +230,11 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
         favorites: 'restaurant',
         offers: 'restaurant',
         serviceability: 'admin',
+        quotes: 'restaurant',
+        orders: 'restaurant',
+        payments: 'utils',
+        refunds: 'utils',
+        webhooks: 'utils',
       };
       const owner = segment ? owners[segment] : undefined;
       if (!owner) {
@@ -244,6 +251,9 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
           'x-csrf-token',
           'idempotency-key',
           'x-upload-token',
+          'stripe-signature',
+          'x-razorpay-signature',
+          'x-razorpay-event-id',
         ]) {
           const value = req.get(key);
           if (value) headers[key] = value;
@@ -393,6 +403,10 @@ function localResources(
   }, 1000);
   timer.unref();
   return {
+    subscribe: (events: string[], handler: Parameters<typeof consumeOnce>[4]) =>
+      broker.subscribe(events, async (event) => {
+        await consumeOnce(mongo, db, name, event, handler);
+      }),
     db,
     client: mongo,
     check,
@@ -404,7 +418,7 @@ function localResources(
       if (redis.isOpen) await redis.close().catch(() => {});
       await mongo.close();
     },
-  } satisfies Resources & Pick<DomainContext, 'db' | 'client'>;
+  } satisfies Resources & Pick<DomainContext, 'db' | 'client' | 'subscribe'>;
 }
 
 export async function startService(
@@ -459,6 +473,7 @@ export async function startService(
                 config,
                 db: resources.db,
                 client: resources.client,
+                subscribe: resources.subscribe,
                 onClose: (fn) => closers.push(fn),
               })
           : undefined,

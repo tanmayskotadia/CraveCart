@@ -3010,6 +3010,32 @@
                               "minimum": 1,
                               "maximum": 70
                             },
+                            "usageLimit": {
+                              "default": null,
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 1000000
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "perUserLimit": {
+                              "default": null,
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 10000
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "maxDiscountMinor": {
                               "type": "integer",
                               "minimum": 1,
@@ -5031,6 +5057,32 @@
                       "minimum": 1,
                       "maximum": 70
                     },
+                    "usageLimit": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "perUserLimit": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "maxDiscountMinor": {
                       "type": "integer",
                       "minimum": 1,
@@ -5106,6 +5158,32 @@
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 70
+                      },
+                      "usageLimit": {
+                        "default": null,
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 1000000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "perUserLimit": {
+                        "default": null,
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       },
                       "maxDiscountMinor": {
                         "type": "integer",
@@ -5325,6 +5403,32 @@
                       "minimum": 1,
                       "maximum": 70
                     },
+                    "usageLimit": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "perUserLimit": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "maxDiscountMinor": {
                       "type": "integer",
                       "minimum": 1,
@@ -5401,6 +5505,32 @@
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 70
+                      },
+                      "usageLimit": {
+                        "default": null,
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 1000000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "perUserLimit": {
+                        "default": null,
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       },
                       "maxDiscountMinor": {
                         "type": "integer",
@@ -6451,6 +6581,32 @@
                               "minimum": 1,
                               "maximum": 70
                             },
+                            "usageLimit": {
+                              "default": null,
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 1000000
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "perUserLimit": {
+                              "default": null,
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 10000
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
                             "maxDiscountMinor": {
                               "type": "integer",
                               "minimum": 1,
@@ -6640,6 +6796,32 @@
                           "type": "integer",
                           "minimum": 1,
                           "maximum": 70
+                        },
+                        "usageLimit": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 1000000
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "perUserLimit": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 10000
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "maxDiscountMinor": {
                           "type": "integer",
@@ -7373,8 +7555,7 @@
                                 }
                               },
                               "checkoutEnabled": {
-                                "type": "boolean",
-                                "const": false
+                                "type": "boolean"
                               },
                               "updatedAt": {
                                 "type": "string",
@@ -7728,8 +7909,7 @@
                         }
                       },
                       "checkoutEnabled": {
-                        "type": "boolean",
-                        "const": false
+                        "type": "boolean"
                       },
                       "updatedAt": {
                         "type": "string",

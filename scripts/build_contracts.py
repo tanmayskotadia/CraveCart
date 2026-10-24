@@ -50,6 +50,7 @@ def envelope(schema):
 
 # Local route coverage is separate from the full proposed product scope and release qualification.
 AVAILABLE_PAGES = {
+    "/checkout", "/checkout/return", "/orders", "/orders/:orderId", "/admin/finance", "/admin/orders", "/admin/orders/:orderId", "/admin/refunds", "/admin/refunds/:refundId",
     "/login", "/signup", "/seller/login", "/seller/register", "/rider/login", "/rider/register", "/admin/login",
     "/workspaces", "/addresses", "/addresses/new", "/addresses/:addressId/edit", "/favorites", "/settings/sessions",
     "/seller/onboarding", "/rider/onboarding", "/admin/verifications", "/admin/verifications/:applicationId", "/admin/zones",
@@ -105,7 +106,7 @@ def build_routes():
         route["implemented"] = route["runtimeStatus"] == "available-locally"
         if route["path"] == "/cart":
             route["plannedPolicy"] = route["policy"]
-            route.update(sessionRequired=True, roles=["customer"], policy="Authenticated owner; saved selections only. Guest cart, quote, redemption and checkout remain planned.")
+            route.update(sessionRequired=True, roles=["customer"], policy="Authenticated owner; saved selection and server-authoritative checkout. Guest cart remains planned.")
     return {"version": "0.1.0", "status": "runtime-slices-with-planned-scope", "market": {"scope": "national", "country": "IN", "currency": "INR", "locale": "en-IN", "timezone": "Asia/Kolkata", "liveZonesEnabled": False},
             "routes": routes, "aliases": [{"from": "/driver/*", "to": "/rider/*", "strategy": "validated-equivalent-only", "unknownSuffix": "404"}]}
 
@@ -242,7 +243,7 @@ def build_openapi(endpoints):
     implemented = OUT / "platform.openapi.json"
     if implemented.exists():
         paths["/platform"] = json.loads(implemented.read_text(encoding="utf-8"))
-    for name in ["identity.openapi.json", "catalog.openapi.json"]:
+    for name in ["identity.openapi.json", "catalog.openapi.json", "commerce.openapi.json"]:
         implemented = OUT / name
         if implemented.exists():
             for path, methods in json.loads(implemented.read_text(encoding="utf-8")).items():
@@ -252,7 +253,7 @@ def build_openapi(endpoints):
                         operation["operationId"] = prior["operationId"]
                     paths.setdefault(path, {})[method] = operation
     return {"openapi": "3.1.0", "info": {"title": "CraveCart API — contract baseline", "version": "0.1.0",
-            "description": "Endpoint inventory plus critical schemas. GET /platform and the operations exported in identity.openapi.json and catalog.openapi.json are implementation-ready; remaining operations require contract promotion before client generation. x-contract-status records each operation's lifecycle."},
+            "description": "Endpoint inventory plus critical schemas. GET /platform and the operations exported in identity.openapi.json and catalog.openapi.json and commerce.openapi.json are implementation-ready; remaining operations require contract promotion before client generation. x-contract-status records each operation's lifecycle."},
             "servers": [{"url": "/api/v1", "description": "Same deployment origin through gateway; no production domain asserted"}],
             "tags": [{"name": v} for v in SERVICES.values()], "paths": paths,
             "components": {"securitySchemes": {
@@ -287,6 +288,7 @@ def build_events():
         fields[event] = {"orderId": ID, "restaurantId": ID}
         if event in ["order.picked-up.v1", "order.out-for-delivery.v1", "order.delivered.v1"]:
             fields[event].update({"deliveryId": ID, "riderId": ID, "operationId": ID})
+    fields["order.refund-requested.v1"] = {"orderId": ID, "restaurantId": ID, "refundId": ID, "amountMinor": INT, "currency": string(pattern="^[A-Z]{3}$")}
     for state in ["requested", "submitted", "succeeded", "failed"]:
         fields[f"refund.{state}.v1"] = {"refundId": ID, "orderId": ID, "amountMinor": INT, "currency": string(pattern="^[A-Z]{3}$")}
     fields["verification.applied.v1"] = {"applicationId": ID, "decisionId": ID, "applicantType": string(enum=["seller", "rider"])}
@@ -341,7 +343,7 @@ def build_actions():
         "Replace cart": [("put", "/cart")], "Apply offer": [("post", "/cart/quote")],
         "Place and pay": [("post", "/orders"), ("post", "/payments/attempts")],
         "Payment return": [("get", "/payments/attempts/:attemptId"), ("post", "/payments/attempts/:attemptId/verify")],
-        "Cancel order": [("post", "/orders/:orderId/cancellation-preview"), ("post", "/orders/:orderId/cancel")],
+        "Cancel order": [("get", "/orders/:orderId/cancellation-preview"), ("post", "/orders/:orderId/cancel")],
         "Track order": [("get", "/orders/:orderId/tracking")], "Reorder": [("post", "/orders/:orderId/reorder")],
         "Seller accept": [("post", "/seller/restaurants/:restaurantId/orders/:orderId/actions")],
         "Seller reject": [("post", "/seller/restaurants/:restaurantId/orders/:orderId/actions")],

@@ -2,6 +2,7 @@ import { z } from 'zod';
 export { cityDirectory, findCity, nationalMarket, type DiscoveryCity } from './market.js';
 export * from './identity.js';
 export * from './catalog.js';
+export * from './commerce.js';
 
 export const serviceNames = ['auth', 'restaurant', 'rider', 'admin', 'realtime', 'utils'] as const;
 export type ServiceName = (typeof serviceNames)[number];
@@ -23,7 +24,7 @@ export const platformSchema = z
           .strict(),
         capabilities: z
           .object({
-            ordering: z.literal(false),
+            ordering: z.boolean(),
             authentication: z.boolean(),
             liveTracking: z.literal(false),
             assistant: z.literal(false),

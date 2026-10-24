@@ -254,6 +254,8 @@ Estimate: **18–24 weeks** for the baseline team described in the planning inde
 | 8. Hardening and pilot | Weeks 17–21 | Full E2E, accessibility, threat review, capacity/fault tests, broker/database restore, runbooks, finance balancing | Quality checklist signed with evidence; no critical unresolved failures |
 | 9. Launch preparation | Weeks 21–24 | Limited city pilot, seller/rider training, support/on-call, gradual rollout, live gateway smoke, follow-up fixes | P0/P1 acceptance and operational release gates passed |
 
+The orders/money runtime is implemented locally; see [checkout and financial operations](engineering/ORDERS-AND-PAYMENTS.md). Provider fixtures and development browser flows are local evidence. Actual hosted gateway, broker, settlement and production release qualification remain open; this status does not authorize live rollout.
+
 Native rider background capability, if selected, starts in phase 2 alongside the web build and must pass physical screen-off tests before continuous tracking is advertised. It is a companion to the MERN backend/frontend, not something a browser permission can replace.
 
 ### Dependency order

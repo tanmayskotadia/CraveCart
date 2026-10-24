@@ -53,10 +53,10 @@ export function Explore() {
           <Icon name="pin" size={24} />
         </span>
         <div>
-          <h2>A menu today. An order soon.</h2>
+          <h2>Find your next favourite.</h2>
           <p>
-            Browse verified, published menus and build your cart in configured areas. No orders are
-            being accepted yet.
+            Browse menus and build your cart in configured areas. Checkout shows the payment
+            environment clearly; test orders do not dispatch a delivery.
           </p>
         </div>
       </div>

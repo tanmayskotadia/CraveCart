@@ -4,6 +4,7 @@ import type { ClientSession } from 'mongodb';
 import { z } from 'zod';
 import {
   restaurantInputSchema,
+  restaurantSchema,
   menuItemInputSchema,
   offerInputSchema,
   cartInputSchema,
@@ -68,14 +69,14 @@ function presentItem(item: StoredItem): MenuItem {
     ...menuItemInputSchema.strip().parse(item),
   };
 }
-function presentRestaurant({ _id, userId: _userId, ...restaurant }: StoredRestaurant): Restaurant {
-  return {
-    id: _id,
-    ...restaurant,
-    open: !restaurant.paused && isOpen(restaurant.hours, new Date(), restaurant.holidays),
+function presentRestaurant(record: StoredRestaurant): Restaurant {
+  return restaurantSchema.strip().parse({
+    ...record,
+    id: record._id,
+    open: !record.paused && isOpen(record.hours, new Date(), record.holidays),
     rating: null,
     ratingCount: 0,
-  };
+  });
 }
 function presentOffer(offer: StoredOffer): Offer {
   return {
@@ -128,6 +129,9 @@ export function priceLine(item: MenuItem, line: CartLineInput): CartLine {
   };
 }
 export function installCatalog(app: Express, ctx: DomainContext) {
+  function configCheckout() {
+    return ctx.config.COMMERCE_MODE !== 'disabled';
+  }
   const { db, client } = ctx,
     restaurants = db.collection<StoredRestaurant>('restaurants'),
     items = db.collection<StoredItem>('menu_items'),
@@ -753,7 +757,10 @@ export function installCatalog(app: Express, ctx: DomainContext) {
       else throw error;
     }
     const { _id: _id, ...value } = cart;
-    json(res, { cart: { ...value, issues, checkoutEnabled: false }, version: value.version });
+    json(res, {
+      cart: { ...value, issues, checkoutEnabled: configCheckout() },
+      version: value.version,
+    });
   });
   app.put('/api/v1/cart', remoteSession(ctx, { mutation: true }), async (req, res) => {
     const input = cartInputSchema.parse(req.body),
@@ -806,7 +813,11 @@ export function installCatalog(app: Express, ctx: DomainContext) {
           );
         throw error;
       }
-    json(res, { ...value, issues: minimumIssue ? [minimumIssue] : [], checkoutEnabled: false });
+    json(res, {
+      ...value,
+      issues: minimumIssue ? [minimumIssue] : [],
+      checkoutEnabled: configCheckout(),
+    });
   });
   app.delete('/api/v1/cart', remoteSession(ctx, { mutation: true }), async (req, res) => {
     const { expectedVersion } = z

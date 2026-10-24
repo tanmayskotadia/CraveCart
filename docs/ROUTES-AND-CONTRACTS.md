@@ -112,6 +112,7 @@ Seller operational pages use `restaurantId` explicitly; `/seller` redirects to o
 | `/admin/orders/:orderId` | Timeline, assignment, escalation and policy-approved intervention |
 | `/admin/support` | Ticket queue and SLA filters |
 | `/admin/support/:ticketId` | Agent messages, assignment and resolution |
+| `/admin/finance` | Admin finance permission | Ledger, provider reconciliation and pricing policy |
 | `/admin/refunds` | Requests, approvals, execution failures; finance grants |
 | `/admin/refunds/:refundId` | Evidence, separate approval/execution audit |
 | `/admin/settlements` | Statements and payout reconciliation |
@@ -212,7 +213,7 @@ Each path below is relative to `/api/v1`; when a row lists multiple methods, eac
 | GET | `/orders` | Customer own paginated history |
 | GET | `/orders/:orderId` | Customer own details |
 | GET | `/orders/:orderId/tracking` | Own authorized snapshot; redacted by phase |
-| POST | `/orders/:orderId/cancellation-preview` | Own policy/amount evaluation |
+| GET | `/orders/:orderId/cancellation-preview` | Own policy/amount evaluation |
 | POST | `/orders/:orderId/cancel` | Own permitted cancellation; expected version |
 | POST | `/orders/:orderId/reorder` | Own order → proposed current cart |
 | GET | `/orders/:orderId/receipt` | Own sanitized receipt/download |
@@ -385,6 +386,7 @@ Topic exchange: `cravecart.domain.v1`. Each consuming service owns its durable q
 | `order.picked-up.v1`, `order.out-for-delivery.v1`, `order.delivered.v1` | Restaurant | Rider confirms task state, Utils ledger, realtime, reports |
 | `order.cancelled.v1`, `order.rejected.v1`, `order.expired.v1` | Restaurant | Release reservations, withdraw dispatch, Utils refund decision |
 | `delivery.incident-opened.v1`, `delivery.failed.v1` | Rider | Admin/support/order incident workflow |
+| `order.refund-requested.v1` | Restaurant | Durable owner refund intent; Utils verifies authorization before creating a provider refund |
 | `refund.requested.v1`, `refund.submitted.v1`, `refund.succeeded.v1`, `refund.failed.v1` | Utils | Order financial projection, admin, customer notification |
 | `settlement.updated.v1` | Utils | Seller/rider finance projections |
 | `support.ticket-created.v1`, `support.ticket-updated.v1` | Utils | Admin, realtime, notification routing |

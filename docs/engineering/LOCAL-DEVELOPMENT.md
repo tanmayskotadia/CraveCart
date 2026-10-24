@@ -21,7 +21,7 @@ docker compose --env-file .env -f infra/compose/compose.yaml up -d --wait mongo 
 npm run dev
 ```
 
-To preview the web/API shell without Docker, run `npm run build` then `npm run dev`; all service liveness routes work, but dependency readiness correctly returns 503. For working identity/onboarding without Docker, start `npm run dev:database` in a separate terminal first. Sign-in uses explicit local development codes; ordering remains disabled. See [identity and onboarding](IDENTITY-AND-ONBOARDING.md) for operator provisioning, MFA, documents and production gates.
+To preview the web/API shell without Docker, run `npm run build` then `npm run dev`; all service liveness routes work, but dependency readiness correctly returns 503. For working identity/onboarding without Docker, start `npm run dev:database` in a separate terminal first. Sign-in uses explicit local development codes; checkout is available only when explicitly configured; `.env.example` selects the labelled development payment simulator. See [checkout and payments](ORDERS-AND-PAYMENTS.md). See [identity and onboarding](IDENTITY-AND-ONBOARDING.md) for operator provisioning, MFA, documents and production gates.
 
 For labelled fictional menus and cart-testing areas, run `npm run seed:catalog`. See [catalog and cart setup](CATALOG-AND-CART.md) for merchant tools, exact pin checks, map configuration and remaining production gates.
 

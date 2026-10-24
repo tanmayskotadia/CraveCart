@@ -65,7 +65,23 @@ See [identity setup and detailed scope](IDENTITY-AND-ONBOARDING.md). No actual S
 | Browser regression | Passed: 20 tests | Landing, national city navigation, OTP dialog states, protected pages, keyboard, outages and reduced motion |
 | Contracts | Passed: 2,115 checks | 90 frontend routes and 199 HTTP operations; source Zod exports merged into the baseline, preserving existing operation IDs |
 
-The local seed contains 18 explicitly labelled fictional restaurants and 72 illustrative dishes across six cities; these are not live restaurant affiliations. Sample stores/zones are excluded in production. See [discovery, catalog and cart setup](CATALOG-AND-CART.md). Ordering, reservations, payment, redemption, dispatch and tracking remain disabled/unimplemented. Community map tiles, live scanners/providers, scaling and hosted deployment remain separate qualification gates.
+The local seed contains 18 explicitly labelled fictional restaurants and 72 illustrative dishes across six cities; these are not live restaurant affiliations. Sample stores/zones are excluded in production. See [discovery, catalog and cart setup](CATALOG-AND-CART.md). That catalog milestone did not include ordering. Checkout, reservations, payment, redemption and refunds are now covered by the money milestone below; dispatch and tracking remain unimplemented. Community map tiles, live scanners/providers, scaling and hosted deployment remain separate qualification gates.
+
+## Orders and financial evidence
+
+| Check | Result | Evidence |
+|---|---|---|
+| Build, type checks, lint and formatting | Passed | Shared contracts, owners, gateway, React and test code; Vite retains a non-blocking main-bundle size warning |
+| Platform unit regressions | Passed: 15 tests | Actual HTTP handlers, origin/headers, capabilities, tracing and calendar rules |
+| Identity/catalog regressions | Passed: 34 tests | Real isolated MongoDB replica sets and exported response contracts |
+| Development money and gateway protocol tests | Passed: 22 tests | Stock and promotion contention, stale quotes, idempotency, capture/cancel races for both methods, expiry, full/partial refunds, already-refunded cancellation, pricing policy versions, signatures, amount/linkage and environment checks; two external-provider-only cases intentionally skipped here and executed below |
+| Provider-boundary money workflows | Passed: 15 tests | Actual adapters and reducers with provider HTTP fixtures plus real MongoDB; replayed signed webhooks, late capture compensation, unknown-response recovery, stable Stripe request parameters, finance permissions and balanced/missing-posting checks |
+| Real desktop and mobile journeys | Passed: 2 full flows | OTP/MFA and partner approvals, catalog/address/cart, Razorpay or Stripe simulation, decline then success, reload, cancellation, processed refund, order history and admin finance dashboard |
+| National UI regressions | Passed: 20 tests | Responsive layout, city/search navigation, auth dialogs, protected links, outage/retry, keyboard and reduced motion |
+| Contract validation | Passed: 2,180 checks | 91 frontend routes, 211 HTTP operations, 38 broker events and explicit contract lifecycle; cancellation preview uses the implemented GET method |
+| Visual review | Passed locally | Desktop/mobile order receipt and finance screenshots inspected in `.local/qa`; original CraveCart branding and red/white layout retained |
+
+The executed suites contain **108 passing tests**. The two development-run skips are provider-boundary cases that pass in the provider run. Source and live services use the explicit development simulator locally; no actual payment, provider request or delivery was made. The raw gateway adapters are verified through HTTP fixtures, not qualified against hosted merchant accounts. RabbitMQ consumers are implemented with transactional inbox deduplication and persistent wake-ups; actual RabbitMQ/Redis delivery, Docker launch and cloud operation remain unexecuted gates below. See [orders, checkout and financial operations](ORDERS-AND-PAYMENTS.md).
 
 ## Unexecuted release gates
 

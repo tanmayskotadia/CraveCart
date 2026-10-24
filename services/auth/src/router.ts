@@ -96,6 +96,8 @@ interface Limit {
 const ACCESS_MS = 15 * 60_000,
   FAMILY_MS = 30 * 24 * 60 * 60_000;
 export const adminPermissions = [
+  'finance:read',
+  'finance:write',
   'zones:read',
   'zones:write',
   'verifications:read',
@@ -898,12 +900,15 @@ export function installAuth(app: Express, ctx: DomainContext) {
     if (res.locals.caller !== 'restaurant')
       throw new HttpError(403, 'SERVICE_DENIED', 'Service denied');
     const input = z
-      .object({ userIds: z.array(z.string().uuid()).min(1).max(1000) })
+      .object({
+        userIds: z.array(z.string().uuid()).min(1).max(1000),
+        role: z.enum(['customer', 'seller']).default('seller'),
+      })
       .strict()
       .parse(req.body);
     const active = await users
       .find(
-        { _id: { $in: input.userIds }, status: 'ACTIVE', roles: 'seller' },
+        { _id: { $in: input.userIds }, status: 'ACTIVE', roles: input.role },
         { projection: { _id: 1 } },
       )
       .toArray();

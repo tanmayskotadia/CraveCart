@@ -173,6 +173,8 @@ export const offerInputSchema = z
       .regex(/^[A-Z0-9]{3,20}$/),
     title: z.string().trim().min(3).max(100),
     percent: z.number().int().min(1).max(70),
+    usageLimit: z.number().int().min(1).max(1000000).nullable().default(null),
+    perUserLimit: z.number().int().min(1).max(10000).nullable().default(null),
     maxDiscountMinor: z.number().int().min(1).max(100000),
     minimumSubtotalMinor: z.number().int().min(0).max(1000000),
     startsAt: z.string().datetime(),
@@ -228,7 +230,7 @@ export type Cart = {
   subtotalMinor: number;
   currency: 'INR';
   issues: string[];
-  checkoutEnabled: false;
+  checkoutEnabled: boolean;
   updatedAt: string;
 };
 export const restaurantSchema = restaurantInputSchema.safeExtend({
@@ -273,7 +275,7 @@ export const cartSchema = z
     subtotalMinor: z.number().int().min(0),
     currency: z.literal('INR'),
     issues: z.array(z.string()),
-    checkoutEnabled: z.literal(false),
+    checkoutEnabled: z.boolean(),
     updatedAt: z.string().datetime(),
   })
   .strict();

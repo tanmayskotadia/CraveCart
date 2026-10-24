@@ -485,7 +485,7 @@
       "roles": [
         "customer"
       ],
-      "policy": "Authenticated owner; saved selections only. Guest cart, quote, redemption and checkout remain planned.",
+      "policy": "Authenticated owner; saved selection and server-authoritative checkout. Guest cart remains planned.",
       "purpose": "Guest cart or authenticated own cart; edit/remove/configure lines, replace restaurant, apply coupon → checkout",
       "states": [
         "loading",
@@ -521,8 +521,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_checkout_return",
@@ -544,8 +544,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_orders",
@@ -567,8 +567,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_orders_orderId",
@@ -590,8 +590,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_orders_orderId_track",
@@ -1556,8 +1556,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_orders_orderId",
@@ -1579,8 +1579,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_support",
@@ -1629,6 +1629,29 @@
       "runtimeStatus": "planned"
     },
     {
+      "id": "page_admin_finance",
+      "path": "/admin/finance",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "Admin finance permission",
+      "purpose": "Ledger, provider reconciliation and pricing policy",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": true,
+      "runtimeStatus": "available-locally"
+    },
+    {
       "id": "page_admin_refunds",
       "path": "/admin/refunds",
       "workspace": "admin",
@@ -1648,8 +1671,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_refunds_refundId",
@@ -1671,8 +1694,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_settlements",

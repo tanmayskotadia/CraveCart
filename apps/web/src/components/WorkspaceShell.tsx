@@ -40,8 +40,8 @@ export function RequireSession({
         <p>This page belongs to a protected workspace.</p>
         <Link
           className="red-button"
-          to={`${login}?returnTo=${encodeURIComponent(location.pathname)}`}
-          state={{ from: location.pathname }}
+          to={`${login}?returnTo=${encodeURIComponent(location.pathname + location.search)}`}
+          state={{ from: location.pathname + location.search }}
         >
           Go to {role} access
         </Link>
@@ -71,6 +71,7 @@ const navigation = {
     ['Addresses', '/addresses'],
     ['Favourites', '/favorites'],
     ['My cart', '/cart'],
+    ['Orders', '/orders'],
     ['Sessions', '/settings/sessions'],
     ['Security', '/settings'],
     ['Workspaces', '/workspaces'],
@@ -93,6 +94,9 @@ const navigation = {
     ['Accounts', '/admin/users'],
     ['Audit history', '/admin/audit'],
     ['Operating zones', '/admin/zones'],
+    ['Orders', '/admin/orders'],
+    ['Finance', '/admin/finance'],
+    ['Refunds', '/admin/refunds'],
     ['Security', '/settings'],
     ['Workspaces', '/workspaces'],
   ],

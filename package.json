@@ -28,13 +28,15 @@
     "test:identity": "vitest run --config vitest.identity.config.ts",
     "test:e2e": "playwright test",
     "test:identity:browser": "playwright test --config playwright.identity.config.ts",
-    "contracts:export": "tsx scripts/export-contracts.ts && tsx scripts/export-identity-contracts.ts && tsx scripts/export-catalog-contracts.ts",
+    "contracts:export": "tsx scripts/export-contracts.ts && tsx scripts/export-identity-contracts.ts && tsx scripts/export-catalog-contracts.ts && tsx scripts/export-commerce-contracts.ts",
     "contracts:build": "npm run contracts:export && python scripts/build_contracts.py",
     "contracts:check": "python scripts/validate_contracts.py",
     "check": "npm run typecheck && npm run lint && npm test && npm run contracts:check",
     "infra:up": "docker compose --env-file .env -f infra/compose/compose.yaml up --build -d --wait",
     "infra:down": "docker compose --env-file .env -f infra/compose/compose.yaml down",
-    "infra:logs": "docker compose --env-file .env -f infra/compose/compose.yaml logs -f"
+    "infra:logs": "docker compose --env-file .env -f infra/compose/compose.yaml logs -f",
+    "test:money": "vitest run --config vitest.money.config.ts",
+    "test:money:providers": "vitest run --config vitest.providers.config.ts"
   },
   "dependencies": {
     "@fontsource/plus-jakarta-sans": "5.3.0",

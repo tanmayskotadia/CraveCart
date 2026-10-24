@@ -199,6 +199,14 @@ export class RabbitBroker implements Publisher {
   private connection?: ChannelModel;
   private channel?: ConfirmChannel;
   private connecting?: Promise<void>;
+  private subscriptions: Array<{
+    events: string[];
+    handler: (event: DomainEvent) => Promise<void>;
+  }> = [];
+  subscribe(events: string[], handler: (event: DomainEvent) => Promise<void>) {
+    if (this.channel) throw new Error('Register consumers before connecting');
+    this.subscriptions.push({ events, handler });
+  }
   constructor(
     private readonly url: string,
     private readonly owner: string,
@@ -231,7 +239,7 @@ export class RabbitBroker implements Publisher {
       await channel.assertExchange('cravecart.dead.v1', 'topic', { durable: true });
       await channel.assertQueue(`${this.owner}.dead.v1`, { durable: true });
       await channel.bindQueue(`${this.owner}.dead.v1`, 'cravecart.dead.v1', `${this.owner}.#`);
-      // Each owner gets a real durable queue even before its business consumers are implemented.
+      // Durable owner queue; invalid messages are dead-lettered for operator review.
       await channel.assertQueue(`${this.owner}.domain.v1`, {
         durable: true,
         arguments: {
@@ -240,6 +248,33 @@ export class RabbitBroker implements Publisher {
         },
       });
       await channel.prefetch(10);
+      for (const eventType of new Set(this.subscriptions.flatMap((value) => value.events)))
+        await channel.bindQueue(`${this.owner}.domain.v1`, 'cravecart.domain.v1', eventType);
+      if (this.subscriptions.length)
+        await channel.consume(
+          `${this.owner}.domain.v1`,
+          (message) => {
+            if (!message) return;
+            void (async () => {
+              try {
+                const event = validateEvent(JSON.parse(message.content.toString('utf8')));
+                const handlers = this.subscriptions.filter((value) =>
+                  value.events.includes(event.eventType),
+                );
+                if (!handlers.length) throw new Error('Unsupported owner event');
+                for (const value of handlers) await value.handler(event);
+                channel.ack(message);
+              } catch {
+                try {
+                  channel.nack(message, false, false);
+                } catch {
+                  // Connection loss leaves the message unacknowledged for redelivery.
+                }
+              }
+            })();
+          },
+          { noAck: false },
+        );
       this.channel = channel;
     } catch (error) {
       await connection.close().catch(() => {});

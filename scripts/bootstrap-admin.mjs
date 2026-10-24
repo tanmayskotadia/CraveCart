@@ -39,6 +39,8 @@ try {
           'users:read',
           'users:write',
           'audit:read',
+          'finance:read',
+          'finance:write',
         ],
       },
       $addToSet: { roles: { $each: ['customer', 'admin'] } },

@@ -85,7 +85,7 @@ def main():
             check("default" in operation["responses"] and "security" in operation, f"Errors and security declared: {oid}")
             check(operation["x-owner"] in builder.SERVICES.values(), f"Known owner: {oid}")
             check(all(name in api["components"]["securitySchemes"] for requirement in operation["security"] for name in requirement), f"Declared security schemes: {oid}")
-            check(operation["x-client-generation-ready"] == (path == "/platform" or method in read("identity.openapi.json").get(path, {}) or method in read("catalog.openapi.json").get(path, {})) and (not operation["x-client-generation-ready"] or operation["x-contract-status"] == "implementation-ready"), f"Client generation limited to implemented slice: {oid}")
+            check(operation["x-client-generation-ready"] == (path == "/platform" or method in read("identity.openapi.json").get(path, {}) or method in read("catalog.openapi.json").get(path, {}) or method in read("commerce.openapi.json").get(path, {})) and (not operation["x-client-generation-ready"] or operation["x-contract-status"] == "implementation-ready"), f"Client generation limited to implemented slice: {oid}")
     local_refs(api)
     for action in actions["actions"]:
         check(bool(action["success"] and action["recovery"]), f"CTA success/recovery: {action['label']}")
@@ -178,7 +178,7 @@ def main():
     report.extend(f"| {name} | {value} |" for name, value in counts.items())
     report += ["", "## Checks executed", "", "- Regenerated-artifact drift; unique routes/operations; National market with fail-closed local zones; four protected workspaces.", "- Path parameters, local schema references, owner/error/security metadata and CTA operation linkage.", "- JSON Schema meta-validation; payment-event positive/negative examples; secret/producer/version/time rejection.", "- Money/quote/version/proof constraints; socket direction and coordinate bounds.", "- Numbered PRD and Discovery acceptance coverage; trace links; local document links.", "- Declared token text contrast pairs (ratios below).", "", "| Foreground | Background | Ratio |", "|---|---|---|"]
     report.extend(f"| {fg} | {bg} | {ratio:.2f}:1 |" for fg, bg, ratio in contrasts)
-    report += ["", "## Scope", "", "These checks validate planning and contract artifacts only. Runtime foundation verification is recorded separately in docs/engineering/VERIFICATION.md. GET /platform and the exported identity/onboarding and catalog/cart operations are implementation-ready; remaining contracts retain their declared baseline status. This script does not execute browser, cloud, payment, load or deployed network tests, and is not a full OpenAPI conformance validator.", ""]
+    report += ["", "## Scope", "", "These checks validate planning and contract artifacts only. Runtime foundation verification is recorded separately in docs/engineering/VERIFICATION.md. GET /platform and the exported identity/onboarding, catalog/cart and checkout/payment operations are implementation-ready; remaining contracts retain their declared baseline status. This script does not execute browser, cloud, payment, load or deployed network tests, and is not a full OpenAPI conformance validator.", ""]
     (ROOT / "docs/discovery/VALIDATION.md").write_text("\n".join(report), encoding="utf-8")
     print(f"PASS: {len(CHECKS)} checks")
     for name, value in counts.items():

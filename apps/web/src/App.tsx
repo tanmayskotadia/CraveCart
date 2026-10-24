@@ -1,3 +1,4 @@
+import './commerce.css';
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { Link, Navigate, Route, Routes, matchPath, useLocation } from 'react-router-dom';
 import manifest from '../../../contracts/routes.json';
@@ -45,6 +46,17 @@ const MenuItemPage = lazy(() =>
 const ZonesPage = lazy(() =>
   import('./pages/Zones').then((module) => ({ default: module.ZonesPage })),
 );
+
+const CheckoutPage = lazy(() =>
+  import('./pages/Commerce').then((m) => ({ default: m.CheckoutPage })),
+);
+const OrdersPage = lazy(() => import('./pages/Commerce').then((m) => ({ default: m.OrdersPage })));
+const OrderPage = lazy(() => import('./pages/Commerce').then((m) => ({ default: m.OrderPage })));
+const PaymentReturnPage = lazy(() =>
+  import('./pages/Commerce').then((m) => ({ default: m.PaymentReturnPage })),
+);
+const FinancePage = lazy(() => import('./pages/Finance').then((m) => ({ default: m.FinancePage })));
+const RefundsPage = lazy(() => import('./pages/Finance').then((m) => ({ default: m.RefundsPage })));
 
 const authPaths = [
   '/login',
@@ -223,6 +235,51 @@ function RoutePage({
   const path = route.path;
   const catalogPages: Record<string, React.ReactNode> = {
     '/restaurants/:slug': <RestaurantPage />,
+    '/checkout': (
+      <RequireSession>
+        <CheckoutPage />
+      </RequireSession>
+    ),
+    '/checkout/return': (
+      <RequireSession>
+        <PaymentReturnPage />
+      </RequireSession>
+    ),
+    '/orders': (
+      <RequireSession>
+        <OrdersPage />
+      </RequireSession>
+    ),
+    '/orders/:orderId': (
+      <RequireSession>
+        <OrderPage />
+      </RequireSession>
+    ),
+    '/admin/orders': (
+      <RequireSession roles={['admin']}>
+        <OrdersPage admin />
+      </RequireSession>
+    ),
+    '/admin/orders/:orderId': (
+      <RequireSession roles={['admin']}>
+        <OrderPage admin />
+      </RequireSession>
+    ),
+    '/admin/finance': (
+      <RequireSession roles={['admin']}>
+        <FinancePage />
+      </RequireSession>
+    ),
+    '/admin/refunds': (
+      <RequireSession roles={['admin']}>
+        <RefundsPage />
+      </RequireSession>
+    ),
+    '/admin/refunds/:refundId': (
+      <RequireSession roles={['admin']}>
+        <RefundsPage />
+      </RequireSession>
+    ),
     '/offers': <OffersPage />,
     '/cart': (
       <RequireSession>
@@ -389,7 +446,8 @@ function PublicPage({ path }: { path: string }) {
       <MessagePage title="Our policies are being prepared">
         <p>
           Approved terms, privacy and cancellation policies will be published before ordering opens.
-          No orders or payments are currently accepted.
+          Development checkout is for simulation only. Live ordering requires approved policies and
+          operational qualification.
         </p>
       </MessagePage>
     );
@@ -400,8 +458,9 @@ function PublicPage({ path }: { path: string }) {
           <details>
             <summary>Can I order food right now?</summary>
             <p>
-              Not yet. Explore the city directory now; restaurant menus and ordering open as each
-              delivery area is configured.
+              You can browse menus and try labelled development checkout in configured areas. Test
+              payments do not charge money or dispatch a delivery. Live ordering will open after
+              operational qualification.
             </p>
           </details>
           <details>

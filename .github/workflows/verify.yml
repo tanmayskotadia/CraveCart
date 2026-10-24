@@ -18,6 +18,8 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - run: npm run test:identity
+      - run: npm run test:money
+      - run: npm run test:money:providers
       - run: npm run contracts:build && npm run contracts:check
       - run: git diff --exit-code -- contracts docs/discovery/traceability.csv
       - run: npm audit --omit=dev --audit-level=high

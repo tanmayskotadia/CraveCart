@@ -7,9 +7,14 @@ import {
   createDecipheriv,
 } from 'node:crypto';
 import type { Request, Response, RequestHandler } from 'express';
-import { MongoServerError, type Db, type MongoClient } from 'mongodb';
+import { MongoServerError, type Db, type MongoClient, type ClientSession } from 'mongodb';
 import type { Config } from '@cravecart/config';
-import { principalSchema, type Principal, type ServiceName } from '@cravecart/contracts';
+import {
+  principalSchema,
+  type Principal,
+  type ServiceName,
+  type DomainEvent,
+} from '@cravecart/contracts';
 
 export class HttpError extends Error {
   constructor(
@@ -41,6 +46,10 @@ export interface DomainContext {
   db: Db;
   client: MongoClient;
   fetcher?: typeof fetch;
+  subscribe?: (
+    events: string[],
+    handler: (event: DomainEvent, session: ClientSession) => Promise<void>,
+  ) => void;
   onClose?: (fn: () => Promise<void>) => void;
 }
 const defaults = {

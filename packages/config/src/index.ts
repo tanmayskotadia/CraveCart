@@ -24,11 +24,37 @@ const schema = z.object({
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_FROM_NUMBER: z.string().optional(),
+  COMMERCE_MODE: z.enum(['disabled', 'development', 'test', 'live']).default('disabled'),
+  PAYMENT_LIVE_CONFIRMED: z.enum(['true', 'false']).default('false'),
+  RAZORPAY_KEY_ID: z.string().optional(),
+  RAZORPAY_KEY_SECRET: z.string().optional(),
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
+  RAZORPAY_ACCOUNT_ID: z.string().optional(),
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_API_VERSION: z.string().optional(),
 });
 export type Config = z.infer<typeof schema>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const config = schema.parse(env);
+  if (
+    config.COMMERCE_MODE === 'development' &&
+    (config.NODE_ENV === 'production' || config.DEV_ADAPTERS !== 'true')
+  )
+    throw new Error('Development commerce is forbidden outside explicit development adapters');
+  if (
+    config.COMMERCE_MODE === 'live' &&
+    (config.PAYMENT_LIVE_CONFIRMED !== 'true' || config.DEV_ADAPTERS !== 'false')
+  )
+    throw new Error('Live commerce requires explicit confirmation and real adapters');
+  if (['live', 'test'].includes(config.COMMERCE_MODE)) {
+    const prefix = config.COMMERCE_MODE === 'live' ? 'live' : 'test';
+    if (config.STRIPE_SECRET_KEY && !config.STRIPE_SECRET_KEY.startsWith(`sk_${prefix}_`))
+      throw new Error('Stripe credentials do not match the commerce environment');
+    if (config.RAZORPAY_KEY_ID && !config.RAZORPAY_KEY_ID.startsWith(`rzp_${prefix}_`))
+      throw new Error('Razorpay credentials do not match the commerce environment');
+  }
   if (config.NODE_ENV === 'production') {
     if (config.DEV_ADAPTERS !== 'false')
       throw new Error('Development adapters are forbidden in production');

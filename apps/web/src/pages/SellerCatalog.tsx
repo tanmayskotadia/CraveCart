@@ -834,8 +834,7 @@ function OfferManager({ restaurantId, offers }: { restaurantId: string; offers: 
         </button>
       </div>
       <p className="small-help">
-        Offers display publicly during their active dates. Checkout eligibility and redemption begin
-        with payments.
+        Offer eligibility and remaining usage are checked again when a customer reserves an order.
       </p>
       {offers.map((offer) => (
         <div className="offer-summary" key={offer.id}>
@@ -890,10 +889,14 @@ function OfferForm({
             startsAt: offer.startsAt,
             endsAt: offer.endsAt,
             active: offer.active,
+            usageLimit: offer.usageLimit,
+            perUserLimit: offer.perUserLimit,
           }
         : {
             code: '',
             title: '',
+            usageLimit: null as number | null,
+            perUserLimit: null as number | null,
             percent: 10,
             maxDiscountMinor: 5000,
             minimumSubtotalMinor: 20000,
@@ -990,6 +993,29 @@ function OfferForm({
                     ).toISOString(),
                   }));
               }}
+            />
+          </Field>
+        ))}
+      </div>
+      <div className="form-grid">
+        {(['usageLimit', 'perUserLimit'] as const).map((name) => (
+          <Field
+            label={
+              name === 'usageLimit'
+                ? 'Total redemption limit (blank for unlimited)'
+                : 'Redemption limit per customer (blank for unlimited)'
+            }
+            key={name}
+          >
+            <input
+              className="form-input"
+              type="number"
+              min={1}
+              max={name === 'usageLimit' ? 1000000 : 10000}
+              value={value[name] ?? ''}
+              onChange={(e) =>
+                setValue({ ...value, [name]: e.target.value ? Number(e.target.value) : null })
+              }
             />
           </Field>
         ))}

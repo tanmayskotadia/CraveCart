@@ -2,7 +2,7 @@
 
 Food discovery and delivery for India, built with MongoDB, Express, React and Node.js using TypeScript. The repository contains a React application, six independently runnable backend services, an API gateway, shared contracts, local infrastructure and automated checks.
 
-The application includes India-wide discovery, real OTP accounts and sessions, authenticator MFA, account security, seller/rider onboarding, private document uploads and admin verification. Restaurant and rider access opens only after approval. Discovery now includes restaurant and dish search, menus and add-ons, addresses and exact zone checks, favorites, offers, seller catalog management and server-priced carts. Ordering, delivery tracking, payments and the assistant remain upcoming work. Live provider and deployment qualification remain required before launch.
+The application includes India-wide discovery, real OTP accounts and sessions, authenticator MFA, account security, seller/rider onboarding, private document uploads and admin verification. Restaurant and rider access opens only after approval. Discovery now includes restaurant and dish search, menus and add-ons, addresses and exact zone checks, favorites, offers, seller catalog management and server-priced carts. Checkout now includes expiring quotes, stock and offer reservations, orders, Razorpay/Stripe adapters, verified webhooks, cancellation, refunds and a balanced financial ledger. Local checkout uses clearly labelled simulated payments; fulfillment, delivery tracking and the assistant remain upcoming work. Live provider and deployment qualification remain required before launch.
 
 ## Run locally
 
@@ -31,6 +31,8 @@ npm run lint
 npm run format:check
 npm test
 npm run test:identity
+npm run test:money
+npm run test:money:providers
 npm run contracts:build
 npm run contracts:check
 npx playwright install chromium
@@ -41,6 +43,7 @@ The real-dependency integration suite has separate setup; see the guide below. E
 
 ## Documentation
 
+- [Checkout, payments, refunds and finance](docs/engineering/ORDERS-AND-PAYMENTS.md)
 - [Discovery, seller menus, addresses and cart](docs/engineering/CATALOG-AND-CART.md)
 - [Identity, onboarding and administrator setup](docs/engineering/IDENTITY-AND-ONBOARDING.md)
 - [Local development and integration tests](docs/engineering/LOCAL-DEVELOPMENT.md)

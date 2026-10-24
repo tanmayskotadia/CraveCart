@@ -993,10 +993,13 @@ export function CartPage() {
               This is a saved selection. Stock is not reserved. Taxes, delivery fees and offers
               require a fresh checkout quote.
             </p>
-            <button className="red-button" disabled>
-              Checkout opens soon
-            </button>
-            <p className="small-help">Payments and placing orders are not available yet.</p>
+            {cart.checkoutEnabled ? (
+              <Link className="red-button" to="/checkout">
+                Proceed to checkout
+              </Link>
+            ) : (
+              <p className="small-help">Checkout is currently unavailable.</p>
+            )}
           </aside>
         </div>
       ) : (

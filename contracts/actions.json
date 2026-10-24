@@ -102,7 +102,7 @@
       "recovery": "Explain conflict/current stage",
       "operations": [
         {
-          "method": "post",
+          "method": "get",
           "path": "/orders/{orderId}/cancellation-preview"
         },
         {

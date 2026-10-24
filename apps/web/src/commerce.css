@@ -1,0 +1,110 @@
+.commerce-banner {
+  padding: 16px 20px;
+  border-left: 3px solid #ef4f5f;
+  background: #fff2f3;
+  color: #76343c;
+  line-height: 1.65;
+  border-radius: 6px;
+}
+.commerce-bill {
+  margin: 24px 0;
+}
+.commerce-bill > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 9px 0;
+}
+.commerce-bill dd {
+  margin: 0;
+  white-space: nowrap;
+}
+.commerce-bill > div:last-child {
+  border-top: 1px solid #e9e9e9;
+  margin-top: 12px;
+  padding-top: 18px;
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+.commerce-methods {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+  display: grid;
+  gap: 12px;
+}
+.commerce-methods label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.commerce-methods input {
+  accent-color: #ef4f5f;
+}
+.commerce-payment {
+  display: grid;
+  gap: 14px;
+  margin: 20px 0;
+}
+.commerce-timeline {
+  border-left: 2px solid #f4c8cd;
+  list-style: none;
+  padding-left: 24px;
+  margin: 24px 0;
+}
+.commerce-timeline li {
+  position: relative;
+  padding-bottom: 24px;
+}
+.commerce-timeline li:before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #ef4f5f;
+  border-radius: 50%;
+  left: -30px;
+  top: 5px;
+}
+.commerce-timeline p {
+  margin: 8px 0;
+}
+.commerce-timeline time {
+  color: #777;
+  font-size: 0.8rem;
+}
+.commerce-status {
+  font-weight: 700;
+  color: #bd3444;
+}
+.commerce-order {
+  margin-bottom: 20px;
+}
+.cart-line small {
+  display: block;
+  color: #777;
+  padding-top: 5px;
+}
+@media print {
+  .site-header,
+  .site-footer,
+  .workspace-sidebar,
+  button,
+  form,
+  .commerce-payment {
+    display: none !important;
+  }
+  .workspace-layout,
+  .cart-layout {
+    display: block;
+  }
+  .workspace-panel {
+    break-inside: avoid;
+    border: 0;
+    box-shadow: none;
+  }
+  .workspace-content {
+    width: 100%;
+  }
+}
