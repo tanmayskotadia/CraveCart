@@ -2,7 +2,7 @@
 
 **Stack:** MongoDB, Express.js, React, Node.js with TypeScript.  
 **Document version:** 1.0 · 24 October 2026 · Proposed implementation baseline.  
-**Status:** Requirements and design only; no application has been implemented or certified for production.
+**Status:** Planning baseline plus implemented local application foundation. Business features and hosted production qualification remain pending; see [runtime verification](./engineering/VERIFICATION.md).
 
 Read these documents in order:
 
@@ -12,7 +12,9 @@ Read these documents in order:
 | [Routes and contracts](./ROUTES-AND-CONTRACTS.md) | Frontend pages, button behavior, API inventory, events, authorization |
 | [Implementation plan](./IMPLEMENTATION-PLAN.md) | Architecture, data design, engineering strategies, milestones, deployment |
 | [Quality and launch checklist](./QUALITY-AND-LAUNCH.md) | Navigation audit, failure tests, security checks, release gates, operations |
-| [Phase 0 delivery](./phase-0/README.md) | Chennai discovery baseline, journeys, design tokens, machine-readable contracts, ADRs and readiness evidence |
+| [Discovery delivery](./discovery/README.md) | India-wide discovery baseline, journeys, design tokens, machine-readable contracts, ADRs and readiness evidence |
+| [Developer guide](./engineering/LOCAL-DEVELOPMENT.md) | Workspace setup, local modes, checks and real-dependency integration tests |
+| [Runtime verification](./engineering/VERIFICATION.md) | Executed application checks and unexecuted infrastructure/deployment gates |
 
 ## Interpretation and assumptions
 
@@ -20,7 +22,7 @@ Read these documents in order:
 - Four product roles are required: customer, restaurant seller, rider, and admin. Three primary login entry points are customer, rider, and admin; sellers also have an explicit seller login and onboarding path. All use one identity service. This avoids omitting the restaurant operator.
 - “Hallucinate between pages and buttons” is interpreted as **no broken links, invented destinations, misleading actions, or inconsistent state**. The chatbot must also avoid unsupported claims.
 - The requested six backend services are retained. Order management is an explicit bounded module in Restaurant Service; payment and chatbot modules live in Utils Service. These modules can be extracted later without changing public contracts.
-- Initial operating market: **Chennai, India** (confirmed by the user), INR, immediate single-restaurant orders. Both Razorpay and Stripe integrations are required before the full-scope release. Actual Stripe live availability and supported currencies depend on the merchant account and market; do not promise global operations merely because an adapter exists.
+- Operating market: **India-wide** (the user expanded the earlier Chennai-only scope), INR, immediate single-restaurant orders. Both Razorpay and Stripe integrations are required before the full-scope release. Actual Stripe live availability and supported currencies depend on the merchant account and market; do not promise global operations merely because an adapter exists.
 - Launch scope and later enhancements are distinguished so “everything” is deliverable and testable. All features explicitly requested by the user are in the full-scope release.
 - The source website could not be read using the research tool. The supplied Google Drive references are shortened/incomplete, so their content was not verified or used as a specification. No paid source code is assumed available.
 - SLOs, capacities, time estimates, TTLs, and business thresholds below are proposed targets, not measured results or vendor guarantees.
@@ -29,7 +31,7 @@ Read these documents in order:
 
 | Decision | Working default | Deadline |
 |---|---|---|
-| City and delivery boundary | Chennai confirmed; admin-managed polygons still require operating boundaries | Discovery / before serviceability implementation |
+| City and delivery boundary | India-wide discovery confirmed; each city requires approved service polygons | Discovery / before serviceability implementation |
 | Maps provider and navigation | Provider adapter; commercial maps/geocoding/directions provider selected after coverage, terms, and cost review | Tracking milestone |
 | SMS/email/push providers | Provider adapters with development fakes and production credentials | Identity milestone |
 | Seller/rider verification documents | Configurable market-specific requirements reviewed by operations | Onboarding milestone |

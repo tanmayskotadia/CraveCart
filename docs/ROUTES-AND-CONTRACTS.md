@@ -1,6 +1,6 @@
 # CraveCart routes and contracts
 
-This is the implementation inventory, not a claim that routes already exist. Phase 0 now provides a checked [machine-readable baseline](../contracts/README.md), including OpenAPI, a page/action manifest and event schemas. Inventory-only HTTP operations must be refined before implementation or client generation.
+This is the implementation inventory, not a claim that routes already exist. Discovery now provides a checked [machine-readable baseline](../contracts/README.md), including OpenAPI, a page/action manifest and event schemas. Inventory-only HTTP operations must be refined before implementation or client generation.
 
 ## 1. Routing conventions
 
@@ -310,6 +310,7 @@ Admin endpoints are control-plane commands. They call authenticated internal own
 
 | Method | Path | Required grant/purpose |
 |---|---|---|
+| GET | `/platform` | Public read-only national discovery and launch capabilities; no private configuration |
 | GET | `/admin/dashboard` | Dashboard-read |
 | GET | `/admin/verifications` | Verification-read |
 | GET | `/admin/verifications/:applicationId` | Verification-read, protected documents |

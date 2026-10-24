@@ -1,0 +1,137 @@
+name: cravecart
+
+x-app: &app
+  build:
+    context: ../..
+    dockerfile: infra/docker/Dockerfile
+  init: true
+  restart: unless-stopped
+  environment: &environment
+    NODE_ENV: development
+    HOST: 0.0.0.0
+    APP_ORIGIN: ${APP_ORIGIN:-http://localhost:5173}
+    MONGO_URI: mongodb://mongo:27017/?replicaSet=rs0
+    RABBITMQ_URL: amqp://cravecart:local-only@rabbitmq:5672/cravecart
+    REDIS_URL: redis://redis:6379
+    INTERNAL_TOKEN: ${INTERNAL_TOKEN:?Copy .env.example to .env}
+    METRICS_TOKEN: ${METRICS_TOKEN:?Copy .env.example to .env}
+    AUTH_SECRET: ${AUTH_SECRET:-development-only-auth-secret-change-me}
+    AUTH_ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY:-development-only-encryption-key-change-me}
+    UPLOAD_ENCRYPTION_KEY: ${UPLOAD_ENCRYPTION_KEY:-development-only-upload-key-change-me}
+    UPLOAD_DIRECTORY: /var/lib/cravecart/uploads
+    AUTH_URL: http://auth:4001
+    RESTAURANT_URL: http://restaurant:4002
+    RIDER_URL: http://rider:4003
+    ADMIN_URL: http://admin:4004
+    REALTIME_URL: http://realtime:4005
+    UTILS_URL: http://utils:4006
+    DEV_ADAPTERS: 'true'
+  depends_on:
+    mongo-init: { condition: service_completed_successfully }
+    rabbitmq: { condition: service_healthy }
+    redis: { condition: service_healthy }
+  healthcheck:
+    test:
+      [
+        CMD,
+        node,
+        -e,
+        "fetch('http://127.0.0.1:'+(process.env.PORT||4001)+'/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+      ]
+    interval: 10s
+    timeout: 5s
+    retries: 10
+    start_period: 20s
+
+services:
+  mongo:
+    image: mongo:8.0
+    command: [mongod, --replSet, rs0, --bind_ip_all]
+    ports: ['127.0.0.1:27017:27017']
+    volumes: [mongo-data:/data/db]
+    healthcheck:
+      test: [CMD, mongosh, --quiet, --eval, "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+  mongo-init:
+    image: mongo:8.0
+    depends_on: { mongo: { condition: service_healthy } }
+    entrypoint: [mongosh, --host, 'mongo:27017', --quiet, --eval]
+    command:
+      [
+        "try { rs.status() } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}) }; while (!db.hello().isWritablePrimary) { sleep(500) }",
+      ]
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: cravecart
+      RABBITMQ_DEFAULT_PASS: local-only
+      RABBITMQ_DEFAULT_VHOST: cravecart
+    ports: ['127.0.0.1:5672:5672', '127.0.0.1:15672:15672']
+    volumes: [rabbitmq-data:/var/lib/rabbitmq]
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, ping]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, 'yes']
+    ports: ['127.0.0.1:6379:6379']
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  auth:
+    <<: *app
+    command: [node, services/auth/dist/index.js]
+    environment: { <<: *environment, PORT: '4001' }
+    ports: ['127.0.0.1:4001:4001']
+  restaurant:
+    <<: *app
+    command: [node, services/restaurant/dist/index.js]
+    environment: { <<: *environment, PORT: '4002' }
+    ports: ['127.0.0.1:4002:4002']
+  rider:
+    <<: *app
+    command: [node, services/rider/dist/index.js]
+    environment: { <<: *environment, PORT: '4003' }
+    ports: ['127.0.0.1:4003:4003']
+  admin:
+    <<: *app
+    command: [node, services/admin/dist/index.js]
+    environment: { <<: *environment, PORT: '4004' }
+    ports: ['127.0.0.1:4004:4004']
+  realtime:
+    <<: *app
+    command: [node, services/realtime/dist/index.js]
+    environment: { <<: *environment, PORT: '4005' }
+    ports: ['127.0.0.1:4005:4005']
+  utils:
+    <<: *app
+    command: [node, services/utils/dist/index.js]
+    environment: { <<: *environment, PORT: '4006' }
+    ports: ['127.0.0.1:4006:4006']
+    volumes: [upload-data:/var/lib/cravecart/uploads]
+  gateway:
+    <<: *app
+    command: [node, apps/gateway/dist/index.js]
+    environment:
+      <<: *environment
+      PORT: '4000'
+      AUTH_URL: http://auth:4001
+      RESTAURANT_URL: http://restaurant:4002
+      RIDER_URL: http://rider:4003
+      ADMIN_URL: http://admin:4004
+      REALTIME_URL: http://realtime:4005
+      UTILS_URL: http://utils:4006
+    ports: ['127.0.0.1:4000:4000']
+
+volumes:
+  mongo-data:
+  rabbitmq-data:
+  redis-data:
+  upload-data:

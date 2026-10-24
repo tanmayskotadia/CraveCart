@@ -1,25 +1,45 @@
 # CraveCart
 
-MERN food-delivery marketplace for Chennai, with customer, seller, rider and admin workspaces, six backend services, RabbitMQ, realtime tracking, payments and a grounded assistant.
+Food discovery and delivery for India, built with MongoDB, Express, React and Node.js using TypeScript. The repository contains a React application, six independently runnable backend services, an API gateway, shared contracts, local infrastructure and automated checks.
 
-**Current stage:** Phase 0 discovery and contract baseline. Application scaffolding is Phase 1; there is no running marketplace yet.
+The application currently provides the launch experience and protected workspace entry points. Customer ordering, identity, seller operations, delivery tracking, payments and the assistant remain upcoming feature work. The interface does not simulate successful orders or sign-ins.
 
-- [Planning pack](docs/README.md)
-- [Phase 0 deliverables and readiness](docs/phase-0/README.md)
+## Run locally
+
+Use Node **24.14.1** and npm **11.11.0**. Install Docker with Compose v2 for the dependency stack.
+
+```powershell
+npm ci
+Copy-Item .env.example .env
+npm run build
+docker compose --env-file .env -f infra/compose/compose.yaml up -d --wait mongo mongo-init rabbitmq redis
+npm run dev
+```
+
+Open [CraveCart](http://localhost:5173). Without Docker, the build and `npm run dev` launch the web/API shell, but dependency readiness returns 503. Hosted setup and real-dependency recovery verification require the infrastructure described in the development guide.
+
+## Validate
+
+```powershell
+python -m pip install -r scripts/requirements-contracts.txt
+npm run typecheck
+npm run lint
+npm run format:check
+npm test
+npm run contracts:build
+npm run contracts:check
+npx playwright install chromium
+npm run test:e2e
+```
+
+The real-dependency integration suite has separate setup; see the guide below. Exact runtime and development package versions are committed in `package-lock.json`.
+
+## Documentation
+
+- [Local development and integration tests](docs/engineering/LOCAL-DEVELOPMENT.md)
+- [Verification results and remaining gates](docs/engineering/VERIFICATION.md)
+- [Operations and deployment prerequisites](docs/engineering/OPERATIONS.md)
+- [Discovery and architecture](docs/discovery/README.md)
 - [Product requirements](docs/PRD.md)
+- [Routes and API contracts](contracts/README.md)
 - [Implementation roadmap](docs/IMPLEMENTATION-PLAN.md)
-
-Validate the local Phase 0 artifacts with Python 3.12+ and `jsonschema` available. The tested validator dependency is recorded in `scripts/requirements-phase0.txt`:
-
-```powershell
-python scripts/validate_phase0.py
-```
-
-Regenerate the machine-readable baseline after editing the planning route inventory or generator:
-
-```powershell
-python scripts/build_phase0_contracts.py
-python scripts/validate_phase0.py
-```
-
-Contract lifecycle and incomplete endpoint schemas are explicitly documented in [contracts/README.md](contracts/README.md).

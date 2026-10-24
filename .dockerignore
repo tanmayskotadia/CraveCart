@@ -1,0 +1,14 @@
+.git
+node_modules
+**/dist
+**/*.tsbuildinfo
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+playwright-report
+test-results
+.local
+__pycache__
+**/__pycache__

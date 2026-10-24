@@ -51,7 +51,7 @@ Utils contains isolated packages and worker pools for payments, uploads, notific
 | Local state | Zustand or small context stores for UI state; never duplicate financial truth |
 | UI/forms | Tailwind or CSS tokens plus accessible primitives; React Hook Form + Zod |
 | Backend | Express + TypeScript, explicit controller/domain/repository boundaries |
-| Persistence | MongoDB replica set + Mongoose; schema migrations and explicit index deployment |
+| Persistence | MongoDB replica set; native driver for shared transaction/outbox infrastructure, domain model choices recorded per module; explicit migrations/index deployment |
 | Messaging | RabbitMQ AMQP client with confirms/manual acks, durable domain queues |
 | Realtime/cache | Socket.IO; compatible Redis adapter chosen after recovery/scaling validation; Redis GEO for ephemeral proximity candidates |
 | Search | MongoDB indexed text/geospatial search initially; advanced search as optional Atlas capability |

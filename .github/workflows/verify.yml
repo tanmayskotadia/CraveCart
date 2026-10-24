@@ -1,0 +1,49 @@
+name: Verify CraveCart
+on: [push, pull_request]
+permissions: { contents: read }
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: npm }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: npm ci
+      - run: python -m pip install -r scripts/requirements-contracts.txt
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run test:identity
+      - run: npm run contracts:build && npm run contracts:check
+      - run: git diff --exit-code -- contracts docs/discovery/traceability.csv
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: browser-failures, path: test-results, if-no-files-found: ignore }
+  dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: npm }
+      - run: npm ci && npm run build
+      - run: cp .env.example .env
+      - run: docker compose --env-file .env -f infra/compose/compose.yaml config --quiet
+      - run: npm run infra:up
+      - name: Transaction / publish / acknowledgement recovery
+        env:
+          MONGO_URI: mongodb://127.0.0.1:27017/?directConnection=true&replicaSet=rs0
+          RABBITMQ_URL: amqp://cravecart:local-only@127.0.0.1:5672/cravecart
+          REDIS_URL: redis://127.0.0.1:6379
+        run: npm run test:integration
+      - run: node scripts/smoke.mjs --ready
+      - run: docker compose --env-file .env -f infra/compose/compose.yaml logs --no-color --tail 200
+        if: failure()
+      - run: npm run infra:down
+        if: always()

@@ -1,6 +1,6 @@
-# Phase 0 contracts
+# Discovery contracts
 
-Version: `0.1.0`; status: **design baseline**, not implemented endpoints. JSON files are intentionally usable by scripts and future contract tooling without a YAML dependency.
+Version: `0.1.0`. `GET /platform` is implemented and exported from a tested shared Zod schema. Remaining business endpoints are a design baseline. JSON files support scripts and contract tooling without a YAML dependency.
 
 | File | Purpose |
 |---|---|
@@ -15,11 +15,11 @@ Version: `0.1.0`; status: **design baseline**, not implemented endpoints. JSON f
 - `inventory-only`: method/path/owner/policy listed. Request/query/response details must be completed before implementing the endpoint.
 - `critical-baseline`: concrete schemas for high-risk ordering/payment/delivery commands; still requires review, exact semantics and example-based implementation tests.
 - `provider-defined`: webhook body/signature protocol belongs to the provider. Preserve raw bytes and use current official verification rules. The schema does not pretend to describe every provider payload.
-- All operations have `x-client-generation-ready: false`. Promote an operation to `implementation-ready` only after its full schemas, errors, authorization, idempotency, pagination/query semantics and examples are reviewed and tested. Then set the generation flag for that operation.
+- Only `GET /platform` has `x-client-generation-ready: true`. Promote another operation to `implementation-ready` only after its full schemas, errors, authorization, idempotency, pagination/query semantics and examples are reviewed and tested. Then set the generation flag for that operation.
 
 No generic response placeholder may be used as a production client type. `GET /orders/{orderId}` currently models the critical summary, not all menu/address/timeline fields required by the detail page. Complete that resource during the order slice. `POST /rider/location` is schema-detailed but remains provisional; do not use browser timestamps/coordinates as delivery proof.
 
-The market remains Chennai/INR at launch. Provider payload adapters, amount/currency/reference checks, normalized phone validation, membership checks, quote math and OTP/verification attempt limits require domain logic beyond JSON Schema.
+The market is India-wide with INR pricing. Discovery cities are independent of approved city-specific delivery zones. Provider payload adapters, amount/currency/reference checks, normalized phone validation, membership checks, quote math and OTP/verification attempt limits require domain logic beyond JSON Schema.
 
 ## Ownership, security and async semantics
 
@@ -34,11 +34,11 @@ The market remains Chennai/INR at launch. Provider payload adapters, amount/curr
 
 ## Regeneration and validation
 
-The planning route inventory plus `scripts/build_phase0_contracts.py` define this initial baseline. Regeneration overwrites generated JSON and traceability; do not hand-edit them. When runtime contracts are introduced in Phase 1, migrate to one canonical shared schema package and retire the Markdown-to-contract generator through an explicit change.
+The planning route inventory plus `scripts/build_contracts.py` define the unimplemented inventory. `packages/contracts/src/index.ts` is canonical for the implemented capability endpoint; `scripts/export-contracts.ts` exports it into `platform.openapi.json`, which the planning generator merges without overwriting its readiness status. Regeneration overwrites generated JSON and traceability; do not hand-edit them. Migrate remaining endpoints individually into the shared runtime schema package as they are implemented.
 
 ```powershell
-python scripts/build_phase0_contracts.py
-python scripts/validate_phase0.py
+npm run contracts:build
+python scripts/validate_contracts.py
 ```
 
 The validator checks inventory coverage, references, route/action links, schema positive/negative examples, traceability and token contrast. It is not a full third-party OpenAPI conformance validator, runtime E2E suite, hosted connectivity test or visual accessibility certification.

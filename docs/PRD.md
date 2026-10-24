@@ -6,6 +6,10 @@ Build a realistic food-delivery marketplace in which customers discover restaura
 
 The complete product must include six independently deployable Node.js services, RabbitMQ, Socket.IO, Docker, Razorpay, Stripe, seller/rider/admin/customer dashboards, navigation, sound alerts, and a chatbot. A polished demo is an intermediate milestone, not evidence of production readiness.
 
+The operating scope is **India-wide**, superseding the earlier Chennai-only pilot decision. City discovery is nationwide; delivery availability is determined by approved city-specific zones, restaurant capacity and rider availability. A city-directory entry must never be presented as proof that ordering is live there.
+
+The global market configuration holds country, currency and timezone. Selected city belongs to discovery/address context, not a hardcoded global city. Zone records must include country, city identifier, polygon, operating hours, fee-policy version and activation status. Catalog and checkout validate both city context and exact delivery coordinates; inactive/unconfigured zones fail closed.
+
 ## 2. Scope and priority
 
 **P0:** Required for a safe end-to-end pilot. **P1:** Required for the complete requested release, after P0 stabilizes. **P2:** Explicit future expansion.

@@ -8,10 +8,10 @@ Retain Vercel React hosting, Render gateway/domain/realtime services, MongoDB re
 
 For Render-to-AWS AMQP, first evaluate supported private connectivity for the chosen region/plan and a compatible AWS endpoint. If unavailable, qualify narrow egress allowlisting plus TLS hostname verification and distinct least-privilege broker users. Shared regional egress ranges alone do not authenticate callers. Never expose broker management or cluster internode ports publicly.
 
-Production broker availability needs durable storage and quorum-node failure testing; one Docker host is a pilot limitation. Do not create or pay for infrastructure during Phase 0 without a selected account/budget. Prepare exact networking configuration in the infrastructure milestone; no IPs, region availability or account entitlements are invented here.
+Production broker availability needs durable storage and quorum-node failure testing; one Docker host is a pilot limitation. Do not create or pay for infrastructure during Discovery without a selected account/budget. Prepare exact networking configuration in the infrastructure milestone; no IPs, region availability or account entitlements are invented here.
 
 ## Evidence and limitations
 
 [Render private network documentation](https://render.com/docs/private-network) describes same-region/workspace communication and eligible private-link integration. [Outbound IP documentation](https://render.com/docs/outbound-ip-addresses) describes service-specific egress discovery and shared ranges. [RabbitMQ production guidance](https://www.rabbitmq.com/docs/production-checklist) informs storage, isolation, monitoring and clustering design. Checked 24 October 2026.
 
-No handshake, failover, cost or latency measurement has run against user infrastructure. The [feasibility checklist](../phase-0/PROVIDERS-AND-FEASIBILITY.md) defines required proof before staging exit.
+No handshake, failover, cost or latency measurement has run against user infrastructure. The [feasibility checklist](../discovery/PROVIDERS-AND-FEASIBILITY.md) defines required proof before staging exit.

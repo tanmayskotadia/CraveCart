@@ -2,7 +2,7 @@
   "version": "0.1.0",
   "status": "design-baseline",
   "market": {
-    "city": "Chennai",
+    "scope": "national",
     "country": "IN",
     "currency": "INR",
     "locale": "en-IN",
