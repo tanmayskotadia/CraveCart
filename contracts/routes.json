@@ -1,0 +1,1963 @@
+{
+  "version": "0.1.0",
+  "status": "design-baseline",
+  "market": {
+    "city": "Chennai",
+    "country": "IN",
+    "currency": "INR",
+    "locale": "en-IN",
+    "timezone": "Asia/Kolkata",
+    "liveZonesEnabled": false
+  },
+  "routes": [
+    {
+      "id": "page_home",
+      "path": "/",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Public",
+      "purpose": "Location selector, search, nearby discovery; restaurant card → detail",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_location",
+      "path": "/location",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Public",
+      "purpose": "GPS/manual address and map pin → serviceability → safe return",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_search",
+      "path": "/search",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Public",
+      "purpose": "Query/filter/sort in URL; dish result → restaurant and dish anchor",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_restaurants_slug",
+      "path": "/restaurants/:slug",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Public",
+      "purpose": "Restaurant/menu/reviews; configure dish → cart",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_offers",
+      "path": "/offers",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Public",
+      "purpose": "Offer terms; browse eligible restaurants",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_help",
+      "path": "/help",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Public",
+      "purpose": "Approved FAQs and support entry",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_legal_terms",
+      "path": "/legal/terms",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Public",
+      "purpose": "Versioned terms",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_legal_privacy",
+      "path": "/legal/privacy",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Public",
+      "purpose": "Privacy notice",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_legal_cancellations",
+      "path": "/legal/cancellations",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Public",
+      "purpose": "Cancellation/refund policy",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_login",
+      "path": "/login",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Guest",
+      "purpose": "Customer sign-in; seller/rider entry links",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_signup",
+      "path": "/signup",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Guest",
+      "purpose": "Customer registration and verified contact",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_verify",
+      "path": "/verify",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Pending auth challenge",
+      "purpose": "OTP verify/resend; no OTP in URL",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_forgot_password",
+      "path": "/forgot-password",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Guest, if passwords enabled",
+      "purpose": "Non-enumerating recovery request",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_reset_password",
+      "path": "/reset-password",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Valid recovery flow",
+      "purpose": "Reset then session review/login",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_workspaces",
+      "path": "/workspaces",
+      "workspace": "public",
+      "sessionRequired": true,
+      "roles": [
+        "customer",
+        "seller",
+        "rider",
+        "admin"
+      ],
+      "policy": "Authenticated",
+      "purpose": "Select only granted roles",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_login",
+      "path": "/seller/login",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Guest",
+      "purpose": "Seller sign-in → seller workspace or onboarding",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_register",
+      "path": "/seller/register",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Applicant",
+      "purpose": "Seller application start",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_rider_login",
+      "path": "/rider/login",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Guest",
+      "purpose": "Rider sign-in",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_rider_register",
+      "path": "/rider/register",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Applicant",
+      "purpose": "Rider application start",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_login",
+      "path": "/admin/login",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Admin identity",
+      "purpose": "Sign-in and MFA; no self-service admin signup",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_403",
+      "path": "/403",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Any",
+      "purpose": "Explain denied access; allowed workspace link",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_not_found",
+      "path": "*",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Any",
+      "purpose": "404 with home/search/back links",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_cart",
+      "path": "/cart",
+      "workspace": "customer",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Guest cart or authenticated own cart",
+      "purpose": "Guest cart or authenticated own cart; edit/remove/configure lines, replace restaurant, apply coupon → checkout",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_checkout",
+      "path": "/checkout",
+      "workspace": "customer",
+      "sessionRequired": true,
+      "roles": [
+        "customer"
+      ],
+      "policy": "customer",
+      "purpose": "Address, verified quote, tip/method, policy acknowledgement → payment initiation",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_checkout_return",
+      "path": "/checkout/return",
+      "workspace": "customer",
+      "sessionRequired": true,
+      "roles": [
+        "customer"
+      ],
+      "policy": "customer",
+      "purpose": "Provider return; inspect backend payment state → order or recoverable pending view",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_orders",
+      "path": "/orders",
+      "workspace": "customer",
+      "sessionRequired": true,
+      "roles": [
+        "customer"
+      ],
+      "policy": "customer",
+      "purpose": "Own paginated order history; view/reorder",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_orders_orderId",
+      "path": "/orders/:orderId",
+      "workspace": "customer",
+      "sessionRequired": true,
+      "roles": [
+        "customer"
+      ],
+      "policy": "customer",
+      "purpose": "Detail/timeline; cancellation/refund request, receipt, support",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_orders_orderId_track",
+      "path": "/orders/:orderId/track",
+      "workspace": "customer",
+      "sessionRequired": true,
+      "roles": [
+        "customer"
+      ],
+      "policy": "customer",
+      "purpose": "Live map, freshness, rider message, support",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_orders_orderId_review",
+      "path": "/orders/:orderId/review",
+      "workspace": "customer",
+      "sessionRequired": true,
+      "roles": [
+        "customer"
+      ],
+      "policy": "customer",
+      "purpose": "Delivered-order rating/text form",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_orders_orderId_messages",
+      "path": "/orders/:orderId/messages",
+      "workspace": "customer",
+      "sessionRequired": true,
+      "roles": [
+        "customer"
+      ],
+      "policy": "customer",
+      "purpose": "Authorized order conversation",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_favorites",
+      "path": "/favorites",
+      "workspace": "customer",
+      "sessionRequired": true,
+      "roles": [
+        "customer"
+      ],
+      "policy": "customer",
+      "purpose": "Saved restaurants → menu",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_profile",
+      "path": "/profile",
+      "workspace": "customer",
+      "sessionRequired": true,
+      "roles": [
+        "customer"
+      ],
+      "policy": "customer",
+      "purpose": "Name/contact/preferences; sensitive changes require reauthentication",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_addresses",
+      "path": "/addresses",
+      "workspace": "customer",
+      "sessionRequired": true,
+      "roles": [
+        "customer"
+      ],
+      "policy": "customer",
+      "purpose": "Add/edit/delete/default; list with empty state",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_addresses_new",
+      "path": "/addresses/new",
+      "workspace": "customer",
+      "sessionRequired": true,
+      "roles": [
+        "customer"
+      ],
+      "policy": "customer",
+      "purpose": "Manual/map address → validate and save",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_addresses_addressId_edit",
+      "path": "/addresses/:addressId/edit",
+      "workspace": "customer",
+      "sessionRequired": true,
+      "roles": [
+        "customer"
+      ],
+      "policy": "customer",
+      "purpose": "Edit owned address; placed-order snapshot unaffected",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_onboarding",
+      "path": "/seller/onboarding",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Application/document submission and review status",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_restaurants",
+      "path": "/seller/restaurants",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Owned restaurant selector; add approved branch flow",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_restaurants_restaurantId_dashboard",
+      "path": "/seller/restaurants/:restaurantId/dashboard",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Active summary, pause/resume, alerts",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_restaurants_restaurantId_orders",
+      "path": "/seller/restaurants/:restaurantId/orders",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Incoming/active/history tabs; status filters",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_restaurants_restaurantId_orders_orderId",
+      "path": "/seller/restaurants/:restaurantId/orders/:orderId",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Accept/reject/prepare/ready/pickup verification and issue report",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_restaurants_restaurantId_menu",
+      "path": "/seller/restaurants/:restaurantId/menu",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Category/dish list; availability controls",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_restaurants_restaurantId_menu_new",
+      "path": "/seller/restaurants/:restaurantId/menu/new",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Create dish/variants/modifiers",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_restaurants_restaurantId_menu_itemId_edit",
+      "path": "/seller/restaurants/:restaurantId/menu/:itemId/edit",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Edit owned dish",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_restaurants_restaurantId_profile",
+      "path": "/seller/restaurants/:restaurantId/profile",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Restaurant information and media",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_restaurants_restaurantId_hours",
+      "path": "/seller/restaurants/:restaurantId/hours",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Weekly hours, holiday closures",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_restaurants_restaurantId_staff",
+      "path": "/seller/restaurants/:restaurantId/staff",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Invite/revoke members and grants",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_restaurants_restaurantId_analytics",
+      "path": "/seller/restaurants/:restaurantId/analytics",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Sales/fulfillment/quality filters",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_restaurants_restaurantId_finance",
+      "path": "/seller/restaurants/:restaurantId/finance",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Commission, refunds, settlement statements",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller_restaurants_restaurantId_reviews",
+      "path": "/seller/restaurants/:restaurantId/reviews",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "seller",
+      "purpose": "Read reviews, report abuse, permitted response",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_rider",
+      "path": "/rider",
+      "workspace": "rider",
+      "sessionRequired": true,
+      "roles": [
+        "rider"
+      ],
+      "policy": "rider",
+      "purpose": "Redirect to application or dashboard",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_rider_onboarding",
+      "path": "/rider/onboarding",
+      "workspace": "rider",
+      "sessionRequired": true,
+      "roles": [
+        "rider"
+      ],
+      "policy": "rider",
+      "purpose": "Identity, vehicle, documents, review status",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_rider_dashboard",
+      "path": "/rider/dashboard",
+      "workspace": "rider",
+      "sessionRequired": true,
+      "roles": [
+        "rider"
+      ],
+      "policy": "rider",
+      "purpose": "Availability, permission health, current delivery",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_rider_offers",
+      "path": "/rider/offers",
+      "workspace": "rider",
+      "sessionRequired": true,
+      "roles": [
+        "rider"
+      ],
+      "policy": "rider",
+      "purpose": "Expiring offers; accept/decline",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_rider_deliveries_deliveryId",
+      "path": "/rider/deliveries/:deliveryId",
+      "workspace": "rider",
+      "sessionRequired": true,
+      "roles": [
+        "rider"
+      ],
+      "policy": "rider",
+      "purpose": "Authoritative delivery steps, OTP, incidents",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_rider_deliveries_deliveryId_navigate",
+      "path": "/rider/deliveries/:deliveryId/navigate",
+      "workspace": "rider",
+      "sessionRequired": true,
+      "roles": [
+        "rider"
+      ],
+      "policy": "rider",
+      "purpose": "Pickup/drop map and external navigation launch",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_rider_history",
+      "path": "/rider/history",
+      "workspace": "rider",
+      "sessionRequired": true,
+      "roles": [
+        "rider"
+      ],
+      "policy": "rider",
+      "purpose": "Completed/failed delivery history",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_rider_earnings",
+      "path": "/rider/earnings",
+      "workspace": "rider",
+      "sessionRequired": true,
+      "roles": [
+        "rider"
+      ],
+      "policy": "rider",
+      "purpose": "Earnings breakdown and payout statements",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_rider_profile",
+      "path": "/rider/profile",
+      "workspace": "rider",
+      "sessionRequired": true,
+      "roles": [
+        "rider"
+      ],
+      "policy": "rider",
+      "purpose": "Rider contact/vehicle settings; reverify material changes",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin",
+      "path": "/admin",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Dashboard redirect",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_dashboard",
+      "path": "/admin/dashboard",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Operations and business summary; dashboard-read",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_verifications",
+      "path": "/admin/verifications",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Seller/rider queue; verification-read",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_verifications_applicationId",
+      "path": "/admin/verifications/:applicationId",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Protected documents, approve/reject/request changes; verification-write",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_users",
+      "path": "/admin/users",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Search/status/roles; user-management",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_users_userId",
+      "path": "/admin/users/:userId",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Scoped profile, suspension, role review; user-management",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_restaurants",
+      "path": "/admin/restaurants",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Marketplace restaurant management",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_restaurants_restaurantId",
+      "path": "/admin/restaurants/:restaurantId",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Status, verification, configuration and incidents",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_riders",
+      "path": "/admin/riders",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Availability, verification and incident filters",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_riders_riderId",
+      "path": "/admin/riders/:riderId",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Scoped operational history and status",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_orders",
+      "path": "/admin/orders",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Live board, delays, exceptions",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_orders_orderId",
+      "path": "/admin/orders/:orderId",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Timeline, assignment, escalation and policy-approved intervention",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_support",
+      "path": "/admin/support",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Ticket queue and SLA filters",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_support_ticketId",
+      "path": "/admin/support/:ticketId",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Agent messages, assignment and resolution",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_refunds",
+      "path": "/admin/refunds",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Requests, approvals, execution failures; finance grants",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_refunds_refundId",
+      "path": "/admin/refunds/:refundId",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Evidence, separate approval/execution audit",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_settlements",
+      "path": "/admin/settlements",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Statements and payout reconciliation",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_promotions",
+      "path": "/admin/promotions",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Versioned coupons/campaigns",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_zones",
+      "path": "/admin/zones",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Service polygons and operating settings",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_reports",
+      "path": "/admin/reports",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Defined metrics and audited exports",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_settings",
+      "path": "/admin/settings",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Fee/policy/feature configuration; configuration-write",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_team",
+      "path": "/admin/team",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Privileged grant administration; super-admin",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_audit",
+      "path": "/admin/audit",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Immutable administrative history; audit-read",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_admin_assistant",
+      "path": "/admin/assistant",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "FAQ versions, evaluation results and tool flags",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_notifications",
+      "path": "/notifications",
+      "workspace": "active",
+      "sessionRequired": true,
+      "roles": [
+        "customer",
+        "seller",
+        "rider",
+        "admin"
+      ],
+      "policy": "Own data in granted active workspace",
+      "purpose": "Shared workspace feature",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "forbidden",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_settings",
+      "path": "/settings",
+      "workspace": "active",
+      "sessionRequired": true,
+      "roles": [
+        "customer",
+        "seller",
+        "rider",
+        "admin"
+      ],
+      "policy": "Own data in granted active workspace",
+      "purpose": "Shared workspace feature",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "forbidden",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_settings_sessions",
+      "path": "/settings/sessions",
+      "workspace": "active",
+      "sessionRequired": true,
+      "roles": [
+        "customer",
+        "seller",
+        "rider",
+        "admin"
+      ],
+      "policy": "Own data in granted active workspace",
+      "purpose": "Shared workspace feature",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "forbidden",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_settings_privacy",
+      "path": "/settings/privacy",
+      "workspace": "active",
+      "sessionRequired": true,
+      "roles": [
+        "customer",
+        "seller",
+        "rider",
+        "admin"
+      ],
+      "policy": "Own data in granted active workspace",
+      "purpose": "Shared workspace feature",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "forbidden",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_support",
+      "path": "/support",
+      "workspace": "active",
+      "sessionRequired": true,
+      "roles": [
+        "customer",
+        "seller",
+        "rider",
+        "admin"
+      ],
+      "policy": "Own data in granted active workspace",
+      "purpose": "Shared workspace feature",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "forbidden",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_support_tickets_ticketId",
+      "path": "/support/tickets/:ticketId",
+      "workspace": "active",
+      "sessionRequired": true,
+      "roles": [
+        "customer",
+        "seller",
+        "rider",
+        "admin"
+      ],
+      "policy": "Own data in granted active workspace",
+      "purpose": "Shared workspace feature",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "forbidden",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_assistant",
+      "path": "/assistant",
+      "workspace": "active",
+      "sessionRequired": true,
+      "roles": [
+        "customer",
+        "seller",
+        "rider",
+        "admin"
+      ],
+      "policy": "Own data in granted active workspace",
+      "purpose": "Shared workspace feature",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "forbidden",
+        "offline",
+        "error"
+      ],
+      "implemented": false
+    },
+    {
+      "id": "page_seller",
+      "path": "/seller",
+      "workspace": "seller",
+      "sessionRequired": true,
+      "roles": [
+        "seller"
+      ],
+      "policy": "Granted seller role; onboarding allowed before verification",
+      "purpose": "Redirect by onboarding state and selected restaurant",
+      "states": [
+        "loading",
+        "forbidden",
+        "error"
+      ],
+      "implemented": false
+    }
+  ],
+  "aliases": [
+    {
+      "from": "/driver/*",
+      "to": "/rider/*",
+      "strategy": "validated-equivalent-only",
+      "unknownSuffix": "404"
+    }
+  ]
+}

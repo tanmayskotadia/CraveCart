@@ -1,0 +1,287 @@
+{
+  "version": "0.1.0",
+  "actions": [
+    {
+      "id": "action_use_my_location",
+      "label": "Use my location",
+      "commandOrDestination": "Browser permission → serviceability API",
+      "success": "Set selected location",
+      "recovery": "Manual entry; explain denied/unavailable",
+      "operations": [
+        {
+          "method": "get",
+          "path": "/serviceability"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_add_dish",
+      "label": "Add dish",
+      "commandOrDestination": "Variant validation → cart-line command",
+      "success": "Updated badge/cart",
+      "recovery": "Preserve choices; explain unavailable option",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/cart/lines"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_replace_cart",
+      "label": "Replace cart",
+      "commandOrDestination": "Confirm → atomic replace command",
+      "success": "New restaurant cart",
+      "recovery": "Old cart preserved if operation fails",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/cart/replace"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_apply_offer",
+      "label": "Apply offer",
+      "commandOrDestination": "Coupon code → quote",
+      "success": "Display validated discount",
+      "recovery": "Inline reason; retain cart",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/cart/quote"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_place_and_pay",
+      "label": "Place and pay",
+      "commandOrDestination": "Idempotent order + payment attempt",
+      "success": "Hosted checkout",
+      "recovery": "Retriable pending state; never silently retry a charge",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/orders"
+        },
+        {
+          "method": "post",
+          "path": "/payments/attempts"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_payment_return",
+      "label": "Payment return",
+      "commandOrDestination": "Backend payment/order lookup",
+      "success": "Order details",
+      "recovery": "Processing screen with bounded polling and support",
+      "operations": [
+        {
+          "method": "get",
+          "path": "/payments/attempts/{attemptId}"
+        },
+        {
+          "method": "post",
+          "path": "/payments/attempts/{attemptId}/verify"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_cancel_order",
+      "label": "Cancel order",
+      "commandOrDestination": "Policy preview → explicit confirmation → command",
+      "success": "Cancelled or request submitted",
+      "recovery": "Explain conflict/current stage",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/orders/{orderId}/cancellation-preview"
+        },
+        {
+          "method": "post",
+          "path": "/orders/{orderId}/cancel"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_track_order",
+      "label": "Track order",
+      "commandOrDestination": "`/orders/:id/track`",
+      "success": "Current snapshot + authorized room",
+      "recovery": "Snapshot/polling with stale status",
+      "operations": [
+        {
+          "method": "get",
+          "path": "/orders/{orderId}/tracking"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_reorder",
+      "label": "Reorder",
+      "commandOrDestination": "Current catalog validation → proposed cart",
+      "success": "Review changed lines",
+      "recovery": "Identify missing dishes; no implicit payment",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/orders/{orderId}/reorder"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_seller_accept",
+      "label": "Seller accept",
+      "commandOrDestination": "Expected-version command",
+      "success": "Confirmed order state",
+      "recovery": "Refetch on conflict; no optimistic irreversible state",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/seller/restaurants/{restaurantId}/orders/{orderId}/actions"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_seller_reject",
+      "label": "Seller reject",
+      "commandOrDestination": "Reason + confirmation",
+      "success": "Rejected and refund pending",
+      "recovery": "Current state and support escalation",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/seller/restaurants/{restaurantId}/orders/{orderId}/actions"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_mark_ready",
+      "label": "Mark ready",
+      "commandOrDestination": "Expected-version command",
+      "success": "Ready state",
+      "recovery": "Explain prerequisites",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/seller/restaurants/{restaurantId}/orders/{orderId}/actions"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_rider_online",
+      "label": "Rider online",
+      "commandOrDestination": "Approval/permission/health check → command",
+      "success": "Dispatch eligible",
+      "recovery": "Explicit unmet requirement",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/rider/availability"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_accept_delivery",
+      "label": "Accept delivery",
+      "commandOrDestination": "Offer ID + version/idempotency",
+      "success": "Assigned delivery",
+      "recovery": "Expired/already claimed feedback",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/rider/offers/{offerId}/accept"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_navigate",
+      "label": "Navigate",
+      "commandOrDestination": "Authorized task coordinate → provider link/map",
+      "success": "Correct pickup/drop destination",
+      "recovery": "Address fallback; never redirect to an invented location",
+      "operations": [
+        {
+          "method": "get",
+          "path": "/rider/deliveries/{deliveryId}"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_confirm_pickup_delivery",
+      "label": "Confirm pickup/delivery",
+      "commandOrDestination": "OTP/proof + expected version",
+      "success": "Persisted transition",
+      "recovery": "Rate-limited validation; incident path",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/rider/deliveries/{deliveryId}/pickup"
+        },
+        {
+          "method": "post",
+          "path": "/rider/deliveries/{deliveryId}/complete"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_refund_approval",
+      "label": "Refund approval",
+      "commandOrDestination": "MFA/reason/approval rules → command",
+      "success": "Approved/submitted state",
+      "recovery": "No false success; finance exception",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/admin/refunds/{refundId}/approve"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_chatbot_action",
+      "label": "Chatbot action",
+      "commandOrDestination": "Server proposal → user confirms token",
+      "success": "Structured result and real link",
+      "recovery": "No mutation; explain expiry/error",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/assistant/actions/{actionId}/confirm"
+        }
+      ],
+      "implemented": false
+    },
+    {
+      "id": "action_logout",
+      "label": "Logout",
+      "commandOrDestination": "Revoke session → local cache clear",
+      "success": "Appropriate login page",
+      "recovery": "Clear sensitive UI; retry revocation safely",
+      "operations": [
+        {
+          "method": "post",
+          "path": "/auth/logout"
+        }
+      ],
+      "implemented": false
+    }
+  ]
+}

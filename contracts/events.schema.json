@@ -1,0 +1,3831 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cravecart:domain-events:v1",
+  "title": "CraveCart broker event baseline",
+  "description": "Payloads exclude secrets/full addresses/OTP. Proof IDs refer to access-controlled short-lived server proofs. Producer identity is also checked against broker credentials, not trusted from JSON alone.",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "identity.roles-changed.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "auth"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "userId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "grantVersion": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "userId",
+            "grantVersion"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "identity.roles-changed.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "identity.suspended.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "auth"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "userId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "required": [
+            "userId",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "identity.suspended.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "seller.application-submitted.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "applicationId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "userId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "applicationId",
+            "userId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "seller.application-submitted.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "rider.application-submitted.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "rider"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "applicationId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "riderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "applicationId",
+            "riderId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "rider.application-submitted.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "verification.decided.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "admin"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "applicationId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "decisionId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "applicantType": {
+              "type": "string",
+              "enum": [
+                "seller",
+                "rider"
+              ]
+            },
+            "decision": {
+              "type": "string",
+              "enum": [
+                "approved",
+                "rejected",
+                "changes-requested"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "required": [
+            "applicationId",
+            "decisionId",
+            "applicantType",
+            "decision",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "verification.decided.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "restaurant.availability-changed.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "restaurantId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "orderable": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "restaurantId",
+            "orderable"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "restaurant.availability-changed.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "menu.updated.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "restaurantId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "catalogVersion": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "restaurantId",
+            "catalogVersion"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "menu.updated.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "payment.captured.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "utils"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "attemptId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "gateway": {
+              "type": "string",
+              "enum": [
+                "razorpay",
+                "stripe"
+              ]
+            },
+            "providerPaymentId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "amountMinor": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            }
+          },
+          "required": [
+            "orderId",
+            "attemptId",
+            "gateway",
+            "providerPaymentId",
+            "amountMinor",
+            "currency"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "payment.captured.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "payment.failed.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "utils"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "attemptId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "failureCode": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "orderId",
+            "attemptId",
+            "failureCode"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "payment.failed.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "delivery.assigned.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "rider"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "deliveryId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "riderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "assignmentVersion": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "deliveryId",
+            "orderId",
+            "riderId",
+            "assignmentVersion"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "delivery.assigned.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "delivery.arrived.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "rider"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "deliveryId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "riderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "deliveryId",
+            "orderId",
+            "riderId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "delivery.arrived.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "delivery.pickup-requested.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "rider"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "deliveryId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "riderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "expectedOrderVersion": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "proofId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "deliveryId",
+            "orderId",
+            "riderId",
+            "operationId",
+            "expectedOrderVersion",
+            "proofId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "delivery.pickup-requested.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "delivery.completion-requested.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "rider"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "deliveryId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "riderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "expectedOrderVersion": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "proofId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "deliveryId",
+            "orderId",
+            "riderId",
+            "operationId",
+            "expectedOrderVersion",
+            "proofId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "delivery.completion-requested.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "delivery.incident-opened.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "rider"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "incidentId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "deliveryId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "reasonCode": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "incidentId",
+            "deliveryId",
+            "orderId",
+            "reasonCode"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "delivery.incident-opened.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "delivery.failed.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "rider"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "incidentId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "deliveryId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "reasonCode": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "incidentId",
+            "deliveryId",
+            "orderId",
+            "reasonCode"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "delivery.failed.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "settlement.updated.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "utils"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "settlementId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "partyId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "SUBMITTED",
+                "PAID",
+                "FAILED"
+              ]
+            }
+          },
+          "required": [
+            "settlementId",
+            "partyId",
+            "state"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "settlement.updated.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "support.ticket-created.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "utils"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "ticketId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "userId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "ticketId",
+            "userId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "support.ticket-created.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "support.ticket-updated.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "utils"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "ticketId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "userId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "IN_PROGRESS",
+                "WAITING",
+                "RESOLVED",
+                "CLOSED"
+              ]
+            }
+          },
+          "required": [
+            "ticketId",
+            "userId",
+            "state"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "support.ticket-updated.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "notification.created.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "utils"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "notificationId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "userId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "category": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "notificationId",
+            "userId",
+            "category"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "notification.created.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "order.payment-pending.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "restaurantId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "orderId",
+            "restaurantId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "order.payment-pending.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "order.placed.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "restaurantId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "orderId",
+            "restaurantId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "order.placed.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "order.accepted.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "restaurantId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "orderId",
+            "restaurantId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "order.accepted.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "order.preparing.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "restaurantId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "orderId",
+            "restaurantId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "order.preparing.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "order.ready.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "restaurantId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "orderId",
+            "restaurantId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "order.ready.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "order.picked-up.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "restaurantId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "deliveryId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "riderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "orderId",
+            "restaurantId",
+            "deliveryId",
+            "riderId",
+            "operationId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "order.picked-up.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "order.out-for-delivery.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "restaurantId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "deliveryId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "riderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "orderId",
+            "restaurantId",
+            "deliveryId",
+            "riderId",
+            "operationId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "order.out-for-delivery.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "order.delivered.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "restaurantId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "deliveryId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "riderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "orderId",
+            "restaurantId",
+            "deliveryId",
+            "riderId",
+            "operationId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "order.delivered.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "order.cancelled.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "restaurantId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "orderId",
+            "restaurantId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "order.cancelled.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "order.rejected.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "restaurantId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "orderId",
+            "restaurantId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "order.rejected.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "order.expired.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "restaurantId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "orderId",
+            "restaurantId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "order.expired.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "refund.requested.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "utils"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "refundId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "amountMinor": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            }
+          },
+          "required": [
+            "refundId",
+            "orderId",
+            "amountMinor",
+            "currency"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "refund.requested.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "refund.submitted.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "utils"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "refundId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "amountMinor": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            }
+          },
+          "required": [
+            "refundId",
+            "orderId",
+            "amountMinor",
+            "currency"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "refund.submitted.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "refund.succeeded.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "utils"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "refundId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "amountMinor": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            }
+          },
+          "required": [
+            "refundId",
+            "orderId",
+            "amountMinor",
+            "currency"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "refund.succeeded.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "refund.failed.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "utils"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "refundId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "amountMinor": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            }
+          },
+          "required": [
+            "refundId",
+            "orderId",
+            "amountMinor",
+            "currency"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "refund.failed.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "verification.applied.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "type": "string",
+          "enum": [
+            "restaurant",
+            "rider"
+          ]
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "applicationId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "decisionId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "applicantType": {
+              "type": "string",
+              "enum": [
+                "seller",
+                "rider"
+              ]
+            }
+          },
+          "required": [
+            "applicationId",
+            "decisionId",
+            "applicantType"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "verification.applied.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "verification.failed.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "type": "string",
+          "enum": [
+            "restaurant",
+            "rider"
+          ]
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "applicationId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "decisionId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "applicantType": {
+              "type": "string",
+              "enum": [
+                "seller",
+                "rider"
+              ]
+            },
+            "failureCode": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "applicationId",
+            "decisionId",
+            "applicantType",
+            "failureCode"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "verification.failed.v1"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "const": "delivery.operation-rejected.v1"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "producer": {
+          "const": "restaurant"
+        },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "id": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "correlationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "causationId": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "deliveryId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "reasonCode": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "deliveryId",
+            "orderId",
+            "operationId",
+            "reasonCode"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "occurredAt",
+        "producer",
+        "aggregate",
+        "correlationId",
+        "causationId",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "delivery.operation-rejected.v1"
+    }
+  ]
+}
