@@ -8,6 +8,7 @@ import { Server } from 'socket.io';
 import { createClient } from 'redis';
 import { ZodError } from 'zod';
 import { HttpError, type DomainContext } from './security.js';
+import { IdempotencyConflict } from '@cravecart/persistence';
 export * from './security.js';
 import { loadConfig, type Config } from '@cravecart/config';
 import {
@@ -146,7 +147,7 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
     '/api',
     rateLimit({
       windowMs: 60_000,
-      limit: config.NODE_ENV==='production'?120:1000,
+      limit: config.NODE_ENV === 'production' ? 120 : 1000,
       standardHeaders: 'draft-8',
       legacyHeaders: false,
       handler: (_req, res) => {
@@ -163,6 +164,7 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
   );
   // Provider webhook routes will register raw-body parsing before JSON parsing when implemented.
   app.use('/api/v1/uploads', express.raw({ type: 'application/octet-stream', limit: '5mb' }));
+  app.use('/api/v1/cart', express.json({ limit: '128kb' }));
   app.use(express.json({ limit: '32kb' }));
   if (name === 'admin') {
     app.get('/api/v1/platform', (req, res) => {
@@ -177,12 +179,16 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
               ordering: false,
               authentication:
                 config.DEV_ADAPTERS === 'true' ||
-                Boolean(config.SMTP_URL) ||
-                Boolean(config.TWILIO_ACCOUNT_SID),
+                Boolean(config.SMTP_URL && config.SMTP_FROM) ||
+                Boolean(
+                  config.TWILIO_ACCOUNT_SID &&
+                  config.TWILIO_AUTH_TOKEN &&
+                  config.TWILIO_FROM_NUMBER,
+                ),
               liveTracking: false,
               assistant: false,
             },
-            serviceability: 'not-configured',
+            serviceability: 'coordinate-check-required',
           },
           meta: { requestId: res.locals.requestId },
         }),
@@ -215,6 +221,13 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
         rider: 'rider',
         admin: 'admin',
         uploads: 'utils',
+        media: 'utils',
+        addresses: 'auth',
+        restaurants: 'restaurant',
+        cart: 'restaurant',
+        favorites: 'restaurant',
+        offers: 'restaurant',
+        serviceability: 'admin',
       };
       const owner = segment ? owners[segment] : undefined;
       if (!owner) {
@@ -280,6 +293,12 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
     });
   });
   app.use(((error, _req, res, _next) => {
+    if (error instanceof IdempotencyConflict)
+      error = new HttpError(
+        409,
+        'IDEMPOTENCY_CONFLICT',
+        'This request key was already used for a different change',
+      );
     const invalid = error instanceof ZodError || error?.type === 'entity.parse.failed';
     const oversized = error?.type === 'entity.too.large';
     const known = error instanceof HttpError;

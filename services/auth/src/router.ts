@@ -96,6 +96,8 @@ interface Limit {
 const ACCESS_MS = 15 * 60_000,
   FAMILY_MS = 30 * 24 * 60 * 60_000;
 export const adminPermissions = [
+  'zones:read',
+  'zones:write',
   'verifications:read',
   'verifications:write',
   'users:read',
@@ -342,14 +344,12 @@ export function installAuth(app: Express, ctx: DomainContext) {
     });
     try {
       if (delivery === 'email')
-        await nodemailer
-          .createTransport(config.SMTP_URL!)
-          .sendMail({
-            from: config.SMTP_FROM,
-            to: input.contact,
-            subject: 'Your CraveCart verification code',
-            text: `Your CraveCart code is ${code}. It expires in 5 minutes. If you did not request this code, ignore this email.`,
-          });
+        await nodemailer.createTransport(config.SMTP_URL!).sendMail({
+          from: config.SMTP_FROM,
+          to: input.contact,
+          subject: 'Your CraveCart verification code',
+          text: `Your CraveCart code is ${code}. It expires in 5 minutes. If you did not request this code, ignore this email.`,
+        });
       if (delivery === 'sms') {
         const response = await fetch(
           `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(config.TWILIO_ACCOUNT_SID!)}/Messages.json`,
@@ -409,8 +409,11 @@ export function installAuth(app: Express, ctx: DomainContext) {
   router.get('/capabilities', (_req, res) =>
     json(res, {
       methods: [
-        ...(development || config.TWILIO_ACCOUNT_SID ? ['phone'] : []),
-        ...(development || config.SMTP_URL ? ['email'] : []),
+        ...(development ||
+        (config.TWILIO_ACCOUNT_SID && config.TWILIO_AUTH_TOKEN && config.TWILIO_FROM_NUMBER)
+          ? ['phone']
+          : []),
+        ...(development || (config.SMTP_URL && config.SMTP_FROM) ? ['email'] : []),
       ],
       developmentDelivery: development,
     }),
@@ -670,13 +673,37 @@ export function installAuth(app: Express, ctx: DomainContext) {
     });
     if (!challenge)
       throw new HttpError(401, 'INVALID_CHALLENGE', 'Authenticator enrollment has expired');
-    if(challenge.sessionId){const current=await loadSession(req);requireCsrf(req,config,current.session._id);if(current.session._id!==challenge.sessionId)throw new HttpError(401,'INVALID_CHALLENGE','This enrollment belongs to another session');}
+    if (challenge.sessionId) {
+      const current = await loadSession(req);
+      requireCsrf(req, config, current.session._id);
+      if (current.session._id !== challenge.sessionId)
+        throw new HttpError(401, 'INVALID_CHALLENGE', 'This enrollment belongs to another session');
+    }
     const user = await users.findOne({ _id: challenge.userId, status: 'ACTIVE' });
     if (!user || user.mfaSecret)
       throw new HttpError(409, 'ALREADY_ENROLLED', 'This enrollment is not available');
-    if(!challenge.pendingSecret)await mfaChallenges.updateOne({_id:challenge._id,pendingSecret:{$exists:false}},{$set:{pendingSecret:seal(Buffer.from(newTotpSecret()),config.AUTH_ENCRYPTION_KEY).toString('base64')}});
-    const stored=await mfaChallenges.findOne({_id:challenge._id,used:false,expiresAt:{$gt:new Date()}});if(!stored?.pendingSecret)throw new HttpError(401,'INVALID_CHALLENGE','Authenticator enrollment has expired');
-    const secret=unseal(Buffer.from(stored.pendingSecret,'base64'),config.AUTH_ENCRYPTION_KEY).toString();
+    if (!challenge.pendingSecret)
+      await mfaChallenges.updateOne(
+        { _id: challenge._id, pendingSecret: { $exists: false } },
+        {
+          $set: {
+            pendingSecret: seal(Buffer.from(newTotpSecret()), config.AUTH_ENCRYPTION_KEY).toString(
+              'base64',
+            ),
+          },
+        },
+      );
+    const stored = await mfaChallenges.findOne({
+      _id: challenge._id,
+      used: false,
+      expiresAt: { $gt: new Date() },
+    });
+    if (!stored?.pendingSecret)
+      throw new HttpError(401, 'INVALID_CHALLENGE', 'Authenticator enrollment has expired');
+    const secret = unseal(
+      Buffer.from(stored.pendingSecret, 'base64'),
+      config.AUTH_ENCRYPTION_KEY,
+    ).toString();
     json(res, {
       secret,
       uri: `otpauth://totp/CraveCart:${encodeURIComponent(user.contact)}?secret=${secret}&issuer=CraveCart&algorithm=SHA1&digits=6&period=30`,
@@ -697,8 +724,17 @@ export function installAuth(app: Express, ctx: DomainContext) {
     );
     if (!challenge)
       throw new HttpError(401, 'INVALID_CHALLENGE', 'Authenticator verification has expired');
-    await limit('mfa',challenge.userId,20,15*60_000);
-    if(challenge.sessionId){const current=await loadSession(req);requireCsrf(req,config,current.session._id);if(current.session._id!==challenge.sessionId)throw new HttpError(401,'INVALID_CHALLENGE','This verification belongs to another session');}
+    await limit('mfa', challenge.userId, 20, 15 * 60_000);
+    if (challenge.sessionId) {
+      const current = await loadSession(req);
+      requireCsrf(req, config, current.session._id);
+      if (current.session._id !== challenge.sessionId)
+        throw new HttpError(
+          401,
+          'INVALID_CHALLENGE',
+          'This verification belongs to another session',
+        );
+    }
     const transaction = client.startSession();
     try {
       const result = await transaction.withTransaction(async () => {
@@ -843,7 +879,36 @@ export function installAuth(app: Express, ctx: DomainContext) {
   });
   app.use('/api/v1/auth', router);
   const internal = express.Router();
-  internal.use(internalOnly(ctx, ['restaurant', 'rider', 'admin', 'utils', 'realtime']));
+  internal.use(internalOnly(ctx, ['auth', 'restaurant', 'rider', 'admin', 'utils', 'realtime']));
+  internal.post('/addresses/get', async (req, res) => {
+    if (res.locals.caller !== 'restaurant')
+      throw new HttpError(403, 'SERVICE_DENIED', 'Service denied');
+    const input = z
+      .object({ userId: z.string().uuid(), addressId: z.string().uuid() })
+      .strict()
+      .parse(req.body);
+    const address = await db
+      .collection('addresses')
+      .findOne({ _id: input.addressId as never, userId: input.userId });
+    if (!address) throw new HttpError(404, 'ADDRESS_NOT_FOUND', 'Choose a saved delivery address');
+    const { _id: _id, userId: _userId, ...value } = address;
+    json(res, value);
+  });
+  internal.post('/memberships/check', async (req, res) => {
+    if (res.locals.caller !== 'restaurant')
+      throw new HttpError(403, 'SERVICE_DENIED', 'Service denied');
+    const input = z
+      .object({ userIds: z.array(z.string().uuid()).min(1).max(1000) })
+      .strict()
+      .parse(req.body);
+    const active = await users
+      .find(
+        { _id: { $in: input.userIds }, status: 'ACTIVE', roles: 'seller' },
+        { projection: { _id: 1 } },
+      )
+      .toArray();
+    json(res, { activeUserIds: active.map((user) => user._id) });
+  });
   internal.post('/sessions/inspect', async (req, res) => {
     const body = z
       .object({ accessToken: z.string().optional(), sessionId: z.string().uuid().optional() })
@@ -981,7 +1046,37 @@ export function installAuth(app: Express, ctx: DomainContext) {
     requirePermission(publicUser(user, session), 'users:write', true);
     if (user._id === body.userId)
       throw new HttpError(409, 'SELF_CHANGE_DENIED', 'You cannot suspend your own account');
-    const transaction=client.startSession();try{await transaction.withTransaction(async()=>{const changed=await users.updateOne({_id:body.userId},{$set:{status:body.status}},{session:transaction});if(!changed.matchedCount)throw new HttpError(404,'NOT_FOUND','Account not found');if(body.status==='SUSPENDED'){await sessions.updateMany({userId:body.userId},{$set:{revokedAt:new Date()}},{session:transaction});await enqueueEvent(db,transaction,{eventId:randomUUID(),eventType:'identity.suspended.v1',schemaVersion:1,occurredAt:new Date().toISOString(),producer:'auth',aggregate:{type:'user',id:body.userId,version:Date.now()},correlationId:String(res.locals.requestId),causationId:session._id,data:{userId:body.userId,reason:body.reason}});}});}finally{await transaction.endSession();}
+    const transaction = client.startSession();
+    try {
+      await transaction.withTransaction(async () => {
+        const changed = await users.updateOne(
+          { _id: body.userId },
+          { $set: { status: body.status } },
+          { session: transaction },
+        );
+        if (!changed.matchedCount) throw new HttpError(404, 'NOT_FOUND', 'Account not found');
+        if (body.status === 'SUSPENDED') {
+          await sessions.updateMany(
+            { userId: body.userId },
+            { $set: { revokedAt: new Date() } },
+            { session: transaction },
+          );
+          await enqueueEvent(db, transaction, {
+            eventId: randomUUID(),
+            eventType: 'identity.suspended.v1',
+            schemaVersion: 1,
+            occurredAt: new Date().toISOString(),
+            producer: 'auth',
+            aggregate: { type: 'user', id: body.userId, version: Date.now() },
+            correlationId: String(res.locals.requestId),
+            causationId: session._id,
+            data: { userId: body.userId, reason: body.reason },
+          });
+        }
+      });
+    } finally {
+      await transaction.endSession();
+    }
     json(res, { updated: true });
   });
   app.use(

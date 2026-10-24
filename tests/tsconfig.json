@@ -6,5 +6,11 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["**/*.ts", "../scripts/export-contracts.ts", "../scripts/export-identity-contracts.ts", "../apps/web/src/access.ts"]
+  "include": [
+    "**/*.ts",
+    "../scripts/export-contracts.ts",
+    "../scripts/export-identity-contracts.ts",
+    "../scripts/export-catalog-contracts.ts",
+    "../apps/web/src/access.ts"
+  ]
 }

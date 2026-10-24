@@ -25,27 +25,27 @@ try {
   const db = client.db('cravecart_auth');
   await db.collection('users').createIndex({ contact: 1 }, { unique: true });
   const user = await db.collection('users').findOne({ contact });
-  await db
-    .collection('users')
-    .updateOne(
-      { contact },
-      {
-        $set: {
-          name,
-          status: 'ACTIVE',
-          permissions: [
-            'verifications:read',
-            'verifications:write',
-            'users:read',
-            'users:write',
-            'audit:read',
-          ],
-        },
-        $addToSet: { roles: { $each: ['customer', 'admin'] } },
-        $setOnInsert: { _id: randomUUID(), createdAt: new Date() },
+  await db.collection('users').updateOne(
+    { contact },
+    {
+      $set: {
+        name,
+        status: 'ACTIVE',
+        permissions: [
+          'zones:read',
+          'zones:write',
+          'verifications:read',
+          'verifications:write',
+          'users:read',
+          'users:write',
+          'audit:read',
+        ],
       },
-      { upsert: true },
-    );
+      $addToSet: { roles: { $each: ['customer', 'admin'] } },
+      $setOnInsert: { _id: randomUUID(), createdAt: new Date() },
+    },
+    { upsert: true },
+  );
   if (user)
     await db
       .collection('sessions')

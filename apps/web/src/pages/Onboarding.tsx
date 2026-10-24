@@ -133,14 +133,22 @@ function ApplicationForm({
       setPending(false);
     }
   }
-  async function checkFile(id:string) {
+  async function checkFile(id: string) {
     setPending(true);
     setError(undefined);
     try {
-      const result = await api<{status:string}>(`/uploads/${id}/complete`,{method:'POST',body:{}});
-      setFiles(old=>old.map(file=>file.id===id?{...file,status:result.status}:file));
-    } catch(error) { setError(error); }
-    finally { setPending(false); }
+      const result = await api<{ status: string }>(`/uploads/${id}/complete`, {
+        method: 'POST',
+        body: {},
+      });
+      setFiles((old) =>
+        old.map((file) => (file.id === id ? { ...file, status: result.status } : file)),
+      );
+    } catch (error) {
+      setError(error);
+    } finally {
+      setPending(false);
+    }
   }
   async function save(submit: boolean) {
     setPending(true);
@@ -148,7 +156,8 @@ function ApplicationForm({
     setNotice('');
     try {
       if (!files.length) throw new Error('Attach at least one verification document.');
-      if(files.some(file=>file.status==='QUARANTINED'))throw new Error('Finish the document check before saving your application.');
+      if (files.some((file) => file.status === 'QUARANTINED'))
+        throw new Error('Finish the document check before saving your application.');
       const body = { profile, documentIds: files.map((file) => file.id) };
       let value = await api<Application>(application ? `${base}/${application.id}` : base, {
         method: application ? 'PATCH' : 'POST',
@@ -393,9 +402,19 @@ function ApplicationForm({
                     <span className="status-badge status-approved">
                       {file.status === 'DEVELOPMENT_REVIEWABLE'
                         ? 'Development checked'
-                        : file.status === 'QUARANTINED' ? 'Check pending' : 'Attached'}
+                        : file.status === 'QUARANTINED'
+                          ? 'Check pending'
+                          : 'Attached'}
                     </span>
-                    {file.status === 'QUARANTINED' && <button className="text-link" type="button" onClick={()=>void checkFile(file.id)}>Retry document check</button>}
+                    {file.status === 'QUARANTINED' && (
+                      <button
+                        className="text-link"
+                        type="button"
+                        onClick={() => void checkFile(file.id)}
+                      >
+                        Retry document check
+                      </button>
+                    )}
                     <button
                       className="text-link"
                       type="button"
@@ -472,9 +491,17 @@ export function SellerWorkspace() {
             <h2>{restaurant.name}</h2>
             <p className="panel-description">{restaurant.city}</p>
             <p>
-              Menu and order management will open with the catalog release. Ordering is currently
+              Manage your restaurant, opening hours, menu and offers. Ordering is currently
               disabled.
             </p>
+            <div className="button-row">
+              <Link className="red-button" to={`/seller/restaurants/${restaurant.id}/menu`}>
+                Manage menu
+              </Link>
+              <Link className="outline-button" to={`/seller/restaurants/${restaurant.id}/profile`}>
+                Restaurant details
+              </Link>
+            </div>
           </div>
         ))
       ) : (

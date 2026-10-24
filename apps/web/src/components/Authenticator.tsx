@@ -8,9 +8,11 @@ export function AuthenticatorQr({ uri }: { uri: string }) {
   const [image, setImage] = useState('');
   useEffect(() => {
     let active = true;
-    void import('qrcode').then(module=>module.default.toDataURL(uri,{width:210,margin:1})).then((value) => {
-      if (active) setImage(value);
-    });
+    void import('qrcode')
+      .then((module) => module.default.toDataURL(uri, { width: 210, margin: 1 }))
+      .then((value) => {
+        if (active) setImage(value);
+      });
     return () => {
       active = false;
     };

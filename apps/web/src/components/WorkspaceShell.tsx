@@ -68,6 +68,9 @@ export function RequireSession({
 const navigation = {
   customer: [
     ['My account', '/profile'],
+    ['Addresses', '/addresses'],
+    ['Favourites', '/favorites'],
+    ['My cart', '/cart'],
     ['Sessions', '/settings/sessions'],
     ['Security', '/settings'],
     ['Workspaces', '/workspaces'],
@@ -89,6 +92,7 @@ const navigation = {
     ['Verifications', '/admin/verifications'],
     ['Accounts', '/admin/users'],
     ['Audit history', '/admin/audit'],
+    ['Operating zones', '/admin/zones'],
     ['Security', '/settings'],
     ['Workspaces', '/workspaces'],
   ],

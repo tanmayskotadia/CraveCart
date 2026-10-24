@@ -21,7 +21,9 @@ docker compose --env-file .env -f infra/compose/compose.yaml up -d --wait mongo 
 npm run dev
 ```
 
-To preview the web/API shell without Docker, run `npm run build` then `npm run dev`; all service liveness routes work, but dependency readiness correctly returns 503. Ordering and sign-in are unavailable in either mode until their implementation is added.
+To preview the web/API shell without Docker, run `npm run build` then `npm run dev`; all service liveness routes work, but dependency readiness correctly returns 503. For working identity/onboarding without Docker, start `npm run dev:database` in a separate terminal first. Sign-in uses explicit local development codes; ordering remains disabled. See [identity and onboarding](IDENTITY-AND-ONBOARDING.md) for operator provisioning, MFA, documents and production gates.
+
+For labelled fictional menus and cart-testing areas, run `npm run seed:catalog`. See [catalog and cart setup](CATALOG-AND-CART.md) for merchant tools, exact pin checks, map configuration and remaining production gates.
 
 ## Ports and checks
 
@@ -70,4 +72,4 @@ Six domain services depend on the shared platform runtime. `packages/contracts` 
 
 ## Formatting and contracts
 
-`npm run format` formats application/tooling files. `npm run contracts:build` exports the implemented Zod HTTP schema, then regenerates the planning inventory and traceability. Only `GET /platform` is implementation-ready. Promote later endpoints individually with full schema, authorization and behavior tests; do not generate production clients from inventory placeholders.
+`npm run format` formats application/tooling files. `npm run contracts:build` exports the implemented Zod HTTP schema, then regenerates the planning inventory and traceability. The capability endpoint and exported identity/onboarding and catalog/cart subsets are implementation-ready. Promote later endpoints individually with full schema, authorization and behavior tests; do not generate production clients from inventory placeholders.

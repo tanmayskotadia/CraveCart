@@ -1,11 +1,13 @@
 # Discovery contracts
 
-Version: `0.1.0`. `GET /platform` is implemented and exported from a tested shared Zod schema. Remaining business endpoints are a design baseline. JSON files support scripts and contract tooling without a YAML dependency.
+Version: `0.1.0`. `GET /platform` and the promoted identity/onboarding and catalog/cart operations are implemented and exported from shared Zod schemas. The remaining operations retain their declared baseline status. See [identity runtime coverage](../docs/engineering/IDENTITY-AND-ONBOARDING.md) for all executing endpoints. JSON files support scripts and contract tooling without a YAML dependency.
 
 | File | Purpose |
 |---|---|
 | [routes.json](routes.json) | Frontend page identity, access/workspace policy, states and aliases |
 | [actions.json](actions.json) | Every critical CTA linked to real declared API operations, success and recovery behavior |
+| [catalog.openapi.json](catalog.openapi.json) | Exported client-ready discovery, addresses, zones, seller catalog, uploads and cart contracts |
+| [identity.openapi.json](identity.openapi.json) | Exported client-ready identity/onboarding subset merged into OpenAPI |
 | [openapi.json](openapi.json) | OpenAPI 3.1 endpoint inventory and critical request/response schemas |
 | [events.schema.json](events.schema.json) | JSON Schema 2020-12 discriminated domain events |
 | [socket.schema.json](socket.schema.json) | Logical Socket.IO event descriptors, directions and data schemas |
@@ -15,7 +17,7 @@ Version: `0.1.0`. `GET /platform` is implemented and exported from a tested shar
 - `inventory-only`: method/path/owner/policy listed. Request/query/response details must be completed before implementing the endpoint.
 - `critical-baseline`: concrete schemas for high-risk ordering/payment/delivery commands; still requires review, exact semantics and example-based implementation tests.
 - `provider-defined`: webhook body/signature protocol belongs to the provider. Preserve raw bytes and use current official verification rules. The schema does not pretend to describe every provider payload.
-- Only `GET /platform` has `x-client-generation-ready: true`. Promote another operation to `implementation-ready` only after its full schemas, errors, authorization, idempotency, pagination/query semantics and examples are reviewed and tested. Then set the generation flag for that operation.
+- The promoted capability and identity operations have `x-client-generation-ready: true`. Promote another operation to `implementation-ready` only after its full schemas, errors, authorization, idempotency, pagination/query semantics and examples are reviewed and tested. Then set the generation flag for that operation.
 
 No generic response placeholder may be used as a production client type. `GET /orders/{orderId}` currently models the critical summary, not all menu/address/timeline fields required by the detail page. Complete that resource during the order slice. `POST /rider/location` is schema-detailed but remains provisional; do not use browser timestamps/coordinates as delivery proof.
 
@@ -34,7 +36,7 @@ The market is India-wide with INR pricing. Discovery cities are independent of a
 
 ## Regeneration and validation
 
-The planning route inventory plus `scripts/build_contracts.py` define the unimplemented inventory. `packages/contracts/src/index.ts` is canonical for the implemented capability endpoint; `scripts/export-contracts.ts` exports it into `platform.openapi.json`, which the planning generator merges without overwriting its readiness status. Regeneration overwrites generated JSON and traceability; do not hand-edit them. Migrate remaining endpoints individually into the shared runtime schema package as they are implemented.
+The planning route inventory plus `scripts/build_contracts.py` define the unimplemented inventory. `packages/contracts/src/index.ts` is canonical for the implemented capability endpoint; `scripts/export-contracts.ts` exports it into `platform.openapi.json`, which the planning generator merges without overwriting its readiness status. Regeneration overwrites generated JSON and traceability; do not hand-edit them. The identity exporter adds its promoted subset and preserves existing operation IDs. Migrate remaining endpoints individually into the shared runtime schema package.
 
 ```powershell
 npm run contracts:build
@@ -42,3 +44,5 @@ python scripts/validate_contracts.py
 ```
 
 The validator checks inventory coverage, references, route/action links, schema positive/negative examples, traceability and token contrast. It is not a full third-party OpenAPI conformance validator, runtime E2E suite, hosted connectivity test or visual accessibility certification.
+
+Route `runtimeStatus` distinguishes available local workflows, partial delivery against the broader product design, and planned screens. `implemented: true` denotes the available local workflow, not production qualification. Cart access currently requires an authenticated owner; guest-cart and checkout policy remains recorded as planned scope. Critical cart actions now reference the executing PUT /cart operation.

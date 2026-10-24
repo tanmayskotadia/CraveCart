@@ -1,15 +1,15 @@
 # Discovery validation evidence
 
-Executed locally on 24 October 2026 using `python scripts/validate_contracts.py`.
+Executed locally on 25 October 2026 using `python scripts/validate_contracts.py`.
 
-Result: **PASS — 1864 structural/example/coverage checks.**
+Result: **PASS — 2115 structural/example/coverage checks.**
 
 ## Artifact counts
 
 | Artifact | Count |
 |---|---|
 | frontend routes | 90 |
-| HTTP operations | 186 |
+| HTTP operations | 199 |
 | critical HTTP schemas | 14 |
 | broker events | 37 |
 | socket events | 12 |
@@ -39,4 +39,4 @@ Result: **PASS — 1864 structural/example/coverage checks.**
 
 ## Scope
 
-These checks validate planning and contract artifacts only. Runtime foundation verification is recorded separately in docs/engineering/VERIFICATION.md. GET /platform and the exported identity/onboarding operations are implementation-ready; remaining contracts retain their declared baseline status. This script does not execute browser, cloud, payment, load or deployed network tests, and is not a full OpenAPI conformance validator.
+These checks validate planning and contract artifacts only. Runtime foundation verification is recorded separately in docs/engineering/VERIFICATION.md. GET /platform and the exported identity/onboarding and catalog/cart operations are implementation-ready; remaining contracts retain their declared baseline status. This script does not execute browser, cloud, payment, load or deployed network tests, and is not a full OpenAPI conformance validator.

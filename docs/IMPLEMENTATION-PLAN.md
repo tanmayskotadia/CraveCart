@@ -237,6 +237,8 @@ Razorpay and Stripe have different verification and idempotency protocols; imple
 
 ## 11. Delivery roadmap
 
+Local delivery now includes identity/onboarding and discovery/catalog: addresses, exact-zone checks, seller menus, favorites, offers and saved carts. See [executed verification](engineering/VERIFICATION.md) and [catalog setup](engineering/CATALOG-AND-CART.md). Order/quote/payment and hosted qualification gates remain open; local availability does not mark the full product launched.
+
 Estimate: **18–24 weeks** for the baseline team described in the planning index, with some tracks overlapping. A solo build should be re-estimated by capacity rather than assuming the same date. Provider verification, native tracking, security remediation and operational setup can extend the schedule.
 
 | Phase | Indicative window | Concrete deliverables | Exit gate / dependency |

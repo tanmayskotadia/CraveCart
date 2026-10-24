@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "status": "design-baseline",
+  "status": "runtime-slices-with-planned-scope",
   "market": {
     "scope": "national",
     "country": "IN",
@@ -28,7 +28,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_location",
@@ -48,7 +49,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_search",
@@ -68,7 +70,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_restaurants_slug",
@@ -88,7 +91,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_offers",
@@ -108,7 +112,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_help",
@@ -128,7 +133,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_legal_terms",
@@ -148,7 +154,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_legal_privacy",
@@ -168,7 +175,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_legal_cancellations",
@@ -188,7 +196,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_login",
@@ -208,7 +217,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_signup",
@@ -228,7 +238,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_verify",
@@ -248,7 +259,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_forgot_password",
@@ -268,7 +280,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_reset_password",
@@ -288,7 +301,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_workspaces",
@@ -313,7 +327,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_login",
@@ -333,7 +348,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_register",
@@ -353,7 +369,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_rider_login",
@@ -373,7 +390,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_rider_register",
@@ -393,7 +411,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_login",
@@ -413,7 +432,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_403",
@@ -433,7 +453,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_not_found",
@@ -453,15 +474,18 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_cart",
       "path": "/cart",
       "workspace": "customer",
-      "sessionRequired": false,
-      "roles": [],
-      "policy": "Guest cart or authenticated own cart",
+      "sessionRequired": true,
+      "roles": [
+        "customer"
+      ],
+      "policy": "Authenticated owner; saved selections only. Guest cart, quote, redemption and checkout remain planned.",
       "purpose": "Guest cart or authenticated own cart; edit/remove/configure lines, replace restaurant, apply coupon → checkout",
       "states": [
         "loading",
@@ -473,7 +497,9 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial",
+      "plannedPolicy": "Guest cart or authenticated own cart"
     },
     {
       "id": "page_checkout",
@@ -495,7 +521,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_checkout_return",
@@ -517,7 +544,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_orders",
@@ -539,7 +567,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_orders_orderId",
@@ -561,7 +590,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_orders_orderId_track",
@@ -583,7 +613,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_orders_orderId_review",
@@ -605,7 +636,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_orders_orderId_messages",
@@ -627,7 +659,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_favorites",
@@ -649,7 +682,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_profile",
@@ -671,7 +705,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_addresses",
@@ -693,7 +728,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_addresses_new",
@@ -715,7 +751,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_addresses_addressId_edit",
@@ -737,7 +774,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_onboarding",
@@ -759,7 +797,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_restaurants",
@@ -781,7 +820,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_seller_restaurants_restaurantId_dashboard",
@@ -803,7 +843,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_seller_restaurants_restaurantId_orders",
@@ -825,7 +866,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_seller_restaurants_restaurantId_orders_orderId",
@@ -847,7 +889,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_seller_restaurants_restaurantId_menu",
@@ -869,7 +912,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_restaurants_restaurantId_menu_new",
@@ -891,7 +935,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_restaurants_restaurantId_menu_itemId_edit",
@@ -913,7 +958,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_restaurants_restaurantId_profile",
@@ -935,7 +981,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_seller_restaurants_restaurantId_hours",
@@ -957,7 +1004,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_restaurants_restaurantId_staff",
@@ -979,7 +1027,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_seller_restaurants_restaurantId_analytics",
@@ -1001,7 +1050,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_seller_restaurants_restaurantId_finance",
@@ -1023,7 +1073,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_seller_restaurants_restaurantId_reviews",
@@ -1045,7 +1096,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_rider",
@@ -1067,7 +1119,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_rider_onboarding",
@@ -1089,7 +1142,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_rider_dashboard",
@@ -1111,7 +1165,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_rider_offers",
@@ -1133,7 +1188,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_rider_deliveries_deliveryId",
@@ -1155,7 +1211,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_rider_deliveries_deliveryId_navigate",
@@ -1177,7 +1234,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_rider_history",
@@ -1199,7 +1257,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_rider_earnings",
@@ -1221,7 +1280,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_rider_profile",
@@ -1243,7 +1303,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_admin",
@@ -1265,7 +1326,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_admin_dashboard",
@@ -1287,7 +1349,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_admin_verifications",
@@ -1309,7 +1372,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_verifications_applicationId",
@@ -1331,7 +1395,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_users",
@@ -1353,7 +1418,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_admin_users_userId",
@@ -1375,7 +1441,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_restaurants",
@@ -1397,7 +1464,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_restaurants_restaurantId",
@@ -1419,7 +1487,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_riders",
@@ -1441,7 +1510,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_riders_riderId",
@@ -1463,7 +1533,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_orders",
@@ -1485,7 +1556,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_orders_orderId",
@@ -1507,7 +1579,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_support",
@@ -1529,7 +1602,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_support_ticketId",
@@ -1551,7 +1625,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_refunds",
@@ -1573,7 +1648,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_refunds_refundId",
@@ -1595,7 +1671,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_settlements",
@@ -1617,7 +1694,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_promotions",
@@ -1639,7 +1717,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_zones",
@@ -1661,7 +1740,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_reports",
@@ -1683,7 +1763,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_settings",
@@ -1705,7 +1786,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_team",
@@ -1727,7 +1809,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_admin_audit",
@@ -1749,7 +1832,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_admin_assistant",
@@ -1771,7 +1855,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_notifications",
@@ -1794,7 +1879,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_settings",
@@ -1817,7 +1903,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     },
     {
       "id": "page_settings_sessions",
@@ -1840,7 +1927,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_settings_privacy",
@@ -1863,7 +1951,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_support",
@@ -1886,7 +1975,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_support_tickets_ticketId",
@@ -1909,7 +1999,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_assistant",
@@ -1932,7 +2023,8 @@
         "offline",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "planned"
     },
     {
       "id": "page_seller",
@@ -1949,7 +2041,8 @@
         "forbidden",
         "error"
       ],
-      "implemented": false
+      "implemented": false,
+      "runtimeStatus": "partial"
     }
   ],
   "aliases": [

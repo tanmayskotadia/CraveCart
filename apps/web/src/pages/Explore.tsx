@@ -1,9 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { findCity } from '@cravecart/contracts';
 import { useCity } from '../components/CityProvider';
 import { SearchBar } from '../components/SearchBar';
 import { Icon } from '../components/Icon';
+const RestaurantResults = lazy(() =>
+  import('./Catalog').then((module) => ({ default: module.RestaurantResults })),
+);
 
 export function Explore() {
   const [params] = useSearchParams();
@@ -42,15 +45,18 @@ export function Explore() {
         <p>A city full of flavour. Let’s find your next favourite.</p>
       </div>
       <SearchBar key={city.slug + query} initialQuery={query} />
+      <Suspense fallback={<p role="status">Loading restaurants…</p>}>
+        <RestaurantResults city={city.slug} />
+      </Suspense>
       <div className="service-notice" role="status">
         <span className="notice-icon">
           <Icon name="pin" size={24} />
         </span>
         <div>
-          <h2>Good things are cooking in {city.name}.</h2>
+          <h2>A menu today. An order soon.</h2>
           <p>
-            Delivery is opening area by area. Restaurant menus will appear here when service is
-            available near you. No orders are being accepted yet.
+            Browse verified, published menus and build your cart in configured areas. No orders are
+            being accepted yet.
           </p>
         </div>
       </div>

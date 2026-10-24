@@ -90,7 +90,10 @@ describe('safety and ownership', () => {
         DEV_ADAPTERS: 'false',
         INTERNAL_TOKEN: 'x'.repeat(40),
         METRICS_TOKEN: 'y'.repeat(40),
-          UPLOAD_SCAN_MODE:'clamav',AUTH_SECRET:'a'.repeat(40),AUTH_ENCRYPTION_KEY:'b'.repeat(40),UPLOAD_ENCRYPTION_KEY:'c'.repeat(40),
+        UPLOAD_SCAN_MODE: 'clamav',
+        AUTH_SECRET: 'a'.repeat(40),
+        AUTH_ENCRYPTION_KEY: 'b'.repeat(40),
+        UPLOAD_ENCRYPTION_KEY: 'c'.repeat(40),
       }),
     ).toThrow('TLS');
   });

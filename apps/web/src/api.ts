@@ -75,7 +75,12 @@ export async function api<T>(
   try {
     return await raw<T>(path, options);
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401 && !/^\/auth\/(?:login|register|otp\/|refresh|csrf|mfa\/verify)/.test(path) && csrf) {
+    if (
+      error instanceof ApiError &&
+      error.status === 401 &&
+      !/^\/auth\/(?:login|register|otp\/|refresh|csrf|mfa\/verify)/.test(path) &&
+      csrf
+    ) {
       await refresh();
       return raw<T>(path, options);
     }

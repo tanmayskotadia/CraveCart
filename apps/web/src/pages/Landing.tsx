@@ -60,7 +60,7 @@ export function Landing() {
         </picture>
         <div className="hero-shade" />
         <div className="hero-content">
-          <p className="hero-wordmark">cravecart</p>
+          <p className="hero-wordmark">CraveCart</p>
           <h1 id="hero-title">
             Every craving.
             <br />
@@ -181,7 +181,7 @@ export function Landing() {
             <div className="phone-notch" />
             <div className="phone-screen">
               <div className="phone-top">
-                <span className="mini-wordmark">cravecart</span>
+                <span className="mini-wordmark">CraveCart</span>
                 <span className="phone-location">
                   <Icon name="pin" size={12} />
                   India

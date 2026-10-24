@@ -9,11 +9,12 @@
       "recovery": "Manual entry; explain denied/unavailable",
       "operations": [
         {
-          "method": "get",
+          "method": "post",
           "path": "/serviceability"
         }
       ],
-      "implemented": false
+      "implemented": true,
+      "clientBehavior": "Browser geolocation populates the pin. Serviceability runs after explicit Check this pin or when a saved default address is selected; GPS denial permits manual entry."
     },
     {
       "id": "action_add_dish",
@@ -23,11 +24,11 @@
       "recovery": "Preserve choices; explain unavailable option",
       "operations": [
         {
-          "method": "post",
-          "path": "/cart/lines"
+          "method": "put",
+          "path": "/cart"
         }
       ],
-      "implemented": false
+      "implemented": true
     },
     {
       "id": "action_replace_cart",
@@ -37,11 +38,11 @@
       "recovery": "Old cart preserved if operation fails",
       "operations": [
         {
-          "method": "post",
-          "path": "/cart/replace"
+          "method": "put",
+          "path": "/cart"
         }
       ],
-      "implemented": false
+      "implemented": true
     },
     {
       "id": "action_apply_offer",
@@ -281,7 +282,7 @@
           "path": "/auth/logout"
         }
       ],
-      "implemented": false
+      "implemented": true
     }
   ]
 }

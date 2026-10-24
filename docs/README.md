@@ -2,7 +2,7 @@
 
 **Stack:** MongoDB, Express.js, React, Node.js with TypeScript.  
 **Document version:** 1.0 · 24 October 2026 · Proposed implementation baseline.  
-**Status:** Planning baseline plus implemented local application foundation. Business features and hosted production qualification remain pending; see [runtime verification](./engineering/VERIFICATION.md).
+**Status:** Planning baseline plus implemented local foundation, identity and onboarding. Discovery, menus, addresses and carts also execute locally. Ordering and hosted production qualification remain pending; see [runtime verification](./engineering/VERIFICATION.md).
 
 Read these documents in order:
 
@@ -14,6 +14,8 @@ Read these documents in order:
 | [Quality and launch checklist](./QUALITY-AND-LAUNCH.md) | Navigation audit, failure tests, security checks, release gates, operations |
 | [Discovery delivery](./discovery/README.md) | India-wide discovery baseline, journeys, design tokens, machine-readable contracts, ADRs and readiness evidence |
 | [Developer guide](./engineering/LOCAL-DEVELOPMENT.md) | Workspace setup, local modes, checks and real-dependency integration tests |
+| [Discovery and cart](./engineering/CATALOG-AND-CART.md) | Seller menus, exact zone checks, customer addresses, public discovery, favorites, offers and cart consistency |
+| [Identity and onboarding](./engineering/IDENTITY-AND-ONBOARDING.md) | Accounts, MFA, applications, admin access, documents and deployment requirements |
 | [Runtime verification](./engineering/VERIFICATION.md) | Executed application checks and unexecuted infrastructure/deployment gates |
 
 ## Interpretation and assumptions

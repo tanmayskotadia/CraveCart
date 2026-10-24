@@ -43,13 +43,22 @@ export function Modal({
       }}
       onClick={(event) => {
         const bounds = event.currentTarget.getBoundingClientRect();
-        const outside = event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
-        if (backdropPress.current && outside && event.target === event.currentTarget) closeRef.current();
+        const outside =
+          event.clientX < bounds.left ||
+          event.clientX > bounds.right ||
+          event.clientY < bounds.top ||
+          event.clientY > bounds.bottom;
+        if (backdropPress.current && outside && event.target === event.currentTarget)
+          closeRef.current();
         backdropPress.current = false;
       }}
       onPointerDown={(event) => {
         const bounds = event.currentTarget.getBoundingClientRect();
-        backdropPress.current = event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
+        backdropPress.current =
+          event.clientX < bounds.left ||
+          event.clientX > bounds.right ||
+          event.clientY < bounds.top ||
+          event.clientY > bounds.bottom;
       }}
     >
       <div className="modal-inner">

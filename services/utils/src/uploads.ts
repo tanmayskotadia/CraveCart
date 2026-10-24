@@ -26,7 +26,8 @@ import {
 interface Upload {
   _id: string;
   userId: string;
-  purpose: 'seller-verification' | 'rider-verification';
+  purpose: 'seller-verification' | 'rider-verification' | 'catalog-image';
+  publicCatalogImage?: boolean;
   filename: string;
   size: number;
   tokenHash: string;
@@ -101,6 +102,8 @@ export function installUploads(app: Express, ctx: DomainContext) {
   });
   router.post('/intents', remoteSession(ctx, { mutation: true }), async (req, res) => {
     const input = uploadIntentSchema.parse(req.body);
+    if (input.purpose === 'catalog-image' && !currentPrincipal(res).roles.includes('seller'))
+      throw new HttpError(403, 'FORBIDDEN', 'Only verified sellers can upload catalog images');
     const uploadId = randomUUID(),
       token = opaque(),
       expiresAt = new Date(Date.now() + 10 * 60_000);
@@ -160,6 +163,8 @@ export function installUploads(app: Express, ctx: DomainContext) {
       mime = 'application/pdf';
     if (!mime || buffer.includes(Buffer.from(EICAR)))
       throw new HttpError(422, 'UNSAFE_FILE', 'Only valid PNG, JPEG or PDF documents are accepted');
+    if (upload.purpose === 'catalog-image' && !mime.startsWith('image/'))
+      throw new HttpError(422, 'IMAGE_REQUIRED', 'Catalog photos must be PNG or JPEG');
     if (mime.startsWith('image/')) {
       try {
         const metadata = await sharp(buffer, { limitInputPixels: 20_000_000 }).metadata();
@@ -276,14 +281,12 @@ export function installUploads(app: Express, ctx: DomainContext) {
   });
   router.get('/:uploadId/content', remoteSession(ctx), async (req, res) => {
     const upload = await authorizedUpload(checkedId(req.params.uploadId), currentPrincipal(res));
-    await db
-      .collection('document_accesses')
-      .insertOne({
-        uploadId: upload._id,
-        actorId: currentPrincipal(res).userId,
-        at: new Date(),
-        requestId: res.locals.requestId,
-      });
+    await db.collection('document_accesses').insertOne({
+      uploadId: upload._id,
+      actorId: currentPrincipal(res).userId,
+      at: new Date(),
+      requestId: res.locals.requestId,
+    });
     const bytes = unseal(
       await readFile(resolve(directory, `${upload._id}.encrypted`)),
       config.UPLOAD_ENCRYPTION_KEY,
@@ -298,6 +301,70 @@ export function installUploads(app: Express, ctx: DomainContext) {
     res.send(bytes);
   });
   app.use('/api/v1/uploads', router);
+  app.post(
+    '/internal/v1/uploads/catalog-bind',
+    internalOnly(ctx, ['restaurant']),
+    async (req, res) => {
+      await ready();
+      const input = z
+        .object({ uploadId: z.string().uuid(), userId: z.string().uuid() })
+        .strict()
+        .parse(req.body);
+      const file = await uploads.findOne({
+        _id: input.uploadId,
+        userId: input.userId,
+        purpose: 'catalog-image',
+      });
+      if (
+        !file ||
+        !file.mime?.startsWith('image/') ||
+        !(
+          file.status === 'CLEAN' ||
+          (config.NODE_ENV !== 'production' &&
+            config.DEV_ADAPTERS === 'true' &&
+            file.status === 'DEVELOPMENT_REVIEWABLE')
+        )
+      )
+        throw new HttpError(422, 'IMAGE_NOT_READY', 'Choose your own checked catalog image');
+      await uploads.updateOne(
+        { _id: input.uploadId, userId: input.userId },
+        { $set: { publicCatalogImage: true } },
+      );
+      json(res, { bound: true });
+    },
+  );
+  app.get('/api/v1/media/:uploadId', async (req, res) => {
+    await ready();
+    const file = await uploads.findOne({
+      _id: checkedId(req.params.uploadId),
+      purpose: 'catalog-image',
+      publicCatalogImage: true,
+    });
+    if (
+      !file ||
+      !file.mime?.startsWith('image/') ||
+      !(
+        file.status === 'CLEAN' ||
+        (config.NODE_ENV !== 'production' &&
+          config.DEV_ADAPTERS === 'true' &&
+          file.status === 'DEVELOPMENT_REVIEWABLE')
+      )
+    )
+      throw new HttpError(404, 'NOT_FOUND', 'Image unavailable');
+    const original = unseal(
+      await readFile(resolve(directory, `${file._id}.encrypted`)),
+      config.UPLOAD_ENCRYPTION_KEY,
+    );
+    const bytes = await sharp(original, { limitInputPixels: 20_000_000 })
+      .rotate()
+      .resize({ width: 1200, height: 900, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer();
+    res.setHeader('Content-Type', 'image/webp');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(bytes);
+  });
   app.post(
     '/internal/v1/uploads/bind',
     internalOnly(ctx, ['restaurant', 'rider']),

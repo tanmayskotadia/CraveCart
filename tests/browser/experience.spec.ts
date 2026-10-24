@@ -1,9 +1,36 @@
 import { test, expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
-  for (const endpoint of ['me','csrf']) await page.route(`**/api/v1/auth/${endpoint}`, route=>route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({error:{code:'UNAUTHENTICATED',message:'Sign in required'}})}));
-  await page.route('**/api/v1/auth/capabilities',route=>route.fulfill({json:{data:{methods:['phone','email'],developmentDelivery:true}}}));
-  await page.route('**/api/v1/auth/login',route=>route.fulfill({status:202,json:{data:{challengeId:'test-challenge-01234567890123456789012345',expiresAt:new Date(Date.now()+300000).toISOString(),resendAfterSeconds:45,delivery:'development',developmentCode:'123456'}}}));
+  await page.route('**/api/v1/restaurants?*', (route) =>
+    route.fulfill({
+      json: { data: { restaurants: [], total: 0, page: 1, pageSize: 12, orderingEnabled: false } },
+    }),
+  );
+  for (const endpoint of ['me', 'csrf'])
+    await page.route(`**/api/v1/auth/${endpoint}`, (route) =>
+      route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: 'UNAUTHENTICATED', message: 'Sign in required' } }),
+      }),
+    );
+  await page.route('**/api/v1/auth/capabilities', (route) =>
+    route.fulfill({ json: { data: { methods: ['phone', 'email'], developmentDelivery: true } } }),
+  );
+  await page.route('**/api/v1/auth/login', (route) =>
+    route.fulfill({
+      status: 202,
+      json: {
+        data: {
+          challengeId: 'test-challenge-01234567890123456789012345',
+          expiresAt: new Date(Date.now() + 300000).toISOString(),
+          resendAfterSeconds: 45,
+          delivery: 'development',
+          developmentCode: '123456',
+        },
+      },
+    }),
+  );
   await page.route('**/api/v1/platform', (route) =>
     route.fulfill({
       status: 200,
@@ -48,7 +75,7 @@ test('city search changes location, survives reload, and never claims live deliv
   await dialog.getByRole('button', { name: 'Hyderabad Telangana' }).click();
   await expect(page).toHaveURL(/city=hyderabad/);
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Hello, Hyderabad.');
-  await expect(page.getByRole('status')).toContainText('No orders are being accepted yet');
+  await expect(page.locator('.service-notice')).toContainText('No orders are being accepted yet');
   await page.reload();
   await expect(
     page.getByRole('button', { name: 'Change city, currently Hyderabad' }),
@@ -77,7 +104,7 @@ test('login validates contacts and labels development delivery explicitly', asyn
   await dialog.getByRole('textbox', { name: 'Mobile number' }).fill('9876543210');
   await dialog.getByRole('button', { name: 'Send one-time password' }).click();
   await expect(dialog.getByTestId('development-code')).toContainText('No SMS or email');
-  await dialog.getByRole('button',{name:'Change contact'}).click();
+  await dialog.getByRole('button', { name: 'Change contact' }).click();
   await dialog.getByRole('button', { name: 'Continue with email', exact: true }).click();
   await dialog.getByRole('textbox', { name: 'Email address' }).fill('food@example.com');
   await dialog.getByRole('button', { name: 'Continue with email', exact: true }).click();

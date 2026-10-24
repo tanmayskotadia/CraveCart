@@ -332,23 +332,26 @@ export function AuthModal() {
           )}
           {!challenge && !mfa && (
             <>
-              {Boolean(capabilities.data && capabilities.data.methods.length > 1) && <><div className="or-divider">
-                <span>or</span>
-              </div>
-              <button
-                className="alternative-login"
-                type="button"
-                disabled={pending}
-                onClick={() => {
-                  setMode(mode === 'phone' ? 'email' : 'phone');
-                  setValue('');
-                  setMessage('');
-                }}
-              >
-                <Icon name={mode === 'phone' ? 'mail' : 'pin'} size={21} />
-                Continue with {mode === 'phone' ? 'email' : 'phone'}
-              </button>
-              </>}
+              {Boolean(capabilities.data && capabilities.data.methods.length > 1) && (
+                <>
+                  <div className="or-divider">
+                    <span>or</span>
+                  </div>
+                  <button
+                    className="alternative-login"
+                    type="button"
+                    disabled={pending}
+                    onClick={() => {
+                      setMode(mode === 'phone' ? 'email' : 'phone');
+                      setValue('');
+                      setMessage('');
+                    }}
+                  >
+                    <Icon name={mode === 'phone' ? 'mail' : 'pin'} size={21} />
+                    Continue with {mode === 'phone' ? 'email' : 'phone'}
+                  </button>
+                </>
+              )}
               <p className="auth-policy">
                 By continuing, you agree to our <Link to="/legal/terms">Terms of Service</Link> and{' '}
                 <Link to="/legal/privacy">Privacy Policy</Link>.

@@ -103,7 +103,7 @@ export function installApplications(app: Express, ctx: DomainContext) {
     };
     try {
       await applications.insertOne(record);
-    } catch(error) {
+    } catch (error) {
       if (error && typeof error === 'object' && 'code' in error && error.code === 11000)
         throw new HttpError(409, 'APPLICATION_EXISTS', 'Continue your existing application');
       throw error;

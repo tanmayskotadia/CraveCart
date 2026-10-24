@@ -74,10 +74,22 @@ export function cookies(req: Request) {
   return result;
 }
 export function requireOrigin(req: Request, config: Config) {
-  let allowed=req.headers.origin===config.APP_ORIGIN;
-  if(!allowed&&config.NODE_ENV!=='production'&&req.headers.origin){try{const expected=new URL(config.APP_ORIGIN),actual=new URL(req.headers.origin);allowed=['localhost','127.0.0.1'].includes(expected.hostname)&&['localhost','127.0.0.1'].includes(actual.hostname)&&expected.protocol==='http:'&&actual.protocol===expected.protocol&&actual.port===expected.port;}catch{/* Malformed origins are never trusted. */}}
-  if (!allowed)
-    throw new HttpError(403, 'ORIGIN_DENIED', 'This request origin is not allowed');
+  let allowed = req.headers.origin === config.APP_ORIGIN;
+  if (!allowed && config.NODE_ENV !== 'production' && req.headers.origin) {
+    try {
+      const expected = new URL(config.APP_ORIGIN),
+        actual = new URL(req.headers.origin);
+      allowed =
+        ['localhost', '127.0.0.1'].includes(expected.hostname) &&
+        ['localhost', '127.0.0.1'].includes(actual.hostname) &&
+        expected.protocol === 'http:' &&
+        actual.protocol === expected.protocol &&
+        actual.port === expected.port;
+    } catch {
+      /* Malformed origins are never trusted. */
+    }
+  }
+  if (!allowed) throw new HttpError(403, 'ORIGIN_DENIED', 'This request origin is not allowed');
 }
 export function csrfToken(config: Config, sessionId: string) {
   return mac(config.AUTH_SECRET, `csrf:${sessionId}`);
@@ -109,7 +121,8 @@ export function currentPrincipal(res: Response) {
 export function requirePermission(principal: Principal, permission: string, stepUp = false) {
   if (!principal.roles.includes('admin') || !principal.permissions.includes(permission))
     throw new HttpError(403, 'FORBIDDEN', 'You do not have permission for this action');
-  if(!principal.mfaEnabled||!principal.mfaVerifiedAt)throw new HttpError(403,'MFA_REQUIRED','Team access requires authenticator verification');
+  if (!principal.mfaEnabled || !principal.mfaVerifiedAt)
+    throw new HttpError(403, 'MFA_REQUIRED', 'Team access requires authenticator verification');
   if (
     stepUp &&
     (!principal.mfaVerifiedAt || Date.now() - Date.parse(principal.mfaVerifiedAt) > 5 * 60_000)
@@ -168,7 +181,7 @@ export function internalOnly(ctx: DomainContext, senders: string[]): RequestHand
           req.originalUrl,
           timestamp,
           nonce,
-          hash(JSON.stringify(req.body??{})),
+          hash(JSON.stringify(req.body ?? {})),
         ].join('\n'),
       );
       if (

@@ -11,6 +11,7 @@ import { App } from './App';
 import { SessionProvider } from './components/SessionProvider';
 import './redesign.css';
 import './workspace.css';
+import './catalog.css';
 
 const client = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000, refetchOnWindowFocus: false } },

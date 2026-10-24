@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api,setCsrf } from '../api';
+import { api, setCsrf } from '../api';
 import { useSession } from '../components/SessionProvider';
 import { WorkspaceShell, ErrorNotice } from '../components/WorkspaceShell';
 import { MfaDialog } from '../components/Authenticator';
@@ -230,7 +230,8 @@ export function SessionsPage() {
     try {
       await api('/auth/sessions/revoke-all', { method: 'POST', body: {} });
       await logout().catch(() => {});
-      setCsrf('');client.removeQueries({predicate:query=>query.queryKey[0]!=='session'});
+      setCsrf('');
+      client.removeQueries({ predicate: (query) => query.queryKey[0] !== 'session' });
       client.setQueryData(['session'], null);
       navigate('/');
     } catch (error) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { Link, Navigate, Route, Routes, matchPath, useLocation } from 'react-router-dom';
 import manifest from '../../../contracts/routes.json';
 import { CityProvider, useCity } from './components/CityProvider';
@@ -17,6 +17,34 @@ import {
   AdminUsers,
   AdminAudit,
 } from './pages/Verification';
+
+const RestaurantPage = lazy(() =>
+  import('./pages/Catalog').then((module) => ({ default: module.RestaurantPage })),
+);
+const CartPage = lazy(() =>
+  import('./pages/Catalog').then((module) => ({ default: module.CartPage })),
+);
+const FavoritesPage = lazy(() =>
+  import('./pages/Catalog').then((module) => ({ default: module.FavoritesPage })),
+);
+const OffersPage = lazy(() =>
+  import('./pages/Catalog').then((module) => ({ default: module.OffersPage })),
+);
+const AddressesPage = lazy(() =>
+  import('./pages/Addresses').then((module) => ({ default: module.AddressesPage })),
+);
+const SellerCatalogPage = lazy(() =>
+  import('./pages/SellerCatalog').then((module) => ({ default: module.SellerCatalogPage })),
+);
+const RestaurantProfilePage = lazy(() =>
+  import('./pages/SellerCatalog').then((module) => ({ default: module.RestaurantProfilePage })),
+);
+const MenuItemPage = lazy(() =>
+  import('./pages/SellerCatalog').then((module) => ({ default: module.MenuItemPage })),
+);
+const ZonesPage = lazy(() =>
+  import('./pages/Zones').then((module) => ({ default: module.ZonesPage })),
+);
 
 const authPaths = [
   '/login',
@@ -40,7 +68,7 @@ function Header() {
     <header className={`site-header ${overlay ? 'header-overlay' : 'header-solid'}`}>
       <div className="header-inner">
         <Link className="brand" to="/" aria-label="CraveCart home">
-          cravecart
+          CraveCart
         </Link>
         <button className="header-city" onClick={() => openCities()}>
           <Icon name="pin" size={18} />
@@ -56,6 +84,9 @@ function Header() {
           </Link>
           {session ? (
             <>
+              <Link className="header-cart" to="/cart" aria-label="Your cart">
+                <Icon name="bag" size={21} />
+              </Link>
               <Link className="desktop-nav" to="/workspaces">
                 Workspaces
               </Link>
@@ -99,7 +130,7 @@ function Footer() {
       <div className="footer-inner">
         <div className="footer-top">
           <Link className="brand" to="/">
-            cravecart
+            CraveCart
           </Link>
           <span className="country-badge">
             <span className="india-flag" aria-hidden="true" />
@@ -190,6 +221,82 @@ function RoutePage({
   route: { path: string; sessionRequired: boolean; roles: string[] };
 }) {
   const path = route.path;
+  const catalogPages: Record<string, React.ReactNode> = {
+    '/restaurants/:slug': <RestaurantPage />,
+    '/offers': <OffersPage />,
+    '/cart': (
+      <RequireSession>
+        <CartPage />
+      </RequireSession>
+    ),
+    '/favorites': (
+      <RequireSession>
+        <FavoritesPage />
+      </RequireSession>
+    ),
+    '/addresses': (
+      <RequireSession>
+        <AddressesPage />
+      </RequireSession>
+    ),
+    '/addresses/new': (
+      <RequireSession>
+        <AddressesPage edit />
+      </RequireSession>
+    ),
+    '/addresses/:addressId/edit': (
+      <RequireSession>
+        <AddressesPage edit />
+      </RequireSession>
+    ),
+    '/seller/restaurants/:restaurantId/menu': (
+      <RequireSession roles={['seller']}>
+        <SellerCatalogPage />
+      </RequireSession>
+    ),
+    '/seller/restaurants/:restaurantId/dashboard': (
+      <RequireSession roles={['seller']}>
+        <SellerCatalogPage />
+      </RequireSession>
+    ),
+    '/seller/restaurants/:restaurantId/menu/new': (
+      <RequireSession roles={['seller']}>
+        <MenuItemPage />
+      </RequireSession>
+    ),
+    '/seller/restaurants/:restaurantId/menu/:itemId/edit': (
+      <RequireSession roles={['seller']}>
+        <MenuItemPage />
+      </RequireSession>
+    ),
+    '/seller/restaurants/:restaurantId/profile': (
+      <RequireSession roles={['seller']}>
+        <RestaurantProfilePage />
+      </RequireSession>
+    ),
+    '/seller/restaurants/:restaurantId/hours': (
+      <RequireSession roles={['seller']}>
+        <RestaurantProfilePage hoursOnly />
+      </RequireSession>
+    ),
+    '/admin/zones': (
+      <RequireSession roles={['admin']}>
+        <ZonesPage />
+      </RequireSession>
+    ),
+  };
+  if (catalogPages[path])
+    return (
+      <Suspense
+        fallback={
+          <section className="page-width workspace-wait" role="status">
+            Opening your workspace…
+          </section>
+        }
+      >
+        {catalogPages[path]}
+      </Suspense>
+    );
   if (path === '/profile')
     return (
       <RequireSession>

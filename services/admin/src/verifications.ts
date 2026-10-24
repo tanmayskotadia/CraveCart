@@ -57,17 +57,15 @@ export function installVerifications(app: Express, ctx: DomainContext) {
     reason: string,
     data: unknown,
   ) => {
-    await db
-      .collection('audit')
-      .insertOne({
-        id: randomUUID(),
-        action,
-        actorId,
-        applicationId,
-        reason,
-        data,
-        at: new Date(),
-      });
+    await db.collection('audit').insertOne({
+      id: randomUUID(),
+      action,
+      actorId,
+      applicationId,
+      reason,
+      data,
+      at: new Date(),
+    });
   };
   async function sync(applicationId?: string) {
     const all = (
@@ -318,20 +316,18 @@ export function installVerifications(app: Express, ctx: DomainContext) {
             },
             { session },
           );
-          await db
-            .collection('audit')
-            .insertOne(
-              {
-                id: randomUUID(),
-                action: 'verification.requested',
-                actorId: principal.userId,
-                applicationId: id,
-                reason: input.reason,
-                data: { operationId, before: record.application.status, decision: input.decision },
-                at: now,
-              },
-              { session },
-            );
+          await db.collection('audit').insertOne(
+            {
+              id: randomUUID(),
+              action: 'verification.requested',
+              actorId: principal.userId,
+              applicationId: id,
+              reason: input.reason,
+              data: { operationId, before: record.application.status, decision: input.decision },
+              at: now,
+            },
+            { session },
+          );
           await enqueueEvent(db, session, {
             eventId: randomUUID(),
             eventType: 'verification.decided.v1',
@@ -381,22 +377,46 @@ export function installVerifications(app: Express, ctx: DomainContext) {
         json(res, present(operation));
         return;
       }
-      if(record?.activeOperationId&&record.activeOperationId!==id)throw new HttpError(409,'OPERATION_CONFLICT','A different review is pending');
-      await operations.updateOne(
-        { _id: id, state: { $ne:'APPLIED' } },
-        {
-          $set: {
-            state:'PENDING',
-            actorUserId: principal.userId,
-            actorSessionId: principal.sessionId,
-            requiresMfa: false,
-            attempts: 0,
-            nextAttemptAt: new Date(0),
-            leaseUntil: new Date(0),
-          },
-        },
-      );
-      await cases.updateOne({_id:operation.applicationId},{$set:{activeOperationId:id}});
+      if (record?.activeOperationId && record.activeOperationId !== id)
+        throw new HttpError(409, 'OPERATION_CONFLICT', 'A different review is pending');
+      const transaction = client.startSession();
+      try {
+        await transaction.withTransaction(async () => {
+          const locked = await cases.updateOne(
+            {
+              _id: operation.applicationId,
+              $or: [{ activeOperationId: { $exists: false } }, { activeOperationId: id }],
+            },
+            { $set: { activeOperationId: id } },
+            { session: transaction },
+          );
+          if (!locked.matchedCount)
+            throw new HttpError(409, 'OPERATION_CONFLICT', 'A different review is pending');
+          const reset = await operations.updateOne(
+            { _id: id, state: { $ne: 'APPLIED' }, leaseUntil: { $lte: new Date() } },
+            {
+              $set: {
+                state: 'PENDING',
+                actorUserId: principal.userId,
+                actorSessionId: principal.sessionId,
+                requiresMfa: false,
+                attempts: 0,
+                nextAttemptAt: new Date(0),
+                leaseUntil: new Date(0),
+              },
+            },
+            { session: transaction },
+          );
+          if (!reset.matchedCount)
+            throw new HttpError(
+              409,
+              'OPERATION_BUSY',
+              'This review is already being applied; refresh its status',
+            );
+        });
+      } finally {
+        await transaction.endSession();
+      }
       await audit(
         'verification.retry-authorized',
         principal.userId,
@@ -428,7 +448,13 @@ export function installVerifications(app: Express, ctx: DomainContext) {
         .strict()
         .parse(req.body);
       const userId = checkedId(req.params.userId);
-      await audit('user.status-change-requested',currentPrincipal(res).userId,userId,body.reason,{status:body.status});
+      await audit(
+        'user.status-change-requested',
+        currentPrincipal(res).userId,
+        userId,
+        body.reason,
+        { status: body.status },
+      );
       await internalCall(ctx, 'auth', '/internal/v1/users/status', {
         ...body,
         userId,

@@ -59,7 +59,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     try {
       await api('/auth/logout', { method: 'POST', body: {} });
-    } catch(error) {
+    } catch (error) {
       if (!(error instanceof ApiError) || error.status !== 401) throw error;
     }
     setCsrf('');

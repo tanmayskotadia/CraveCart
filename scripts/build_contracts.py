@@ -47,6 +47,21 @@ def envelope(schema):
     return obj({"data": schema, "meta": obj({"requestId": ID, "nextCursor": string(maxLength=512)}, ["requestId"])}, ["data"])
 
 
+
+# Local route coverage is separate from the full proposed product scope and release qualification.
+AVAILABLE_PAGES = {
+    "/login", "/signup", "/seller/login", "/seller/register", "/rider/login", "/rider/register", "/admin/login",
+    "/workspaces", "/addresses", "/addresses/new", "/addresses/:addressId/edit", "/favorites", "/settings/sessions",
+    "/seller/onboarding", "/rider/onboarding", "/admin/verifications", "/admin/verifications/:applicationId", "/admin/zones",
+    "/seller/restaurants/:restaurantId/menu", "/seller/restaurants/:restaurantId/menu/new",
+    "/seller/restaurants/:restaurantId/menu/:itemId/edit", "/seller/restaurants/:restaurantId/hours", "/403", "*",
+}
+PARTIAL_PAGES = {
+    "/", "/search", "/location", "/restaurants/:slug", "/offers", "/cart", "/profile", "/settings",
+    "/seller/restaurants", "/seller/restaurants/:restaurantId/profile", "/seller/restaurants/:restaurantId/dashboard",
+    "/rider/dashboard", "/rider/profile", "/admin/dashboard", "/admin/users", "/admin/audit", "/seller", "/rider", "/admin",
+}
+
 def build_routes():
     block = TEXT.split("## 2. Frontend pages", 1)[1].split("## 3.", 1)[0]
     routes = []
@@ -85,7 +100,13 @@ def build_routes():
     routes.append({"id": "page_seller", "path": "/seller", "workspace": "seller", "sessionRequired": True,
                    "roles": ["seller"], "policy": "Granted seller role; onboarding allowed before verification",
                    "purpose": "Redirect by onboarding state and selected restaurant", "states": ["loading", "forbidden", "error"], "implemented": False})
-    return {"version": "0.1.0", "status": "design-baseline", "market": {"scope": "national", "country": "IN", "currency": "INR", "locale": "en-IN", "timezone": "Asia/Kolkata", "liveZonesEnabled": False},
+    for route in routes:
+        route["runtimeStatus"] = "available-locally" if route["path"] in AVAILABLE_PAGES else "partial" if route["path"] in PARTIAL_PAGES else "planned"
+        route["implemented"] = route["runtimeStatus"] == "available-locally"
+        if route["path"] == "/cart":
+            route["plannedPolicy"] = route["policy"]
+            route.update(sessionRequired=True, roles=["customer"], policy="Authenticated owner; saved selections only. Guest cart, quote, redemption and checkout remain planned.")
+    return {"version": "0.1.0", "status": "runtime-slices-with-planned-scope", "market": {"scope": "national", "country": "IN", "currency": "INR", "locale": "en-IN", "timezone": "Asia/Kolkata", "liveZonesEnabled": False},
             "routes": routes, "aliases": [{"from": "/driver/*", "to": "/rider/*", "strategy": "validated-equivalent-only", "unknownSuffix": "404"}]}
 
 
@@ -221,16 +242,17 @@ def build_openapi(endpoints):
     implemented = OUT / "platform.openapi.json"
     if implemented.exists():
         paths["/platform"] = json.loads(implemented.read_text(encoding="utf-8"))
-    identity = OUT / "identity.openapi.json"
-    if identity.exists():
-        for path, methods in json.loads(identity.read_text(encoding="utf-8")).items():
-            for method, operation in methods.items():
-                prior = paths.get(path, {}).get(method)
-                if prior:
-                    operation["operationId"] = prior["operationId"]
-                paths.setdefault(path, {})[method] = operation
+    for name in ["identity.openapi.json", "catalog.openapi.json"]:
+        implemented = OUT / name
+        if implemented.exists():
+            for path, methods in json.loads(implemented.read_text(encoding="utf-8")).items():
+                for method, operation in methods.items():
+                    prior = paths.get(path, {}).get(method)
+                    if prior:
+                        operation["operationId"] = prior["operationId"]
+                    paths.setdefault(path, {})[method] = operation
     return {"openapi": "3.1.0", "info": {"title": "CraveCart API — contract baseline", "version": "0.1.0",
-            "description": "Endpoint inventory plus critical schemas. GET /platform and the operations exported in identity.openapi.json are implementation-ready; remaining operations require contract promotion before client generation. x-contract-status records each operation's lifecycle."},
+            "description": "Endpoint inventory plus critical schemas. GET /platform and the operations exported in identity.openapi.json and catalog.openapi.json are implementation-ready; remaining operations require contract promotion before client generation. x-contract-status records each operation's lifecycle."},
             "servers": [{"url": "/api/v1", "description": "Same deployment origin through gateway; no production domain asserted"}],
             "tags": [{"name": v} for v in SERVICES.values()], "paths": paths,
             "components": {"securitySchemes": {
@@ -315,8 +337,8 @@ def build_sockets():
 def build_actions():
     block = TEXT.split("## 3. Critical button contracts", 1)[1].split("## 4.", 1)[0]
     mappings = {
-        "Use my location": [("get", "/serviceability")], "Add dish": [("post", "/cart/lines")],
-        "Replace cart": [("post", "/cart/replace")], "Apply offer": [("post", "/cart/quote")],
+        "Use my location": [("post", "/serviceability")], "Add dish": [("put", "/cart")],
+        "Replace cart": [("put", "/cart")], "Apply offer": [("post", "/cart/quote")],
         "Place and pay": [("post", "/orders"), ("post", "/payments/attempts")],
         "Payment return": [("get", "/payments/attempts/:attemptId"), ("post", "/payments/attempts/:attemptId/verify")],
         "Cancel order": [("post", "/orders/:orderId/cancellation-preview"), ("post", "/orders/:orderId/cancel")],
@@ -340,6 +362,10 @@ def build_actions():
         actions.append({"id": "action_" + re.sub(r"[^a-z]+", "_", cols[0].lower()).strip("_"), "label": cols[0],
                         "commandOrDestination": cols[1], "success": cols[2], "recovery": cols[3],
                         "operations": [{"method": m, "path": re.sub(r":(\w+)", r"{\1}", p)} for m, p in mappings[cols[0]]], "implemented": False})
+    for action in actions:
+        action["implemented"] = action["label"] in {"Use my location", "Add dish", "Replace cart", "Logout"}
+        if action["label"] == "Use my location":
+            action["clientBehavior"] = "Browser geolocation populates the pin. Serviceability runs after explicit Check this pin or when a saved default address is selected; GPS denial permits manual entry."
     return {"version": "0.1.0", "actions": actions}
 
 
@@ -398,7 +424,9 @@ def build_traceability(routes, api):
         writer.writerow(["requirement_id", "acceptance_scope", "workspace", "route", "method", "api_path", "operation_id", "owner", "target_phase", "status", "evidence"])
         for rid, desc, workspace, route, method, path, phase in rows:
             operation = api["paths"][path][method]
-            writer.writerow([rid, desc, workspace, route, method.upper(), path, operation["operationId"], operation["x-owner"], phase, "designed-not-implemented", "pending implementation tests"])
+            status = "runtime-slice-implemented" if operation.get("x-client-generation-ready") else "partially-implemented" if route in PARTIAL_PAGES or route in AVAILABLE_PAGES else "designed-not-implemented"
+            evidence = "docs/engineering/VERIFICATION.md; broad feature/release gates remain open" if status != "designed-not-implemented" else "pending implementation tests"
+            writer.writerow([rid, desc, workspace, route, method.upper(), path, operation["operationId"], operation["x-owner"], phase, status, evidence])
         for rid, desc, evidence in [
             ("P0-DISC-03", "Decision owners and safe fallback", "docs/discovery/DISCOVERY.md"),
             ("P0-DISC-04", "External readiness truthfully recorded", "docs/discovery/PROVIDERS-AND-FEASIBILITY.md"),

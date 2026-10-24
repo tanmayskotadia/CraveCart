@@ -1,6 +1,7 @@
 """Validate Discovery artifacts. Requires the existing jsonschema Python package."""
 from pathlib import Path
 from copy import deepcopy
+from datetime import datetime, timezone, timedelta
 import csv
 import json
 import re
@@ -67,7 +68,7 @@ def main():
     check("*" in route_paths and "/403" in route_paths, "404 and forbidden routes declared")
     for role in ["customer", "seller", "rider", "admin"]:
         check(any(r["workspace"] == role and r["sessionRequired"] for r in routes["routes"]), f"Protected {role} workspace declared")
-    check(all(not r["implemented"] for r in routes["routes"]), "Route implementation status is truthful")
+    check(all(r["implemented"] == (r["runtimeStatus"] == "available-locally") and r["runtimeStatus"] in {"available-locally", "partial", "planned"} for r in routes["routes"]), "Route implementation status distinguishes available, partial and planned scope")
     for route in routes["routes"]:
         check("error" in route["states"], f"Route has error state: {route['path']}")
     check(api["openapi"] == "3.1.0" and api["servers"][0]["url"] == "/api/v1", "OpenAPI version and gateway base declared")
@@ -83,7 +84,8 @@ def main():
             check(declared == set(re.findall(r"{([^}]+)}", path)), f"All path parameters required: {oid}")
             check("default" in operation["responses"] and "security" in operation, f"Errors and security declared: {oid}")
             check(operation["x-owner"] in builder.SERVICES.values(), f"Known owner: {oid}")
-            check(operation["x-client-generation-ready"] == (path == "/platform" or method in read("identity.openapi.json").get(path, {})) and (not operation["x-client-generation-ready"] or operation["x-contract-status"] == "implementation-ready"), f"Client generation limited to implemented slice: {oid}")
+            check(all(name in api["components"]["securitySchemes"] for requirement in operation["security"] for name in requirement), f"Declared security schemes: {oid}")
+            check(operation["x-client-generation-ready"] == (path == "/platform" or method in read("identity.openapi.json").get(path, {}) or method in read("catalog.openapi.json").get(path, {})) and (not operation["x-client-generation-ready"] or operation["x-contract-status"] == "implementation-ready"), f"Client generation limited to implemented slice: {oid}")
     local_refs(api)
     for action in actions["actions"]:
         check(bool(action["success"] and action["recovery"]), f"CTA success/recovery: {action['label']}")
@@ -172,11 +174,11 @@ def main():
         contrasts.append((foreground, background, ratio))
     counts = {"frontend routes": len(route_paths), "HTTP operations": len(operations), "critical HTTP schemas": sum(o["x-contract-status"] == "critical-baseline" for o in operations.values()),
               "broker events": len(events["oneOf"]), "socket events": len(sockets["oneOf"]), "critical CTAs": len(actions["actions"]), "traceability rows": len(trace)}
-    report = ["# Discovery validation evidence", "", "Executed locally on 24 October 2026 using `python scripts/validate_contracts.py`.", "", f"Result: **PASS — {len(CHECKS)} structural/example/coverage checks.**", "", "## Artifact counts", "", "| Artifact | Count |", "|---|---|"]
+    report = ["# Discovery validation evidence", "", f"Executed locally on {datetime.now(timezone(timedelta(hours=5, minutes=30))).strftime('%d %B %Y')} using `python scripts/validate_contracts.py`.", "", f"Result: **PASS — {len(CHECKS)} structural/example/coverage checks.**", "", "## Artifact counts", "", "| Artifact | Count |", "|---|---|"]
     report.extend(f"| {name} | {value} |" for name, value in counts.items())
     report += ["", "## Checks executed", "", "- Regenerated-artifact drift; unique routes/operations; National market with fail-closed local zones; four protected workspaces.", "- Path parameters, local schema references, owner/error/security metadata and CTA operation linkage.", "- JSON Schema meta-validation; payment-event positive/negative examples; secret/producer/version/time rejection.", "- Money/quote/version/proof constraints; socket direction and coordinate bounds.", "- Numbered PRD and Discovery acceptance coverage; trace links; local document links.", "- Declared token text contrast pairs (ratios below).", "", "| Foreground | Background | Ratio |", "|---|---|---|"]
     report.extend(f"| {fg} | {bg} | {ratio:.2f}:1 |" for fg, bg, ratio in contrasts)
-    report += ["", "## Scope", "", "These checks validate planning and contract artifacts only. Runtime foundation verification is recorded separately in docs/engineering/VERIFICATION.md. GET /platform and the exported identity/onboarding operations are implementation-ready; remaining contracts retain their declared baseline status. This script does not execute browser, cloud, payment, load or deployed network tests, and is not a full OpenAPI conformance validator.", ""]
+    report += ["", "## Scope", "", "These checks validate planning and contract artifacts only. Runtime foundation verification is recorded separately in docs/engineering/VERIFICATION.md. GET /platform and the exported identity/onboarding and catalog/cart operations are implementation-ready; remaining contracts retain their declared baseline status. This script does not execute browser, cloud, payment, load or deployed network tests, and is not a full OpenAPI conformance validator.", ""]
     (ROOT / "docs/discovery/VALIDATION.md").write_text("\n".join(report), encoding="utf-8")
     print(f"PASS: {len(CHECKS)} checks")
     for name, value in counts.items():

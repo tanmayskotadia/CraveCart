@@ -85,7 +85,10 @@
                     },
                     "serviceability": {
                       "type": "string",
-                      "const": "not-configured"
+                      "enum": [
+                        "not-configured",
+                        "coordinate-check-required"
+                      ]
                     }
                   },
                   "required": [
