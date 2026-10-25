@@ -49,7 +49,9 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
       <div className="restaurant-card-copy">
         <div>
           <h2>{restaurant.name}</h2>
-          <span className="new-label">New</span>
+          <span className="new-label">
+            {restaurant.rating === null ? 'New' : `${restaurant.rating.toFixed(1)} ★`}
+          </span>
         </div>
         <p>{restaurant.cuisines.join(' · ')}</p>
         <div className="restaurant-card-meta">
@@ -379,7 +381,10 @@ export function RestaurantPage() {
           <p className="small-help">{restaurant.address}</p>
           <p>
             {money(restaurant.costForTwoMinor)} for two · {restaurant.preparationMinutes} minutes
-            preparation · No reviews yet
+            preparation ·{' '}
+            {restaurant.rating === null
+              ? 'No verified reviews yet'
+              : `${restaurant.rating.toFixed(1)} / 5 (${restaurant.ratingCount} reviews)`}
           </p>
         </div>
         <div className="button-row">
@@ -554,11 +559,12 @@ export function RestaurantPage() {
             specific dietary needs.
           </p>
           <p>
-            Ordering and payment are not open yet. Your cart is a saved selection, not a confirmed
-            order.
+            Review your address and the current total at checkout. Your order is confirmed after
+            verified payment and restaurant acceptance.
           </p>
         </aside>
       </div>
+      <PublicReviews slug={restaurant.slug} />
       {chosen && (
         <DishChooser
           item={chosen}
@@ -1016,3 +1022,4 @@ export function CartPage() {
     </WorkspaceShell>
   );
 }
+import { PublicReviews } from './Operations';

@@ -2,9 +2,15 @@
 
 Food discovery and delivery for India, built with MongoDB, Express, React and Node.js using TypeScript. The repository contains a React application, six independently runnable backend services, an API gateway, shared contracts, local infrastructure and automated checks.
 
-The application includes India-wide discovery, real OTP accounts and sessions, authenticator MFA, account security, seller/rider onboarding, private document uploads and admin verification. Restaurant and rider access opens only after approval. Discovery now includes restaurant and dish search, menus and add-ons, addresses and exact zone checks, favorites, offers, seller catalog management and server-priced carts. Checkout now includes expiring quotes, stock and offer reservations, orders, Razorpay/Stripe adapters, verified webhooks, cancellation, refunds and a balanced financial ledger. Local checkout uses clearly labelled simulated payments; fulfillment, delivery tracking and the assistant remain upcoming work. Live provider and deployment qualification remain required before launch.
+The application includes India-wide discovery, real OTP accounts and sessions, authenticator MFA, account security, seller/rider onboarding, private document uploads and admin verification. Restaurant and rider access opens only after approval. Discovery now includes restaurant and dish search, menus and add-ons, addresses and exact zone checks, favorites, offers, seller catalog management and server-priced carts. Checkout now includes expiring quotes, stock and offer reservations, orders, Razorpay/Stripe adapters, verified webhooks, cancellation, refunds and a balanced financial ledger. Fulfillment now includes the seller kitchen board, exclusive rider assignment, pickup and delivery codes, customer tracking, notifications and operator incident recovery. The assistant remains upcoming work. Live provider and deployment qualification remain required before launch.
 
-## Run locally
+## Host on Vercel and Render
+
+Follow the [hosted deployment and API-key guide](docs/engineering/HOSTING.md). The repository includes a Render Blueprint, private persistent upload storage, managed-service configuration, Vercel API-proxy setup and a hosted readiness check. Deployment requires provider account access and credentials; this repository does not imply a live production deployment.
+
+Read the [complete delivery journey](docs/engineering/FULFILLMENT-AND-TRACKING.md), [role operations](docs/engineering/ROLE-OPERATIONS.md) and [PRD](docs/PRD.md). Support conversations, delivery messages, verified reviews, restaurant teams, limited administrative grants, reports and accounting records are implemented. Bank payouts and contractual compensation remain subject to policy and provider configuration. Use `.env.hosted.example` for backend settings. Production rejects development codes, synthetic payments and developer upload storage.
+
+## Development and isolated verification
 
 Use Node **24.14.1** and npm **11.11.0**. Install Docker with Compose v2 for the dependency stack.
 
@@ -33,6 +39,8 @@ npm test
 npm run test:identity
 npm run test:money
 npm run test:money:providers
+npm run test:fulfillment
+npm run test:delivery:browser
 npm run contracts:build
 npm run contracts:check
 npx playwright install chromium
@@ -43,6 +51,8 @@ The real-dependency integration suite has separate setup; see the guide below. E
 
 ## Documentation
 
+- [Hosted deployment and keys](docs/engineering/HOSTING.md)
+- [Kitchen, rider delivery and tracking](docs/engineering/FULFILLMENT-AND-TRACKING.md)
 - [Checkout, payments, refunds and finance](docs/engineering/ORDERS-AND-PAYMENTS.md)
 - [Discovery, seller menus, addresses and cart](docs/engineering/CATALOG-AND-CART.md)
 - [Identity, onboarding and administrator setup](docs/engineering/IDENTITY-AND-ONBOARDING.md)

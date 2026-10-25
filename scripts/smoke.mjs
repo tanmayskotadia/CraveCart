@@ -21,7 +21,7 @@ if (
   !response.ok ||
   body.data.market.scope !== 'national' ||
   body.data.market.country !== 'IN' ||
-  body.data.capabilities.ordering !== false ||
+  typeof body.data.capabilities.ordering !== 'boolean' ||
   body.meta.requestId !== response.headers.get('x-request-id')
 )
   throw new Error('Gateway platform contract failed');

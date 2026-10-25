@@ -613,8 +613,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_orders_orderId_review",
@@ -636,8 +636,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_orders_orderId_messages",
@@ -659,8 +659,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_favorites",
@@ -843,8 +843,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "partial"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_restaurants_restaurantId_orders",
@@ -866,8 +866,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_restaurants_restaurantId_orders_orderId",
@@ -889,8 +889,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_restaurants_restaurantId_menu",
@@ -1027,8 +1027,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_restaurants_restaurantId_analytics",
@@ -1050,8 +1050,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_restaurants_restaurantId_finance",
@@ -1073,8 +1073,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller_restaurants_restaurantId_reviews",
@@ -1096,8 +1096,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_rider",
@@ -1165,8 +1165,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "partial"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_rider_offers",
@@ -1188,8 +1188,31 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
+    },
+    {
+      "id": "page_rider_deliveries",
+      "path": "/rider/deliveries",
+      "workspace": "rider",
+      "sessionRequired": true,
+      "roles": [
+        "rider"
+      ],
+      "policy": "rider",
+      "purpose": "Own active and past delivery tasks",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_rider_deliveries_deliveryId",
@@ -1211,8 +1234,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_rider_deliveries_deliveryId_navigate",
@@ -1234,8 +1257,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_rider_history",
@@ -1257,8 +1280,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_rider_earnings",
@@ -1280,8 +1303,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_rider_profile",
@@ -1602,8 +1625,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_support_ticketId",
@@ -1625,8 +1648,31 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
+    },
+    {
+      "id": "page_admin_delivery_operations",
+      "path": "/admin/delivery-operations",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Active tasks, pending confirmations and incidents; dispatch permission",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_finance",
@@ -1740,8 +1786,31 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
+    },
+    {
+      "id": "page_admin_reviews",
+      "path": "/admin/reviews",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Delivered-order review moderation and reports",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_zones",
@@ -1786,8 +1855,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_settings",
@@ -1832,8 +1901,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_audit",
@@ -1855,8 +1924,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "partial"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_assistant",
@@ -1902,8 +1971,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_settings",
@@ -1998,8 +2067,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_support_tickets_ticketId",
@@ -2022,8 +2091,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_assistant",

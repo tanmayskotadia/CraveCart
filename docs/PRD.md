@@ -10,7 +10,36 @@ The operating scope is **India-wide**, superseding the earlier Chennai-only pilo
 
 The global market configuration holds country, currency and timezone. Selected city belongs to discovery/address context, not a hardcoded global city. Zone records must include country, city identifier, polygon, operating hours, fee-policy version and activation status. Catalog and checkout validate both city context and exact delivery coordinates; inactive/unconfigured zones fail closed.
 
+## Hosted end-to-end delivery requirements
+
+Updated 25 October 2026 from the supplied customer discovery references.
+
+- Deploy the React frontend on Vercel and the gateway plus six MERN services on Render. MongoDB, RabbitMQ and Redis must use hosted TLS endpoints. Uploaded files must survive deployment on private persistent storage; production must never depend on `.local`, development codes, fictional restaurants, simulated rider locations or development payments.
+- Customer sign-in uses the shared CraveCart authentication UI and opens a location-aware discovery page: compact header/search, delivery-focused navigation, circular cuisine inspiration, merchant cards, accurate filters and real published seller menus. Dining/nightlife may only show real supported content; unsupported tabs must not promise booking or invent venues, ratings, discounts or delivery estimates.
+- Restaurant sign-in uses the same visual identity and opens owned restaurant management and incoming orders. Approved sellers can publish restaurant details, images, hours and dishes/modifiers; customer discovery reads that same catalog. Paid orders appear on the correct seller board.
+- Delivery is an explicit authoritative sequence: PAYMENT_PENDING → PLACED → ACCEPTED → PREPARING → READY_FOR_PICKUP → PICKED_UP → OUT_FOR_DELIVERY → DELIVERED. Rejection before pickup releases reservations and authorizes compensation. Customer cancellation is evaluated by current policy and cannot cancel food in transit.
+- Dispatch starts after merchant acceptance. Only approved, active, online riders with recent accurate foreground GPS can receive nearby offers. Offers expire, declined candidates cool down, radius expands in bounded rounds and no-rider cases become visible operational exceptions. One order has one active assignment and one rider has one active task; concurrent accepts and cancellation must converge without double assignment.
+- Riders see pickup details before pickup; private customer drop-off/contact data is restricted to the assigned active delivery. Pickup and completion require separate server-generated, expiring, attempt-limited codes shared by the entitled restaurant/customer. GPS is never proof of delivery. Lost HTTP responses retain pending operations and reuse the same command identity.
+- Customer tracking uses authorized Socket.IO snapshots and a polling fallback. Reconnection reauthenticates and reloads authoritative state. Show location freshness and accuracy; revoke rider-location access when the delivery ends. Navigation opens a validated pickup/drop destination; no straight line is presented as a routed ETA.
+- Sound is opt-in after interaction, deduplicated by event identity, and paired with visible notifications. Important notifications survive reload. GPS denial, offline rider, expired offer, wrong code, no rider, stale tracking and provider outages have actionable states.
+- Production configuration uses sandbox gateway keys initially until live charging is explicitly approved. API keys belong in hosting secret settings. Actual hosting remains pending account/project/domain access and provider credentials; configuration and automated tests are not evidence of deployment.
+
+Acceptance: a real customer can find a seller-created dish, check out with verified gateway payment, see merchant acceptance/preparation, track an exclusively assigned rider, share the delivery code, and observe confirmed delivery in all three workspaces. Automated tests must cover ownership, races, expiry, invalid proofs, stale GPS, reconnect and refund compensation. Physical screen-off/background tracking requires a native companion and remains outside the foreground MERN web guarantee.
+
 ## 2. Scope and priority
+
+### Role-operation implementation requirements
+
+- Support tickets use requester ownership, optional authorized order links, versioned replies, persistent paginated history and explicit closure. Support operators need separate read/write grants; resolution requires fresh MFA and a visible reason. A support resolution does not execute a financial or fulfillment command.
+- Customer–rider messages belong to the current authorized order participants. Sending is permitted during an active assigned delivery; completion closes sending while entitled history remains readable. Messages are rate-limited, rendered as text and reportable. Administrative moderation preserves protected originals and an owner audit.
+- One review per delivered customer order is enforced transactionally. Public ratings aggregate only visible verified reviews in the current environment. Restaurants may respond; operators may hide or restore with version, reason and MFA. No customer contact details appear in public reviews.
+- Restaurant owners can add approved seller accounts as kitchen or manager colleagues for a specific restaurant. Kitchen access does not allow menu, finance or team changes. Managers may edit catalogs and review responses; owner-only finance and access administration remain enforced. General unverified staff invitations are future scope.
+- Governance operators assign allowlisted support, analyst, read-only finance, auditor or operations bundles to existing verified accounts. Changes revoke target sessions. Self-change and modification/suspension of bootstrap governance accounts are denied through ordinary UI. Arbitrary permission strings are rejected.
+- Reports identify India date boundaries, generation time, mode and metric definitions. Queries span at most 93 inclusive calendar days. Order-created-date cohorts use current authoritative states and do not claim historical event-time revenue. Administrative aggregate exports require fresh MFA, reason and an audit identity.
+- Financial records distinguish captured/refunded values and recorded delivered-order tips from commission, net payable and completed bank settlement. Until compensation agreements and provider reconciliation are configured, commission/payable remain null and settlement status remains UNRECONCILED. Rider records exclude customer capture/refund details. CSV downloads identify their page scope.
+- Promotion oversight operates on real merchant-funded offers with version, reason and fresh MFA. Operating-zone and versioned pricing-policy controls continue through the existing domain endpoints. Broader platform-funded campaigns, custom compensation contracts and automated bank payouts need separate implementation/qualification.
+
+Implementation and acceptance evidence: [role operations](engineering/ROLE-OPERATIONS.md). Cross-service retention/deletion, real support staffing and hosted qualification remain launch requirements. The assistant follows this milestone.
 
 **P0:** Required for a safe end-to-end pilot. **P1:** Required for the complete requested release, after P0 stabilizes. **P2:** Explicit future expansion.
 

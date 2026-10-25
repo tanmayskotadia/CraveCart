@@ -12,6 +12,8 @@
     "../scripts/export-identity-contracts.ts",
     "../scripts/export-catalog-contracts.ts",
     "../apps/web/src/access.ts",
-    "../scripts/export-commerce-contracts.ts"
+    "../scripts/export-commerce-contracts.ts",
+    "../scripts/export-fulfillment-contracts.ts",
+    "../scripts/export-operations-contracts.ts"
   ]
 }

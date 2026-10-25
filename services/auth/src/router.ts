@@ -96,6 +96,16 @@ interface Limit {
 const ACCESS_MS = 15 * 60_000,
   FAMILY_MS = 30 * 24 * 60 * 60_000;
 export const adminPermissions = [
+  'assistant:read','assistant:write',
+  'support:read',
+  'support:write',
+  'reports:read',
+  'promotions:read',
+  'promotions:write',
+  'staff:read',
+  'staff:write',
+  'dispatch:write',
+  'dispatch:read',
   'finance:read',
   'finance:write',
   'zones:read',
@@ -881,7 +891,10 @@ export function installAuth(app: Express, ctx: DomainContext) {
   });
   app.use('/api/v1/auth', router);
   const internal = express.Router();
-  internal.use(internalOnly(ctx, ['auth', 'restaurant', 'rider', 'admin', 'utils', 'realtime']));
+  internal.use(
+    ['/addresses/get', '/memberships/check', '/sessions/inspect', '/roles/apply', '/users'],
+    internalOnly(ctx, ['auth', 'restaurant', 'rider', 'admin', 'utils', 'realtime']),
+  );
   internal.post('/addresses/get', async (req, res) => {
     if (res.locals.caller !== 'restaurant')
       throw new HttpError(403, 'SERVICE_DENIED', 'Service denied');
@@ -897,12 +910,12 @@ export function installAuth(app: Express, ctx: DomainContext) {
     json(res, value);
   });
   internal.post('/memberships/check', async (req, res) => {
-    if (res.locals.caller !== 'restaurant')
+    if (!['restaurant', 'rider', 'realtime'].includes(res.locals.caller))
       throw new HttpError(403, 'SERVICE_DENIED', 'Service denied');
     const input = z
       .object({
         userIds: z.array(z.string().uuid()).min(1).max(1000),
-        role: z.enum(['customer', 'seller']).default('seller'),
+        role: z.enum(['customer', 'seller', 'rider']).default('seller'),
       })
       .strict()
       .parse(req.body);
@@ -1054,6 +1067,15 @@ export function installAuth(app: Express, ctx: DomainContext) {
     const transaction = client.startSession();
     try {
       await transaction.withTransaction(async () => {
+        if (body.status === 'SUSPENDED') {
+          const target = await users.findOne({ _id: body.userId }, { session: transaction });
+          if (target?.permissions.includes('staff:write'))
+            throw new HttpError(
+              409,
+              'PROTECTED_OPERATOR',
+              'Bootstrap governance accounts require an operator recovery procedure',
+            );
+        }
         const changed = await users.updateOne(
           { _id: body.userId },
           { $set: { status: body.status } },

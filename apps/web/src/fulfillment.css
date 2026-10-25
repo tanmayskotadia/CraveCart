@@ -1,0 +1,140 @@
+.delivery-map {
+  height: 320px;
+  border-radius: 14px;
+  background: #f4f1ed;
+  margin: 18px 0;
+  z-index: 0;
+}
+.verification-code {
+  padding: 22px;
+  border: 1px solid #f3c4ca;
+  background: #fff7f8;
+  border-radius: 12px;
+  margin: 20px 0;
+}
+.verification-code > span {
+  display: block;
+  color: #805059;
+  font-size: 0.85rem;
+}
+.verification-code > strong {
+  display: block;
+  font-size: 2.3rem;
+  letter-spacing: 0.3em;
+  color: #c73549;
+  padding: 12px 0;
+}
+.verification-code p {
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.kitchen-order {
+  margin-bottom: 24px;
+}
+.kitchen-order details {
+  margin: 24px 0;
+}
+.kitchen-order summary {
+  cursor: pointer;
+  color: #c73549;
+}
+.inspiration-band {
+  background: #f8f8f8;
+  margin: 28px 0;
+  padding: 32px;
+  border-radius: 14px;
+}
+.inspiration-band h2 {
+  font-size: 1.55rem;
+  letter-spacing: -0.04em;
+  margin-bottom: 24px;
+}
+.cuisine-circles {
+  display: flex;
+  gap: 30px;
+  overflow: auto;
+  padding-bottom: 12px;
+}
+.cuisine-circles a {
+  flex: 0 0 125px;
+  text-align: center;
+  color: #252525;
+  text-decoration: none;
+}
+.cuisine-circles img {
+  width: 115px;
+  height: 115px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  margin: 0 auto 14px;
+  transition: transform 0.25s;
+}
+.cuisine-circles a:hover img {
+  transform: translateY(-5px);
+}
+.delivery-tabs {
+  display: flex;
+  gap: 32px;
+  border-bottom: 1px solid #eee;
+  margin-top: 26px;
+}
+.delivery-tabs a,
+.delivery-tabs span {
+  padding: 18px 4px;
+  text-decoration: none;
+  color: #555;
+}
+.delivery-tabs .active {
+  color: #ef4f5f;
+  border-bottom: 2px solid #ef4f5f;
+}
+.discovery-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+}
+.discovery-intro h1 {
+  font-size: 2rem;
+  letter-spacing: -0.04em;
+}
+.discovery-intro p {
+  color: #777;
+}
+.service-notice {
+  margin-top: 30px;
+}
+@media (max-width: 640px) {
+  .inspiration-band {
+    padding: 24px 16px;
+    margin-left: -12px;
+    margin-right: -12px;
+  }
+  .cuisine-circles {
+    gap: 18px;
+  }
+  .cuisine-circles a {
+    flex-basis: 88px;
+    font-size: 0.85rem;
+  }
+  .cuisine-circles img {
+    height: 84px;
+    width: 84px;
+  }
+  .discovery-intro {
+    display: block;
+  }
+  .delivery-map {
+    height: 260px;
+  }
+  .verification-code > strong {
+    font-size: 1.8rem;
+    letter-spacing: 0.22em;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cuisine-circles img {
+    transition: none;
+  }
+}

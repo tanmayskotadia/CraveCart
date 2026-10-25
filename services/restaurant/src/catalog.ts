@@ -32,6 +32,7 @@ import {
   type DomainContext,
 } from '@cravecart/platform';
 import { executeOnce, enqueueEvent } from '@cravecart/persistence';
+import { restaurantAccess } from './access.js';
 
 type StoredRestaurant = RestaurantInput & {
   _id: string;
@@ -206,9 +207,33 @@ export function installCatalog(app: Express, ctx: DomainContext) {
     }
   }
   async function owned(id: string, userId: string, session?: ClientSession) {
-    const record = await restaurants.findOne({ _id: id, userId }, { session });
+    await restaurantAccess(ctx, id, userId);
+    const record = await restaurants.findOne({ _id: id }, { session });
     if (!record) throw new HttpError(404, 'NOT_FOUND', 'Restaurant not found');
     return record;
+  }
+  async function withRatings(records: Restaurant[]) {
+    const ratings = await db
+      .collection('reviews')
+      .aggregate([
+        {
+          $match: {
+            restaurantId: { $in: records.map((r) => r.id) },
+            moderation: 'VISIBLE',
+            mode: ctx.config.COMMERCE_MODE,
+          },
+        },
+        { $group: { _id: '$restaurantId', rating: { $avg: '$rating' }, count: { $sum: 1 } } },
+      ])
+      .toArray();
+    return records.map((r) => {
+      const rating = ratings.find((x) => x._id === r.id);
+      return {
+        ...r,
+        rating: rating ? Math.round(rating.rating * 10) / 10 : null,
+        ratingCount: rating?.count ?? 0,
+      };
+    });
   }
   async function visible(city?: string, ids?: string[]) {
     const records = await restaurants
@@ -275,14 +300,26 @@ export function installCatalog(app: Express, ctx: DomainContext) {
   seller.use(remoteSession(ctx, { role: 'seller' }));
   seller.get('/', async (_req, res) => {
     await provision(currentPrincipal(res).userId);
+    const memberships = await db
+      .collection('restaurant_staff')
+      .find({ userId: currentPrincipal(res).userId, active: true })
+      .limit(50)
+      .toArray();
+    const memberIds = memberships.map((m) => m.restaurantId);
     json(
       res,
       (
         await restaurants
-          .find({ userId: currentPrincipal(res).userId })
+          .find({ $or: [{ userId: currentPrincipal(res).userId }, { _id: { $in: memberIds } }] })
           .sort({ _id: 1 })
           .toArray()
-      ).map(presentRestaurant),
+      ).map((r) => ({
+        ...presentRestaurant(r),
+        access:
+          r.userId === currentPrincipal(res).userId
+            ? 'owner'
+            : memberships.find((m) => m.restaurantId === r._id)?.role,
+      })),
     );
   });
   seller.get('/:restaurantId/catalog', async (req, res) => {
@@ -332,7 +369,7 @@ export function installCatalog(app: Express, ctx: DomainContext) {
       try {
         await session.withTransaction(async () => {
           updated = await restaurants.findOneAndUpdate(
-            { _id: id, userId, version: expectedVersion },
+            { _id: id, version: expectedVersion },
             { $set: { ...restaurant, updatedAt: new Date().toISOString() }, $inc: { version: 1 } },
             { session, returnDocument: 'after' },
           );
@@ -532,14 +569,14 @@ export function installCatalog(app: Express, ctx: DomainContext) {
       .strict()
       .parse(req.query);
     if (!findCity(query.city)) throw new HttpError(422, 'INVALID_CITY', 'Choose a supported city');
-    let records = (await visible(query.city)).map(presentRestaurant);
+    let records = await withRatings((await visible(query.city)).map(presentRestaurant));
     const menu = await items
         .find({ restaurantId: { $in: records.map((record) => record.id) }, deleted: false })
         .toArray(),
       search = query.q.toLocaleLowerCase('en-IN');
     records = records.filter(
       (record) =>
-        !query.minRating &&
+        (!query.minRating || (record.rating !== null && record.rating >= query.minRating)) &&
         (!query.q ||
           `${record.name} ${record.cuisines.join(' ')}`
             .toLocaleLowerCase('en-IN')
@@ -579,14 +616,14 @@ export function installCatalog(app: Express, ctx: DomainContext) {
       total: records.length,
       page: query.page,
       pageSize: 12,
-      orderingEnabled: false,
+      orderingEnabled: ctx.config.COMMERCE_MODE !== 'disabled',
     });
   });
   app.get('/api/v1/restaurants/:slug', async (req, res) => {
     const record = await publicRecord(z.string().max(100).parse(req.params.slug)),
       now = new Date().toISOString();
     json(res, {
-      restaurant: presentRestaurant(record),
+      restaurant: (await withRatings([presentRestaurant(record)]))[0],
       items: (
         await items
           .find({ restaurantId: record._id, deleted: false })
@@ -762,16 +799,15 @@ export function installCatalog(app: Express, ctx: DomainContext) {
       version: value.version,
     });
   });
-  app.put('/api/v1/cart', remoteSession(ctx, { mutation: true }), async (req, res) => {
-    const input = cartInputSchema.parse(req.body),
-      userId = currentPrincipal(res).userId,
-      { record, priced, subtotalMinor, minimumIssue } = await validateCart(
+  async function saveCart(input:z.infer<typeof cartInputSchema>,userId:string,session?:ClientSession,expectedSubtotalMinor?:number) {
+    const { record, priced, subtotalMinor, minimumIssue } = await validateCart(
         input.restaurantId,
         input.addressId,
         userId,
         input.lines,
       );
-    const old = await carts.findOne({ _id: userId });
+    if(expectedSubtotalMinor!==undefined&&subtotalMinor!==expectedSubtotalMinor)throw new HttpError(409,'PRICE_CHANGED','The cart price changed; review a new proposal');
+    const old = await carts.findOne({ _id: userId },{session});
     if ((old?.version ?? 0) !== input.expectedVersion)
       throw new HttpError(
         409,
@@ -798,12 +834,13 @@ export function installCatalog(app: Express, ctx: DomainContext) {
       const changed = await carts.updateOne(
         { _id: userId, version: input.expectedVersion },
         { $set: value },
+        { session },
       );
       if (!changed.modifiedCount)
         throw new HttpError(409, 'VERSION_CONFLICT', 'Your cart changed. Reload it before saving');
     } else
       try {
-        await carts.insertOne({ _id: userId, ...value });
+        await carts.insertOne({ _id: userId, ...value },{session});
       } catch (error) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 11000)
           throw new HttpError(
@@ -813,11 +850,14 @@ export function installCatalog(app: Express, ctx: DomainContext) {
           );
         throw error;
       }
-    json(res, {
+    return {
       ...value,
       issues: minimumIssue ? [minimumIssue] : [],
       checkoutEnabled: configCheckout(),
-    });
+    };
+  }
+  app.put('/api/v1/cart', remoteSession(ctx, { mutation: true }), async (req, res) => {
+    json(res,await saveCart(cartInputSchema.parse(req.body),currentPrincipal(res).userId));
   });
   app.delete('/api/v1/cart', remoteSession(ctx, { mutation: true }), async (req, res) => {
     const { expectedVersion } = z
@@ -838,4 +878,5 @@ export function installCatalog(app: Express, ctx: DomainContext) {
       throw new HttpError(409, 'VERSION_CONFLICT', 'Cart changed. Reload before clearing it');
     json(res, { cleared: true, version: expectedVersion + 1 });
   });
+  return {saveCart,validateCart};
 }

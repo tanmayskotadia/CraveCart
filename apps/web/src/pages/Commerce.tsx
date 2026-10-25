@@ -13,9 +13,9 @@ function Environment({ mode }: { mode: string }) {
   return mode !== 'live' ? (
     <p className="commerce-banner" role="status">
       {mode === 'development'
-        ? 'Development checkout · simulated payments only. No money is charged and no delivery is dispatched.'
+        ? 'Development checkout · simulated payments only. No real money is charged. Use coordinated test deliveries only.'
         : mode === 'test'
-          ? 'Payment gateway sandbox · test payments only. No delivery is dispatched.'
+          ? 'Payment gateway sandbox · test payments only. Use coordinated test deliveries only.'
           : 'Checkout is currently unavailable.'}
     </p>
   ) : null;
@@ -399,6 +399,15 @@ export function OrdersPage({ admin = false }: { admin?: boolean }) {
       {query.data?.map((order) => (
         <article className="workspace-panel commerce-order" key={order.id}>
           <Environment mode={order.quote.mode} />
+          {!admin && (
+            <div className="button-row">
+              <Link to={`/support?orderId=${order.id}`}>Contact support</Link>
+              <Link to={`/orders/${order.id}/messages`}>Delivery conversation</Link>
+              {order.status === 'DELIVERED' && (
+                <Link to={`/orders/${order.id}/review`}>Review your meal</Link>
+              )}
+            </div>
+          )}
           <div className="panel-title-row">
             <h2>{order.quote.restaurant.name}</h2>
             <strong>{money(order.quote.totals.totalMinor)}</strong>
@@ -477,12 +486,19 @@ export function OrderPage({ admin = false }: { admin?: boolean }) {
               </p>
               {order.status === 'PLACED' && (
                 <p>
-                  Payment verified. Restaurant acceptance and rider dispatch are not enabled in this
-                  release.
+                  Payment verified. Follow kitchen preparation and your assigned rider on the
+                  tracking page.
                 </p>
               )}
               {order.status === 'PAYMENT_PENDING' && !admin && (
                 <PaymentControls order={order} refresh={query.refetch} />
+              )}
+              {!admin && order.status !== 'PAYMENT_PENDING' && (
+                <p>
+                  <Link className="red-button" to={`/orders/${order.id}/track`}>
+                    Track your food
+                  </Link>
+                </p>
               )}
               <h3>Order timeline</h3>
               <ol className="commerce-timeline">
@@ -587,6 +603,31 @@ export function OrderPage({ admin = false }: { admin?: boolean }) {
                       .finally(() => setBusy(false));
                   }}
                 >
+                  {['ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'].includes(order.status) && (
+                    <div>
+                      <button
+                        className="outline-button"
+                        type="button"
+                        disabled={busy || reason.trim().length < 5}
+                        onClick={() => {
+                          setBusy(true);
+                          void api(`/admin/orders/${order.id}/dispatch/retry`, {
+                            method: 'POST',
+                            body: { reason },
+                          })
+                            .then(() => query.refetch())
+                            .catch(setError)
+                            .finally(() => setBusy(false));
+                        }}
+                      >
+                        Retry rider search
+                      </button>
+                      <p className="small-help">
+                        Enter an operator reason below and verify your authenticator before
+                        restarting dispatch.
+                      </p>
+                    </div>
+                  )}
                   <h3>Authorize refund</h3>
                   <p className="small-help">
                     Requires a fresh authenticator check. Amount cannot exceed the remaining

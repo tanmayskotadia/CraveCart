@@ -1,3 +1,5 @@
+import './fulfillment.css';
+import './operations.css';
 import './commerce.css';
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { Link, Navigate, Route, Routes, matchPath, useLocation } from 'react-router-dom';
@@ -58,6 +60,49 @@ const PaymentReturnPage = lazy(() =>
 const FinancePage = lazy(() => import('./pages/Finance').then((m) => ({ default: m.FinancePage })));
 const RefundsPage = lazy(() => import('./pages/Finance').then((m) => ({ default: m.RefundsPage })));
 
+const SellerOrdersPage = lazy(() =>
+  import('./pages/Fulfillment').then((m) => ({ default: m.SellerOrdersPage })),
+);
+const CustomerTrackingPage = lazy(() =>
+  import('./pages/Fulfillment').then((m) => ({ default: m.CustomerTrackingPage })),
+);
+const RiderDeliveriesPage = lazy(() =>
+  import('./pages/Fulfillment').then((m) => ({ default: m.RiderDeliveriesPage })),
+);
+const NotificationsPage = lazy(() =>
+  import('./pages/Fulfillment').then((m) => ({ default: m.NotificationsPage })),
+);
+const DeliveryOperationsPage = lazy(() =>
+  import('./pages/Fulfillment').then((m) => ({ default: m.DeliveryOperationsPage })),
+);
+const SupportPage = lazy(() =>
+  import('./pages/Operations').then((m) => ({ default: m.SupportPage })),
+);
+const OrderMessagesPage = lazy(() =>
+  import('./pages/Operations').then((m) => ({ default: m.OrderMessagesPage })),
+);
+const OrderReviewPage = lazy(() =>
+  import('./pages/Operations').then((m) => ({ default: m.OrderReviewPage })),
+);
+const ReviewsPage = lazy(() =>
+  import('./pages/Operations').then((m) => ({ default: m.ReviewsPage })),
+);
+const StatementsPage = lazy(() =>
+  import('./pages/Operations').then((m) => ({ default: m.StatementsPage })),
+);
+const ReportsPage = lazy(() =>
+  import('./pages/Operations').then((m) => ({ default: m.ReportsPage })),
+);
+const HistoryPage = lazy(() =>
+  import('./pages/Operations').then((m) => ({ default: m.HistoryPage })),
+);
+const TeamPage = lazy(() => import('./pages/Operations').then((m) => ({ default: m.TeamPage })));
+const PromotionsPage = lazy(() =>
+  import('./pages/Operations').then((m) => ({ default: m.PromotionsPage })),
+);
+const OperationsAuditPage = lazy(() =>
+  import('./pages/Operations').then((m) => ({ default: m.OperationsAuditPage })),
+);
 const authPaths = [
   '/login',
   '/signup',
@@ -98,6 +143,9 @@ function Header() {
             <>
               <Link className="header-cart" to="/cart" aria-label="Your cart">
                 <Icon name="bag" size={21} />
+              </Link>
+              <Link className="desktop-nav" to="/notifications">
+                Notifications
               </Link>
               <Link className="desktop-nav" to="/workspaces">
                 Workspaces
@@ -234,6 +282,156 @@ function RoutePage({
 }) {
   const path = route.path;
   const catalogPages: Record<string, React.ReactNode> = {
+    '/support': (
+      <RequireSession>
+        <SupportPage />
+      </RequireSession>
+    ),
+    '/support/tickets/:ticketId': (
+      <RequireSession>
+        <SupportPage />
+      </RequireSession>
+    ),
+    '/orders/:orderId/messages': (
+      <RequireSession>
+        <OrderMessagesPage />
+      </RequireSession>
+    ),
+    '/orders/:orderId/review': (
+      <RequireSession>
+        <OrderReviewPage />
+      </RequireSession>
+    ),
+    '/admin/support': (
+      <RequireSession roles={['admin']}>
+        <SupportPage admin />
+      </RequireSession>
+    ),
+    '/admin/support/:ticketId': (
+      <RequireSession roles={['admin']}>
+        <SupportPage admin />
+      </RequireSession>
+    ),
+    '/admin/reviews': (
+      <RequireSession roles={['admin']}>
+        <ReviewsPage admin />
+      </RequireSession>
+    ),
+    '/admin/team': (
+      <RequireSession roles={['admin']}>
+        <TeamPage admin />
+      </RequireSession>
+    ),
+    '/admin/settlements': (
+      <RequireSession roles={['admin']}>
+        <FinancePage />
+      </RequireSession>
+    ),
+    '/admin/settings': (
+      <RequireSession roles={['admin']}>
+        <FinancePage />
+      </RequireSession>
+    ),
+    '/admin/promotions': (
+      <RequireSession roles={['admin']}>
+        <PromotionsPage />
+      </RequireSession>
+    ),
+    '/admin/reports': (
+      <RequireSession roles={['admin']}>
+        <ReportsPage admin />
+      </RequireSession>
+    ),
+    '/admin/audit': (
+      <RequireSession roles={['admin']}>
+        <OperationsAuditPage />
+      </RequireSession>
+    ),
+    '/seller/restaurants/:restaurantId/reviews': (
+      <RequireSession roles={['seller']}>
+        <ReviewsPage />
+      </RequireSession>
+    ),
+    '/seller/restaurants/:restaurantId/staff': (
+      <RequireSession roles={['seller']}>
+        <TeamPage />
+      </RequireSession>
+    ),
+    '/seller/restaurants/:restaurantId/analytics': (
+      <RequireSession roles={['seller']}>
+        <ReportsPage />
+      </RequireSession>
+    ),
+    '/seller/restaurants/:restaurantId/finance': (
+      <RequireSession roles={['seller']}>
+        <StatementsPage />
+      </RequireSession>
+    ),
+    '/seller/restaurants/:restaurantId/history': (
+      <RequireSession roles={['seller']}>
+        <HistoryPage />
+      </RequireSession>
+    ),
+    '/rider/history': (
+      <RequireSession roles={['rider']}>
+        <HistoryPage rider />
+      </RequireSession>
+    ),
+    '/rider/earnings': (
+      <RequireSession roles={['rider']}>
+        <StatementsPage rider />
+      </RequireSession>
+    ),
+    '/admin/delivery-operations': (
+      <RequireSession roles={['admin']}>
+        <DeliveryOperationsPage />
+      </RequireSession>
+    ),
+    '/seller/restaurants/:restaurantId/orders': (
+      <RequireSession roles={['seller']}>
+        <SellerOrdersPage />
+      </RequireSession>
+    ),
+    '/seller/restaurants/:restaurantId/orders/:orderId': (
+      <RequireSession roles={['seller']}>
+        <SellerOrdersPage />
+      </RequireSession>
+    ),
+    '/orders/:orderId/track': (
+      <RequireSession>
+        <CustomerTrackingPage />
+      </RequireSession>
+    ),
+    '/rider/dashboard': (
+      <RequireSession roles={['rider']}>
+        <RiderDeliveriesPage />
+      </RequireSession>
+    ),
+    '/rider/offers': (
+      <RequireSession roles={['rider']}>
+        <RiderDeliveriesPage />
+      </RequireSession>
+    ),
+    '/rider/deliveries': (
+      <RequireSession roles={['rider']}>
+        <RiderDeliveriesPage />
+      </RequireSession>
+    ),
+    '/rider/deliveries/:deliveryId': (
+      <RequireSession roles={['rider']}>
+        <RiderDeliveriesPage />
+      </RequireSession>
+    ),
+    '/rider/deliveries/:deliveryId/navigate': (
+      <RequireSession roles={['rider']}>
+        <RiderDeliveriesPage />
+      </RequireSession>
+    ),
+    '/notifications': (
+      <RequireSession>
+        <NotificationsPage />
+      </RequireSession>
+    ),
     '/restaurants/:slug': <RestaurantPage />,
     '/checkout': (
       <RequireSession>
@@ -313,7 +511,7 @@ function RoutePage({
     ),
     '/seller/restaurants/:restaurantId/dashboard': (
       <RequireSession roles={['seller']}>
-        <SellerCatalogPage />
+        <SellerOrdersPage />
       </RequireSession>
     ),
     '/seller/restaurants/:restaurantId/menu/new': (

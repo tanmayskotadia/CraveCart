@@ -20,11 +20,13 @@ jobs:
       - run: npm run test:identity
       - run: npm run test:money
       - run: npm run test:money:providers
+      - run: npm run test:fulfillment
       - run: npm run contracts:build && npm run contracts:check
       - run: git diff --exit-code -- contracts docs/discovery/traceability.csv
       - run: npm audit --omit=dev --audit-level=high
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - run: npm run test:delivery:browser
       - uses: actions/upload-artifact@v4
         if: failure()
         with: { name: browser-failures, path: test-results, if-no-files-found: ignore }

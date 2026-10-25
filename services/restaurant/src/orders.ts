@@ -45,7 +45,7 @@ interface QuoteRecord extends Quote {
   policy: PricingPolicy;
   zoneId: string;
 }
-interface OrderRecord extends Order {
+export interface OrderRecord extends Order {
   _id: string;
   userId: string;
   quoteId: string;
@@ -194,7 +194,13 @@ export function installOrders(app: Express, ctx: DomainContext) {
     if (!order) throw new HttpError(404, 'NOT_FOUND', 'Order not found');
     return order;
   }
-  async function event(session: ClientSession, order: OrderRecord, type: string, res?: Response) {
+  async function event(
+    session: ClientSession,
+    order: OrderRecord,
+    type: string,
+    res?: Response,
+    extra: Record<string, unknown> = {},
+  ) {
     await enqueueEvent(db, session, {
       eventId: randomUUID(),
       eventType: type,
@@ -204,7 +210,7 @@ export function installOrders(app: Express, ctx: DomainContext) {
       aggregate: { type: 'order', id: order._id, version: order.version },
       correlationId: String(res?.locals.requestId ?? order._id),
       causationId: order._id,
-      data: { orderId: order._id, restaurantId: order.quote.restaurant.id },
+      data: { orderId: order._id, restaurantId: order.quote.restaurant.id, ...extra },
     });
   }
   async function compute(
@@ -907,7 +913,19 @@ export function installOrders(app: Express, ctx: DomainContext) {
   );
   app.use('/api/v1', router);
   const internal = express.Router();
-  internal.use(internalOnly(ctx, ['utils', 'admin']));
+  internal.use(
+    [
+      '/orders/payable',
+      '/orders/payment',
+      '/orders/refund-applied',
+      '/orders/admin-list',
+      '/orders/admin-read',
+      '/orders/retry-refunds',
+      '/orders/admin-refund',
+      '/commerce',
+    ],
+    internalOnly(ctx, ['utils', 'admin']),
+  );
   internal.use(async (_req, _res, next) => {
     try {
       await ready();
@@ -1340,5 +1358,5 @@ export function installOrders(app: Express, ctx: DomainContext) {
     clearInterval(timer);
     await work;
   });
-  return { tick, applyCapture };
+  return { tick, applyCapture, orders, present, release, authorizeRefund, event };
 }

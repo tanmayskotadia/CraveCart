@@ -154,7 +154,7 @@ Razorpay and Stripe have different verification and idempotency protocols; imple
 
 ### Dispatch and delivery saga
 
-- Start dispatch after seller acceptance using preparation estimate; score eligible online approved nearby riders using pickup ETA, active workload and fairness. Redis GEO returns candidates; durable assignment checks remain authoritative.
+- Start dispatch after seller acceptance using preparation estimate; score eligible online approved nearby riders using pickup distance, active workload and fairness. The current implementation uses MongoDB GEO for durable candidate selection and Redis for short-lived location caching. A future qualified route provider can supply pickup ETA; distance is not presented as a road-route ETA. Durable assignment checks remain authoritative.
 - Use configurable search radius expansion, offer expiry, decline cooldown, capped retries and no-rider escalation. Initial defaults: 20-second offer, three search rounds; tune from pilot evidence.
 - Accept performs transactional conditional writes with unique active-assignment constraints and confirms that the order is still eligible. Cross-service cancellation races trigger idempotent withdrawal before pickup; do not claim a global transaction exists.
 - Rider pickup/completion commands create durable pending operations. Restaurant validates current authoritative order state, assigned rider and verification proof, then emits applied/rejected outcome. UI may show “confirming”; it cannot claim completed delivery on a queued request alone.
@@ -258,7 +258,11 @@ The orders/money runtime is implemented locally; see [checkout and financial ope
 
 Native rider background capability, if selected, starts in phase 2 alongside the web build and must pass physical screen-off tests before continuous tracking is advertised. It is a companion to the MERN backend/frontend, not something a browser permission can replace.
 
+Hosted fulfillment implementation now connects merchant order actions, bounded rider dispatch, authoritative pickup/completion, GPS, authenticated Socket.IO and notification recovery. See [fulfillment and tracking](engineering/FULFILLMENT-AND-TRACKING.md) and [Vercel/Render hosting](engineering/HOSTING.md). Hosted execution, real provider callbacks, physical devices, load and operational qualification remain open until supported by evidence.
+
 ### Dependency order
+
+Role operations now include support conversations, active-delivery messages and moderation, verified reviews with derived ratings, scoped restaurant teams, limited administrative permission bundles, paginated history, India-period reports, audited aggregate exports and explicit accounting-record views. See [runtime scope and limits](engineering/ROLE-OPERATIONS.md). Settlement/compensation contracts and provider reconciliation remain open gates; recorded customer charges are not inferred to be partner earnings. The assistant is the next implementation milestone.
 
 `Contracts → identity/ownership → catalog/serviceability → authoritative quote → payment/order saga → seller fulfillment → exclusive dispatch → verified delivery → statements/reconciliation`.
 

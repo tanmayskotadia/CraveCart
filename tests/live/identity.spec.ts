@@ -48,9 +48,10 @@ test('real accounts, documents, MFA and both partner approvals', async ({
   }
   try {
     await signIn(page, '/signup', `${prefix}-customer@example.test`, true);
-    await expect(page).toHaveURL(/\/profile$/);
+    await expect(page).toHaveURL(/\/search\?city=/);
     await page.reload();
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Your account');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Hello,');
+    await page.goto('/profile');
     await page.goto('/admin/dashboard');
     await expect(
       page.getByRole('heading', { name: 'This workspace isn’t available to you.' }),
@@ -114,7 +115,7 @@ test('real accounts, documents, MFA and both partner approvals', async ({
       await expect(partner.getByRole('link', { name: 'Open your workspace' })).toBeVisible();
       await partner.getByRole('link', { name: 'Open your workspace' }).click();
       await expect(partner.getByRole('heading', { level: 1 })).toContainText(
-        kind === 'seller' ? 'Your restaurants' : 'Delivery partner workspace',
+        kind === 'seller' ? 'Your restaurants' : 'Delivery partner',
       );
       expect(
         await partner.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),

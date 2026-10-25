@@ -75,7 +75,19 @@ export const quoteSchema = z
   })
   .strict();
 export type Quote = z.infer<typeof quoteSchema>;
-export const orderStatusSchema = z.enum(['PAYMENT_PENDING', 'PLACED', 'CANCELLED', 'EXPIRED']);
+export const orderStatusSchema = z.enum([
+  'PAYMENT_PENDING',
+  'PLACED',
+  'ACCEPTED',
+  'PREPARING',
+  'READY_FOR_PICKUP',
+  'PICKED_UP',
+  'OUT_FOR_DELIVERY',
+  'DELIVERED',
+  'REJECTED',
+  'CANCELLED',
+  'EXPIRED',
+]);
 export const paymentStateSchema = z.enum([
   'UNPAID',
   'CAPTURED',

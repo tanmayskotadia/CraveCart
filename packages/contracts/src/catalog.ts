@@ -161,8 +161,9 @@ export type Restaurant = RestaurantInput & {
   version: number;
   sample: boolean;
   open: boolean;
-  rating: null;
-  ratingCount: 0;
+  rating: number | null;
+  ratingCount: number;
+  access?: 'owner' | 'manager' | 'kitchen';
 };
 export const offerInputSchema = z
   .object({
@@ -242,8 +243,9 @@ export const restaurantSchema = restaurantInputSchema.safeExtend({
   version: z.number().int().positive(),
   sample: z.boolean(),
   open: z.boolean(),
-  rating: z.null(),
-  ratingCount: z.literal(0),
+  rating: z.number().min(1).max(5).nullable(),
+  ratingCount: z.number().int().nonnegative(),
+  access: z.enum(['owner', 'manager', 'kitchen']).optional(),
   updatedAt: z.string().datetime(),
 });
 export const menuItemSchema = menuItemInputSchema.safeExtend({

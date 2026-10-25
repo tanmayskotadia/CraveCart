@@ -72,6 +72,8 @@ const navigation = {
     ['Favourites', '/favorites'],
     ['My cart', '/cart'],
     ['Orders', '/orders'],
+    ['Support', '/support'],
+    ['Notifications', '/notifications'],
     ['Sessions', '/settings/sessions'],
     ['Security', '/settings'],
     ['Workspaces', '/workspaces'],
@@ -79,12 +81,19 @@ const navigation = {
   seller: [
     ['Application', '/seller/onboarding'],
     ['My restaurants', '/seller/restaurants'],
+    ['Support', '/support'],
     ['Security', '/settings'],
     ['Workspaces', '/workspaces'],
   ],
   rider: [
     ['Application', '/rider/onboarding'],
-    ['Rider profile', '/rider/dashboard'],
+    ['Delivery tasks', '/rider/dashboard'],
+    ['Offers', '/rider/offers'],
+    ['Delivery history', '/rider/history'],
+    ['Earnings records', '/rider/earnings'],
+    ['Support', '/support'],
+    ['Notifications', '/notifications'],
+    ['Rider profile', '/rider/profile'],
     ['Security', '/settings'],
     ['Workspaces', '/workspaces'],
   ],
@@ -96,11 +105,33 @@ const navigation = {
     ['Operating zones', '/admin/zones'],
     ['Orders', '/admin/orders'],
     ['Finance', '/admin/finance'],
+    ['Delivery operations', '/admin/delivery-operations'],
     ['Refunds', '/admin/refunds'],
+    ['Support inbox', '/admin/support'],
+    ['Reviews', '/admin/reviews'],
+    ['Reports', '/admin/reports'],
+    ['Promotions', '/admin/promotions'],
+    ['Staff access', '/admin/team'],
     ['Security', '/settings'],
     ['Workspaces', '/workspaces'],
   ],
 } as const;
+const adminNavigationPermissions: Record<string, string> = {
+  Overview: 'verifications:read',
+  Verifications: 'verifications:read',
+  Accounts: 'users:read',
+  'Audit history': 'audit:read',
+  'Operating zones': 'zones:read',
+  Orders: 'finance:read',
+  Finance: 'finance:read',
+  'Delivery operations': 'dispatch:read',
+  Refunds: 'finance:read',
+  'Support inbox': 'support:read',
+  Reviews: 'support:read',
+  Reports: 'reports:read',
+  Promotions: 'promotions:read',
+  'Staff access': 'staff:read',
+};
 export function WorkspaceShell({
   title,
   description,
@@ -133,6 +164,9 @@ export function WorkspaceShell({
           {navigation[active]
             .filter(
               ([label]) =>
+                (active !== 'admin' ||
+                  !adminNavigationPermissions[label] ||
+                  session?.principal.permissions.includes(adminNavigationPermissions[label]!)) &&
                 !(label === 'My restaurants' && !session?.principal.roles.includes('seller')) &&
                 !(label === 'Rider profile' && !session?.principal.roles.includes('rider')),
             )

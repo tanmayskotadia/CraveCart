@@ -4,10 +4,12 @@ import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
 import { timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { Server } from 'socket.io';
 import { createClient } from 'redis';
 import { ZodError } from 'zod';
-import { HttpError, type DomainContext } from './security.js';
+import { HttpError, upstream, type DomainContext } from './security.js';
 import { IdempotencyConflict } from '@cravecart/persistence';
 export * from './security.js';
 import { loadConfig, type Config } from '@cravecart/config';
@@ -178,7 +180,7 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
             name: 'CraveCart',
             market: nationalMarket,
             capabilities: {
-              ordering: false,
+              ordering: config.COMMERCE_MODE !== 'disabled',
               authentication:
                 config.DEV_ADAPTERS === 'true' ||
                 Boolean(config.SMTP_URL && config.SMTP_FROM) ||
@@ -187,8 +189,8 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
                   config.TWILIO_AUTH_TOKEN &&
                   config.TWILIO_FROM_NUMBER,
                 ),
-              liveTracking: false,
-              assistant: false,
+              liveTracking: config.COMMERCE_MODE !== 'disabled',
+              assistant: true,
             },
             serviceability: 'coordinate-check-required',
           },
@@ -200,10 +202,9 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
   if (name === 'gateway') {
     app.get('/api/v1/platform', async (req, res) => {
       emptyQuerySchema.parse(req.query);
-      const upstream = process.env.ADMIN_URL ?? 'http://127.0.0.1:4004';
       const headers = downstreamHeaders(res.locals.requestId as string);
       headers['x-internal-token'] = config.INTERNAL_TOKEN;
-      const response = await fetcher(new URL('/api/v1/platform', upstream), {
+      const response = await fetcher(new URL('/api/v1/platform', upstream('admin')), {
         headers,
         signal: AbortSignal.timeout(2000),
       });
@@ -235,8 +236,17 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
         payments: 'utils',
         refunds: 'utils',
         webhooks: 'utils',
+        realtime: 'realtime',
+        notifications: 'realtime',
+        support: 'admin',
+        reviews: 'restaurant',
+        assistant: 'utils',
       };
-      const owner = segment ? owners[segment] : undefined;
+      const owner = /^\/orders\/[^/]+\/messages(?:\/|$)/.test(req.path)
+        ? 'realtime'
+        : segment
+          ? owners[segment]
+          : undefined;
       if (!owner) {
         next();
         return;
@@ -271,11 +281,13 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
             : Buffer.isBuffer(req.body)
               ? new Uint8Array(req.body).buffer
               : JSON.stringify(req.body ?? {});
+        const disconnect=new AbortController();
+        res.once('close',()=>{if(!res.writableEnded)disconnect.abort();});
         const response = await fetcher(new URL(req.originalUrl, upstream(owner)), {
           method: req.method,
           headers,
           body,
-          signal: AbortSignal.timeout(20_000),
+          signal: AbortSignal.any([disconnect.signal,AbortSignal.timeout(segment==='assistant'?45000:20000)]),
           redirect: 'manual',
         });
         for (const key of ['content-type', 'content-disposition', 'cache-control', 'retry-after']) {
@@ -285,8 +297,14 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
         const setCookies = response.headers.getSetCookie();
         if (setCookies.length) res.setHeader('set-cookie', setCookies);
         res.setHeader('x-content-type-options', 'nosniff');
+        if(response.headers.get('content-type')?.startsWith('text/event-stream')&&response.body){
+          res.status(response.status);res.setHeader('X-Accel-Buffering','no');res.flushHeaders();
+          await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream),res);return;
+        }
         res.status(response.status).send(Buffer.from(await response.arrayBuffer()));
       } catch (error) {
+        if(res.destroyed)return;
+        if(res.headersSent){res.end();return;}
         next(error);
       }
     });
@@ -309,6 +327,8 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
         'IDEMPOTENCY_CONFLICT',
         'This request key was already used for a different change',
       );
+    if (error?.code === 11000)
+      error = new HttpError(409, 'RESOURCE_CONFLICT', 'The resource changed. Refresh and retry.');
     const invalid = error instanceof ZodError || error?.type === 'entity.parse.failed';
     const oversized = error?.type === 'entity.too.large';
     const known = error instanceof HttpError;
@@ -354,7 +374,7 @@ function localResources(
     serverSelectionTimeoutMS: 1000,
     connectTimeoutMS: 1000,
   });
-  const db = mongo.db(`cravecart_${name}`);
+  const db = mongo.db(`${config.MONGO_DB_PREFIX}_${name}`);
   const broker = new RabbitBroker(config.RABBITMQ_URL, name);
   const redis = createClient({
     url: config.REDIS_URL,
@@ -439,9 +459,8 @@ export async function startService(
             const result = await Promise.all(
               serviceNames.map(async (service) => {
                 try {
-                  const url =
-                    process.env[`${service.toUpperCase()}_URL`] ??
-                    `http://127.0.0.1:${ports[service]}`;
+                  const { upstream } = await import('./security.js');
+                  const url = upstream(service);
                   return [
                     service,
                     (
@@ -461,6 +480,7 @@ export async function startService(
         }
       : localResources(name, config, logger);
   const closers: Array<() => Promise<void>> = [];
+  const socketSetups: Array<(server: Server) => void> = [];
   const server = createServer(
     createApp({
       name,
@@ -474,6 +494,7 @@ export async function startService(
                 db: resources.db,
                 client: resources.client,
                 subscribe: resources.subscribe,
+                onSocket: (setup) => socketSetups.push(setup),
                 onClose: (fn) => closers.push(fn),
               })
           : undefined,
@@ -485,8 +506,8 @@ export async function startService(
       cors: { origin: config.APP_ORIGIN, credentials: true },
       maxHttpBufferSize: 32_768,
     });
-    // Authentication/tickets come with identity implementation; deny every connection until then.
-    io.use((_socket, next) => next(new Error('Realtime authentication is not available yet')));
+    if (socketSetups.length) for (const setup of socketSetups) setup(io);
+    else io.use((_socket, next) => next(new Error('Realtime is unavailable')));
   }
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject);

@@ -50,6 +50,11 @@ def envelope(schema):
 
 # Local route coverage is separate from the full proposed product scope and release qualification.
 AVAILABLE_PAGES = {
+    "/support", "/support/tickets/:ticketId", "/orders/:orderId/messages", "/orders/:orderId/review",
+    "/admin/support", "/admin/support/:ticketId", "/admin/reviews", "/admin/team", "/admin/promotions", "/admin/reports", "/admin/audit",
+    "/seller/restaurants/:restaurantId/reviews", "/seller/restaurants/:restaurantId/staff", "/seller/restaurants/:restaurantId/finance", "/seller/restaurants/:restaurantId/analytics", "/seller/restaurants/:restaurantId/history", "/rider/history", "/rider/earnings",
+    "/admin/delivery-operations",
+    "/seller/restaurants/:restaurantId/orders", "/seller/restaurants/:restaurantId/orders/:orderId", "/seller/restaurants/:restaurantId/dashboard", "/orders/:orderId/track", "/rider/dashboard", "/rider/offers", "/rider/deliveries", "/rider/deliveries/:deliveryId", "/rider/deliveries/:deliveryId/navigate", "/notifications",
     "/checkout", "/checkout/return", "/orders", "/orders/:orderId", "/admin/finance", "/admin/orders", "/admin/orders/:orderId", "/admin/refunds", "/admin/refunds/:refundId",
     "/login", "/signup", "/seller/login", "/seller/register", "/rider/login", "/rider/register", "/admin/login",
     "/workspaces", "/addresses", "/addresses/new", "/addresses/:addressId/edit", "/favorites", "/settings/sessions",
@@ -167,7 +172,7 @@ def build_openapi(endpoints):
         "AssistantConfirmation": obj({"confirmationToken": string(minLength=32, maxLength=2048)}),
     }
     details = {
-        ("post", "/cart/quote"): ("QuoteRequest", "Quote", "200"),
+        ("post", "/quotes"): ("QuoteRequest", "Quote", "200"),
         ("post", "/orders"): ("CreateOrderRequest", "OrderSummary", "201"),
         ("get", "/orders/:orderId"): (None, "OrderSummary", "200"),
         ("post", "/orders/:orderId/cancel"): ("CancelOrderRequest", "OrderSummary", "200"),
@@ -243,7 +248,7 @@ def build_openapi(endpoints):
     implemented = OUT / "platform.openapi.json"
     if implemented.exists():
         paths["/platform"] = json.loads(implemented.read_text(encoding="utf-8"))
-    for name in ["identity.openapi.json", "catalog.openapi.json", "commerce.openapi.json"]:
+    for name in ["identity.openapi.json", "catalog.openapi.json", "commerce.openapi.json", "fulfillment.openapi.json", "operations.openapi.json"]:
         implemented = OUT / name
         if implemented.exists():
             for path, methods in json.loads(implemented.read_text(encoding="utf-8")).items():
@@ -326,21 +331,25 @@ def build_sockets():
         "message.read": ("client-to-server", obj({"conversationId": ID, "lastReadMessageId": ID})),
         "system.resync-required": ("server-to-client", obj({"resourceType": string(enum=["order", "delivery", "notifications", "conversation"]), "resourceId": ID, "reason": REASON})),
     }
+    snapshot = json.loads((OUT / "fulfillment.openapi.json").read_text(encoding="utf-8"))["/orders/{orderId}/tracking"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["properties"]["data"]
+    payloads.update({"delivery:subscribe": ("client-to-server", obj({"orderId": ID})), "delivery:snapshot": ("server-to-client", snapshot), "delivery:forbidden": ("server-to-client", obj({"message": string()}))})
     variants = []
     for name, (direction, data) in payloads.items():
         schema = obj({"event": {"const": name}, "direction": {"const": direction}, "data": data})
         schema["title"] = name
+        schema["x-contract-status"] = "implementation-ready" if name.startswith("delivery:") else "planned"
+        schema["x-client-generation-ready"] = name.startswith("delivery:")
         schema["x-authorization"] = "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
         variants.append(schema)
     return {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "urn:cravecart:socket-events:v1", "oneOf": variants,
-            "description": "Logical event descriptors; Socket.IO sends event name separately from data. Client events use acknowledgement {ok:true,data} or {ok:false,error:{code,message,requestId,retryable}}. Business writes persist before fanout."}
+            "description": "Logical event descriptors; Socket.IO sends event name separately from data. Implemented delivery:subscribe acknowledges {subscribed:boolean}; other event names retain planned scope. Business writes persist before fanout."}
 
 
 def build_actions():
     block = TEXT.split("## 3. Critical button contracts", 1)[1].split("## 4.", 1)[0]
     mappings = {
         "Use my location": [("post", "/serviceability")], "Add dish": [("put", "/cart")],
-        "Replace cart": [("put", "/cart")], "Apply offer": [("post", "/cart/quote")],
+        "Replace cart": [("put", "/cart")], "Apply offer": [("post", "/quotes")],
         "Place and pay": [("post", "/orders"), ("post", "/payments/attempts")],
         "Payment return": [("get", "/payments/attempts/:attemptId"), ("post", "/payments/attempts/:attemptId/verify")],
         "Cancel order": [("get", "/orders/:orderId/cancellation-preview"), ("post", "/orders/:orderId/cancel")],

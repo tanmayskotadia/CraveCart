@@ -1,0 +1,22 @@
+import {z} from 'zod';
+export const assistantTopicSchema=z.enum(['payments','cancellation','tracking','account','availability','seller','rider','privacy','support']);
+export const assistantContentInputSchema=z.object({topic:assistantTopicSchema,question:z.string().trim().min(5).max(160),answer:z.string().trim().min(15).max(1800),href:z.string().max(200),audience:z.enum(['all','customer','seller','rider']),expiresAt:z.string().datetime()}).strict();
+export const assistantContentSchema=assistantContentInputSchema.extend({id:z.string().uuid(),version:z.number().int().positive(),status:z.enum(['DRAFT','PUBLISHED','ARCHIVED']),publishedAt:z.string().datetime().nullable(),source:z.literal('CraveCart approved help')}).strict();
+export const assistantContextSchema=z.object({city:z.string().max(60).optional(),orderId:z.string().uuid().optional()}).strict();
+export const assistantMessageInputSchema=z.object({text:z.string().trim().min(1).max(1500),expectedVersion:z.number().int().positive(),context:assistantContextSchema.default({})}).strict();
+export const assistantLinkSchema=z.object({label:z.string().max(100),href:z.string().max(300)}).strict();
+export const assistantMenuCardSchema=z.object({restaurantId:z.string().uuid(),itemId:z.string().uuid(),restaurantName:z.string(),name:z.string(),priceMinor:z.number().int().nonnegative(),href:z.string(),customizationRequired:z.boolean()}).strict();
+export const assistantReplySchema=z.object({kind:z.enum(['FAQ','MENU','ORDER','REFUND','HELP','SAFETY','DENIED','UNAVAILABLE']),text:z.string().max(5000),links:z.array(assistantLinkSchema).max(10),cards:z.array(assistantMenuCardSchema).max(10),sources:z.array(z.object({title:z.string(),href:z.string(),version:z.number().int().positive().nullable(),checkedAt:z.string().datetime()}).strict()).max(10),provider:z.enum(['builtin','openai-assisted','fallback'])}).strict();
+export const assistantTurnSchema=z.object({id:z.string().uuid(),question:z.string(),reply:assistantReplySchema,at:z.string().datetime()}).strict();
+export const assistantProposalInputSchema=z.object({restaurantId:z.string().uuid(),itemId:z.string().uuid(),quantity:z.number().int().min(1).max(10)}).strict();
+export const assistantActionSchema=z.object({id:z.string().uuid(),kind:z.enum(['cart','support']),summary:z.string(),expiresAt:z.string().datetime(),state:z.enum(['PROPOSED','EXECUTING','APPLIED','REJECTED']),confirmationToken:z.string(),resultHref:z.string().nullable()}).strict();
+export const assistantConversationSchema=z.object({id:z.string().uuid(),version:z.number().int().positive(),title:z.string(),createdAt:z.string().datetime(),updatedAt:z.string().datetime(),turns:z.array(assistantTurnSchema).max(50),actions:z.array(assistantActionSchema).max(30)}).strict();
+export type AssistantReply=z.infer<typeof assistantReplySchema>;
+export type AssistantTurn=z.infer<typeof assistantTurnSchema>;
+export type AssistantContent=z.infer<typeof assistantContentSchema>;
+export type AssistantAction=z.infer<typeof assistantActionSchema>;
+export type AssistantConversation=z.infer<typeof assistantConversationSchema>;
+export const assistantConfirmSchema=z.object({confirmationToken:z.string().min(32).max(128)}).strict();
+export const assistantHandoffSchema=z.object({subject:z.string().trim().min(5).max(120),category:z.enum(['order','payment','account','restaurant','delivery','other']),orderId:z.string().uuid().nullable(),text:z.string().trim().min(5).max(2000),consent:z.literal(true)}).strict();
+export const assistantCartCommandSchema=z.object({sessionId:z.string().uuid(),commandId:z.string().uuid(),expiresAt:z.string().datetime(),input:z.object({expectedVersion:z.number().int().nonnegative(),restaurantId:z.string().uuid(),addressId:z.string().uuid(),replace:z.literal(false),lines:z.array(z.object({itemId:z.string().uuid(),variantId:z.string().uuid().nullable(),optionIds:z.array(z.string().uuid()),quantity:z.number().int().min(1).max(20),instructions:z.string().max(200)}).strict()).min(1).max(20)}).strict(),expectedSubtotalMinor:z.number().int().nonnegative()}).strict();
+

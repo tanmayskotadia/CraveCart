@@ -22,7 +22,7 @@ const client = new MongoClient(
 );
 try {
   await client.connect();
-  const db = client.db('cravecart_auth');
+  const db = client.db(`${process.env.MONGO_DB_PREFIX ?? 'cravecart'}_auth`);
   await db.collection('users').createIndex({ contact: 1 }, { unique: true });
   const user = await db.collection('users').findOne({ contact });
   await db.collection('users').updateOne(
@@ -32,6 +32,14 @@ try {
         name,
         status: 'ACTIVE',
         permissions: [
+          'assistant:read','assistant:write',
+          'support:read',
+          'support:write',
+          'reports:read',
+          'promotions:read',
+          'promotions:write',
+          'staff:read',
+          'staff:write',
           'zones:read',
           'zones:write',
           'verifications:read',
@@ -39,6 +47,8 @@ try {
           'users:read',
           'users:write',
           'audit:read',
+          'dispatch:write',
+          'dispatch:read',
           'finance:read',
           'finance:write',
         ],

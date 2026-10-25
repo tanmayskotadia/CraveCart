@@ -2,17 +2,17 @@
 
 Executed locally on 25 October 2026 using `python scripts/validate_contracts.py`.
 
-Result: **PASS — 2180 structural/example/coverage checks.**
+Result: **PASS — 2392 structural/example/coverage checks.**
 
 ## Artifact counts
 
 | Artifact | Count |
 |---|---|
-| frontend routes | 91 |
-| HTTP operations | 211 |
-| critical HTTP schemas | 8 |
+| frontend routes | 94 |
+| HTTP operations | 246 |
+| critical HTTP schemas | 2 |
 | broker events | 38 |
-| socket events | 12 |
+| socket events | 15 |
 | critical CTAs | 19 |
 | traceability rows | 53 |
 

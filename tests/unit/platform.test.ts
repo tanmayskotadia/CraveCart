@@ -49,10 +49,15 @@ describe('service HTTP contract', () => {
     expect(response.body.error).not.toHaveProperty('stack');
   });
   it('forwards correlation and returns a structured dependency outage at the gateway', async () => {
+    vi.stubEnv('ADMIN_URL', '');
+    vi.stubEnv('ADMIN_HOSTPORT', 'cravecart-admin-private:10000');
     const fetcher = vi.fn<typeof fetch>().mockRejectedValue(new Error('amqp://secret@host'));
     const gateway = createApp({ name: 'gateway', config, resources, fetcher });
     const response = await request(gateway).get('/api/v1/platform');
     expect(response.status).toBe(503);
+    expect(String(fetcher.mock.calls[0]?.[0])).toBe(
+      'http://cravecart-admin-private:10000/api/v1/platform',
+    );
     expect(JSON.stringify(response.body)).not.toContain('secret@host');
     expect(fetcher.mock.calls[0]?.[1]?.headers).toHaveProperty(
       'x-request-id',
@@ -91,6 +96,7 @@ describe('safety and ownership', () => {
         INTERNAL_TOKEN: 'x'.repeat(40),
         METRICS_TOKEN: 'y'.repeat(40),
         UPLOAD_SCAN_MODE: 'clamav',
+        UPLOAD_DIRECTORY: '/var/lib/cravecart/uploads',
         AUTH_SECRET: 'a'.repeat(40),
         AUTH_ENCRYPTION_KEY: 'b'.repeat(40),
         UPLOAD_ENCRYPTION_KEY: 'c'.repeat(40),

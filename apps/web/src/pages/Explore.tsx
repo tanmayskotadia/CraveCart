@@ -36,15 +36,40 @@ export function Explore() {
         <span>/</span>
         <span>{city.name}</span>
       </nav>
-      <div className="explore-heading">
-        <p className="eyebrow">{city.state}, India</p>
-        <h1>
-          {query ? `${query} in ${city.name}` : `Hello, ${city.name}.`}
-          <span>What are you craving?</span>
-        </h1>
-        <p>A city full of flavour. Let’s find your next favourite.</p>
+      <div className="discovery-intro">
+        <div>
+          <p className="eyebrow">{city.state}, India</p>
+          <h1>
+            {query ? `${query} in ${city.name}` : `Hello, ${city.name}.`}
+            <span className="sr-only"> What are you craving?</span>
+          </h1>
+          <p>Discover food from kitchens near you.</p>
+        </div>
+        <SearchBar key={city.slug + query} initialQuery={query} />
       </div>
-      <SearchBar key={city.slug + query} initialQuery={query} />
+      <nav className="delivery-tabs" aria-label="Food discovery">
+        <span className="active">Food delivery</span>
+        <Link to="/orders">Your orders</Link>
+        <Link to="/favorites">Favourites</Link>
+      </nav>
+      <section className="inspiration-band">
+        <h2>Inspiration for your next order</h2>
+        <div className="cuisine-circles">
+          {[
+            ['Biryani', 'biryani', 'Biryani'],
+            ['South Indian', 'indian-feast', 'South Indian'],
+            ['Pizza', 'pizza', 'Pizza'],
+            ['Meals', 'indian-feast', 'Meals'],
+            ['North Indian', 'indian-feast', 'North Indian'],
+            ['Rice bowls', 'biryani', 'Rice'],
+          ].map(([label, image, term]) => (
+            <Link key={label} to={`/search?${new URLSearchParams({ city: city.slug, q: term! })}`}>
+              <img src={`/images/${image}.webp`} alt="" width={115} height={115} />
+              <span>{label}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
       <Suspense fallback={<p role="status">Loading restaurants…</p>}>
         <RestaurantResults city={city.slug} />
       </Suspense>
@@ -53,10 +78,10 @@ export function Explore() {
           <Icon name="pin" size={24} />
         </span>
         <div>
-          <h2>Find your next favourite.</h2>
+          <h2>Choose a delivery address.</h2>
           <p>
-            Browse menus and build your cart in configured areas. Checkout shows the payment
-            environment clearly; test orders do not dispatch a delivery.
+            Availability depends on your exact address and the restaurant’s delivery area. Checkout
+            clearly identifies sandbox payments before you place an order.
           </p>
         </div>
       </div>

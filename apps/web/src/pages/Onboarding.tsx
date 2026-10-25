@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { cityDirectory, type Application, type ApplicationProfile } from '@cravecart/contracts';
 import { api } from '../api';
@@ -13,6 +13,8 @@ interface FileEntry {
   status: string;
 }
 export function OnboardingPage({ kind }: { kind: Kind }) {
+  const [search, setSearch] = useSearchParams();
+  const newBranch = kind === 'seller' && search.get('new') === '1';
   const { session } = useSession();
   const base = kind === 'seller' ? '/seller/applications' : '/rider/application';
   const query = useQuery({
@@ -37,10 +39,13 @@ export function OnboardingPage({ kind }: { kind: Kind }) {
     );
   return (
     <ApplicationForm
-      key={`${kind}:${query.data?.[0]?.id ?? 'new'}`}
+      key={`${kind}:${newBranch ? 'new-branch' : (query.data?.[0]?.id ?? 'new')}`}
       kind={kind}
-      application={query.data?.[0]}
+      application={newBranch ? undefined : query.data?.[0]}
       refresh={query.refetch}
+      onSaved={() => {
+        if (newBranch) setSearch({}, { replace: true });
+      }}
     />
   );
 }
@@ -48,10 +53,12 @@ function ApplicationForm({
   kind,
   application,
   refresh,
+  onSaved,
 }: {
   kind: Kind;
   application: Application | undefined;
   refresh: () => Promise<unknown>;
+  onSaved?: () => void;
 }) {
   const { session, reload } = useSession();
   const client = useQueryClient();
@@ -169,6 +176,7 @@ function ApplicationForm({
           body: { expectedVersion: value.version },
           headers: { 'Idempotency-Key': crypto.randomUUID() },
         });
+      onSaved?.();
       setLoadedVersion(value.version);
       client.setQueryData(['application', kind, session?.principal.userId], [value]);
       setNotice(
@@ -472,6 +480,7 @@ export function SellerWorkspace() {
           city: string;
           verification: string;
           orderingEnabled: boolean;
+          access?: 'owner' | 'manager' | 'kitchen';
         }>
       >('/seller/restaurants'),
   });
@@ -481,6 +490,11 @@ export function SellerWorkspace() {
       title="Your restaurants"
       description="Verified businesses attached to your account."
     >
+      <p>
+        <Link className="red-button" to="/seller/onboarding?new=1">
+          Add a restaurant
+        </Link>
+      </p>
       <ErrorNotice error={query.error} />
       {query.isPending ? (
         <p role="status">Loading restaurants…</p>
@@ -491,16 +505,58 @@ export function SellerWorkspace() {
             <h2>{restaurant.name}</h2>
             <p className="panel-description">{restaurant.city}</p>
             <p>
-              Manage your restaurant, opening hours, menu and offers. Ordering is currently
-              disabled.
+              Manage your restaurant, publish dishes, and follow each paid order through kitchen
+              preparation and rider handover.
             </p>
             <div className="button-row">
-              <Link className="red-button" to={`/seller/restaurants/${restaurant.id}/menu`}>
-                Manage menu
+              <Link className="red-button" to={`/seller/restaurants/${restaurant.id}/orders`}>
+                Incoming orders
               </Link>
-              <Link className="outline-button" to={`/seller/restaurants/${restaurant.id}/profile`}>
-                Restaurant details
+              {restaurant.access !== 'kitchen' && (
+                <>
+                  <Link className="outline-button" to={`/seller/restaurants/${restaurant.id}/menu`}>
+                    Manage menu
+                  </Link>
+                  <Link
+                    className="outline-button"
+                    to={`/seller/restaurants/${restaurant.id}/profile`}
+                  >
+                    Restaurant details
+                  </Link>
+                </>
+              )}
+              <Link className="outline-button" to={`/seller/restaurants/${restaurant.id}/history`}>
+                Order history
               </Link>
+              {restaurant.access !== 'kitchen' && (
+                <Link
+                  className="outline-button"
+                  to={`/seller/restaurants/${restaurant.id}/analytics`}
+                >
+                  Analytics
+                </Link>
+              )}
+              {(!restaurant.access || restaurant.access === 'owner') && (
+                <Link
+                  className="outline-button"
+                  to={`/seller/restaurants/${restaurant.id}/finance`}
+                >
+                  Financial records
+                </Link>
+              )}
+              {restaurant.access !== 'kitchen' && (
+                <Link
+                  className="outline-button"
+                  to={`/seller/restaurants/${restaurant.id}/reviews`}
+                >
+                  Reviews
+                </Link>
+              )}
+              {(!restaurant.access || restaurant.access === 'owner') && (
+                <Link className="outline-button" to={`/seller/restaurants/${restaurant.id}/staff`}>
+                  Team access
+                </Link>
+              )}
             </div>
           </div>
         ))

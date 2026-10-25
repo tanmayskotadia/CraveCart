@@ -262,7 +262,7 @@ add(
     total: z.number().int().nonnegative(),
     page: version,
     pageSize: z.literal(12),
-    orderingEnabled: z.literal(false),
+    orderingEnabled: z.boolean(),
   }),
   undefined,
   {

@@ -578,6 +578,13 @@
                         "enum": [
                           "PAYMENT_PENDING",
                           "PLACED",
+                          "ACCEPTED",
+                          "PREPARING",
+                          "READY_FOR_PICKUP",
+                          "PICKED_UP",
+                          "OUT_FOR_DELIVERY",
+                          "DELIVERED",
+                          "REJECTED",
                           "CANCELLED",
                           "EXPIRED"
                         ]
@@ -1145,6 +1152,13 @@
                           "enum": [
                             "PAYMENT_PENDING",
                             "PLACED",
+                            "ACCEPTED",
+                            "PREPARING",
+                            "READY_FOR_PICKUP",
+                            "PICKED_UP",
+                            "OUT_FOR_DELIVERY",
+                            "DELIVERED",
+                            "REJECTED",
                             "CANCELLED",
                             "EXPIRED"
                           ]
@@ -1723,6 +1737,13 @@
                         "enum": [
                           "PAYMENT_PENDING",
                           "PLACED",
+                          "ACCEPTED",
+                          "PREPARING",
+                          "READY_FOR_PICKUP",
+                          "PICKED_UP",
+                          "OUT_FOR_DELIVERY",
+                          "DELIVERED",
+                          "REJECTED",
                           "CANCELLED",
                           "EXPIRED"
                         ]
@@ -2489,6 +2510,13 @@
                         "enum": [
                           "PAYMENT_PENDING",
                           "PLACED",
+                          "ACCEPTED",
+                          "PREPARING",
+                          "READY_FOR_PICKUP",
+                          "PICKED_UP",
+                          "OUT_FOR_DELIVERY",
+                          "DELIVERED",
+                          "REJECTED",
                           "CANCELLED",
                           "EXPIRED"
                         ]
@@ -4618,6 +4646,13 @@
                           "enum": [
                             "PAYMENT_PENDING",
                             "PLACED",
+                            "ACCEPTED",
+                            "PREPARING",
+                            "READY_FOR_PICKUP",
+                            "PICKED_UP",
+                            "OUT_FOR_DELIVERY",
+                            "DELIVERED",
+                            "REJECTED",
                             "CANCELLED",
                             "EXPIRED"
                           ]
@@ -5196,6 +5231,13 @@
                         "enum": [
                           "PAYMENT_PENDING",
                           "PLACED",
+                          "ACCEPTED",
+                          "PREPARING",
+                          "READY_FOR_PICKUP",
+                          "PICKED_UP",
+                          "OUT_FOR_DELIVERY",
+                          "DELIVERED",
+                          "REJECTED",
                           "CANCELLED",
                           "EXPIRED"
                         ]
@@ -5842,6 +5884,13 @@
                             "enum": [
                               "PAYMENT_PENDING",
                               "PLACED",
+                              "ACCEPTED",
+                              "PREPARING",
+                              "READY_FOR_PICKUP",
+                              "PICKED_UP",
+                              "OUT_FOR_DELIVERY",
+                              "DELIVERED",
+                              "REJECTED",
                               "CANCELLED",
                               "EXPIRED"
                             ]

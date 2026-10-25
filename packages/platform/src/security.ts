@@ -50,6 +50,7 @@ export interface DomainContext {
     events: string[],
     handler: (event: DomainEvent, session: ClientSession) => Promise<void>,
   ) => void;
+  onSocket?: (setup: (server: import('socket.io').Server) => void) => void;
   onClose?: (fn: () => Promise<void>) => void;
 }
 const defaults = {
@@ -61,7 +62,16 @@ const defaults = {
   utils: 4006,
 };
 export function upstream(service: ServiceName) {
-  return process.env[`${service.toUpperCase()}_URL`] ?? `http://127.0.0.1:${defaults[service]}`;
+  const explicit = process.env[`${service.toUpperCase()}_URL`];
+  if (explicit) return explicit;
+  const host = process.env[`${service.toUpperCase()}_HOSTPORT`];
+  if (host) {
+    if (!/^[a-zA-Z0-9.-]+:[0-9]{1,5}$/.test(host))
+      throw new Error('Invalid private service address');
+    return `http://${host}`;
+  }
+  if (process.env.NODE_ENV === 'production') throw new Error('Missing production upstream');
+  return `http://127.0.0.1:${defaults[service]}`;
 }
 export function cookieNames(config: Config) {
   return config.NODE_ENV === 'production'

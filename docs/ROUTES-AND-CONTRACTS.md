@@ -88,6 +88,7 @@ Seller operational pages use `restaurantId` explicitly; `/seller` redirects to o
 | `/rider/onboarding` | Identity, vehicle, documents, review status |
 | `/rider/dashboard` | Availability, permission health, current delivery |
 | `/rider/offers` | Expiring offers; accept/decline |
+| `/rider/deliveries` | Own active and past delivery tasks |
 | `/rider/deliveries/:deliveryId` | Authoritative delivery steps, OTP, incidents |
 | `/rider/deliveries/:deliveryId/navigate` | Pickup/drop map and external navigation launch |
 | `/rider/history` | Completed/failed delivery history |
@@ -112,11 +113,13 @@ Seller operational pages use `restaurantId` explicitly; `/seller` redirects to o
 | `/admin/orders/:orderId` | Timeline, assignment, escalation and policy-approved intervention |
 | `/admin/support` | Ticket queue and SLA filters |
 | `/admin/support/:ticketId` | Agent messages, assignment and resolution |
+| `/admin/delivery-operations` | Active tasks, pending confirmations and incidents; dispatch permission |
 | `/admin/finance` | Admin finance permission | Ledger, provider reconciliation and pricing policy |
 | `/admin/refunds` | Requests, approvals, execution failures; finance grants |
 | `/admin/refunds/:refundId` | Evidence, separate approval/execution audit |
 | `/admin/settlements` | Statements and payout reconciliation |
 | `/admin/promotions` | Versioned coupons/campaigns |
+| `/admin/reviews` | Delivered-order review moderation and reports |
 | `/admin/zones` | Service polygons and operating settings |
 | `/admin/reports` | Defined metrics and audited exports |
 | `/admin/settings` | Fee/policy/feature configuration; configuration-write |
@@ -399,6 +402,16 @@ Requested vs applied events must remain distinct. A rider completion request can
 - One-use handshake ticket in the auth payload; not a long-lived JWT query parameter. Validate Origin, expiry, active session and role.
 - Server authorizes joins to `user:{id}`, `restaurant:{id}`, `rider:{id}`, `order:{id}` and administrative rooms. Never accept arbitrary client room names.
 - Revalidate grants on reconnect and sensitive room joins; revoke subscriptions on account suspension, cancellation, assignment change and completion.
+
+Implemented hosted protocol: `delivery:subscribe` accepts `{orderId}` and acknowledges `{subscribed:boolean}`. Authorized connections receive `delivery:snapshot` using the shared fulfillment snapshot schema, or `delivery:forbidden` with a safe message. One-use tickets come from `POST /realtime/tickets`. Order entitlement and active session are rechecked every three seconds; reconnect mints a new ticket and refetches. Rider GPS uses authenticated HTTP `POST /rider/location`. The event table below remains planned scope for future broadcast/message protocols; those event names are not advertised as implemented.
+
+| Direction | Event | Contract |
+|---|---|---|
+| Client → server | `delivery:subscribe` | `{orderId}`; authorize and acknowledge `{subscribed:boolean}` |
+| Server → client | `delivery:snapshot` | Shared current fulfillment snapshot, monotonic order version and current authorized location |
+| Server → client | `delivery:forbidden` | `{message}`; safe denial and client refetch |
+
+Planned broadcast/message contracts:
 
 | Direction | Event | Contract |
 |---|---|---|

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useCity } from './CityProvider';
 import { useQuery } from '@tanstack/react-query';
 import { sessionResponseSchema, type SessionResponse } from '@cravecart/contracts';
 import { api } from '../api';
@@ -47,6 +48,7 @@ export function AuthModal() {
     [completed, setCompleted] = useState<SessionResponse>(),
     [resendAt, setResendAt] = useState(0),
     [seconds, setSeconds] = useState(0);
+  const { city } = useCity();
   const capabilities = useQuery({
     queryKey: ['auth-capabilities'],
     queryFn: () => api<{ methods: string[]; developmentDelivery: boolean }>('/auth/capabilities'),
@@ -81,8 +83,19 @@ export function AuthModal() {
             ? '/rider/dashboard'
             : '/rider/onboarding'
           : workspace === 'admin'
-            ? '/admin/dashboard'
-            : (safeReturnPath(state?.from, roles) ?? '/profile'));
+            ? session.principal.permissions.includes('verifications:read')
+              ? '/admin/dashboard'
+              : session.principal.permissions.includes('support:read')
+                ? '/admin/support'
+                : session.principal.permissions.includes('reports:read')
+                  ? '/admin/reports'
+                  : session.principal.permissions.includes('finance:read')
+                    ? '/admin/finance'
+                    : session.principal.permissions.includes('audit:read')
+                      ? '/admin/audit'
+                      : '/admin/delivery-operations'
+            : ((state?.from && state.from !== '/' ? safeReturnPath(state.from, roles) : null) ??
+              `/search?city=${city?.slug ?? 'chennai'}`));
     navigate(destination, { replace: true });
   }
   async function requestCode() {

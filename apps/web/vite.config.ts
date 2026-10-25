@@ -6,9 +6,13 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    proxy: { '/api': 'http://127.0.0.1:4000' },
+    proxy: { '/api': process.env.DEV_GATEWAY_ORIGIN ?? 'http://127.0.0.1:4000' },
     fs: { deny: ['.env', '.env.*', '*.{crt,pem}', '**/.git/**', '**/.local/**'] },
   },
-  preview: { port: 4173, strictPort: true },
+  preview: {
+    port: 4173,
+    strictPort: true,
+    proxy: { '/api': process.env.DEV_GATEWAY_ORIGIN ?? 'http://127.0.0.1:4000' },
+  },
   build: { sourcemap: false },
 });

@@ -3,6 +3,7 @@ export { cityDirectory, findCity, nationalMarket, type DiscoveryCity } from './m
 export * from './identity.js';
 export * from './catalog.js';
 export * from './commerce.js';
+export * from './fulfillment.js';
 
 export const serviceNames = ['auth', 'restaurant', 'rider', 'admin', 'realtime', 'utils'] as const;
 export type ServiceName = (typeof serviceNames)[number];
@@ -77,3 +78,5 @@ export type DomainEvent = z.infer<typeof domainEventSchema>;
 export function isRequestId(value: unknown): value is string {
   return z.string().uuid().safeParse(value).success;
 }
+export * from './operations.js';
+export * from './assistant.js';

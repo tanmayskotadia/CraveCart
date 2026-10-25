@@ -63,7 +63,23 @@ export function installApplications(app: Express, ctx: DomainContext) {
   const applications = db.collection<ApplicationRecord>('applications');
   const base = kind === 'seller' ? '/api/v1/seller/applications' : '/api/v1/rider/application';
   const ready = lazyIndexes(async () => {
-    await applications.createIndex({ userId: 1 }, { unique: true });
+    const oldIndex = (
+      await applications
+        .listIndexes()
+        .toArray()
+        .catch(() => [])
+    ).find((index) => index.name === 'userId_1' && index.unique);
+    if (oldIndex) await applications.dropIndex('userId_1');
+    await applications.createIndex(
+      { userId: 1 },
+      {
+        unique: true,
+        name: 'one_open_application_per_seller',
+        partialFilterExpression: {
+          status: { $in: ['DRAFT', 'SUBMITTED', 'CHANGES_REQUESTED', 'REJECTED'] },
+        },
+      },
+    );
     await applications.createIndex({ status: 1, updatedAt: -1 });
     await db.collection('internal_nonces').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
   });
@@ -79,7 +95,12 @@ export function installApplications(app: Express, ctx: DomainContext) {
   router.get('/', remoteSession(ctx), async (_req, res) =>
     json(
       res,
-      (await applications.find({ userId: currentPrincipal(res).userId }).toArray()).map(present),
+      (
+        await applications
+          .find({ userId: currentPrincipal(res).userId })
+          .sort({ createdAt: -1 })
+          .toArray()
+      ).map(present),
     ),
   );
   router.post('/', remoteSession(ctx, { mutation: true }), async (req, res) => {
@@ -87,7 +108,7 @@ export function installApplications(app: Express, ctx: DomainContext) {
     if (!findCity(body.profile.city))
       throw new HttpError(422, 'INVALID_CITY', 'Choose a supported discovery city');
     const userId = currentPrincipal(res).userId;
-    if (await applications.findOne({ userId }))
+    if (await applications.findOne({ userId, status: { $ne: 'APPROVED' } }))
       throw new HttpError(409, 'APPLICATION_EXISTS', 'Continue your existing application');
     const now = new Date().toISOString();
     const record: ApplicationRecord = {

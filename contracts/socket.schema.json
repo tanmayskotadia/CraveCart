@@ -40,6 +40,8 @@
       ],
       "additionalProperties": false,
       "title": "order.subscribe",
+      "x-contract-status": "planned",
+      "x-client-generation-ready": false,
       "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
     },
     {
@@ -74,6 +76,8 @@
       ],
       "additionalProperties": false,
       "title": "order.unsubscribe",
+      "x-contract-status": "planned",
+      "x-client-generation-ready": false,
       "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
     },
     {
@@ -135,6 +139,8 @@
       ],
       "additionalProperties": false,
       "title": "rider.location.update",
+      "x-contract-status": "planned",
+      "x-client-generation-ready": false,
       "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
     },
     {
@@ -204,6 +210,8 @@
       ],
       "additionalProperties": false,
       "title": "order.status.updated",
+      "x-contract-status": "planned",
+      "x-client-generation-ready": false,
       "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
     },
     {
@@ -277,6 +285,8 @@
       ],
       "additionalProperties": false,
       "title": "rider.location.updated",
+      "x-contract-status": "planned",
+      "x-client-generation-ready": false,
       "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
     },
     {
@@ -336,6 +346,8 @@
       ],
       "additionalProperties": false,
       "title": "delivery.offer.created",
+      "x-contract-status": "planned",
+      "x-client-generation-ready": false,
       "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
     },
     {
@@ -376,6 +388,8 @@
       ],
       "additionalProperties": false,
       "title": "delivery.offer.withdrawn",
+      "x-contract-status": "planned",
+      "x-client-generation-ready": false,
       "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
     },
     {
@@ -427,6 +441,8 @@
       ],
       "additionalProperties": false,
       "title": "delivery.assignment.updated",
+      "x-contract-status": "planned",
+      "x-client-generation-ready": false,
       "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
     },
     {
@@ -481,6 +497,8 @@
       ],
       "additionalProperties": false,
       "title": "notification.created",
+      "x-contract-status": "planned",
+      "x-client-generation-ready": false,
       "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
     },
     {
@@ -538,6 +556,8 @@
       ],
       "additionalProperties": false,
       "title": "message.created",
+      "x-contract-status": "planned",
+      "x-client-generation-ready": false,
       "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
     },
     {
@@ -579,6 +599,8 @@
       ],
       "additionalProperties": false,
       "title": "message.read",
+      "x-contract-status": "planned",
+      "x-client-generation-ready": false,
       "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
     },
     {
@@ -629,8 +651,485 @@
       ],
       "additionalProperties": false,
       "title": "system.resync-required",
+      "x-contract-status": "planned",
+      "x-client-generation-ready": false,
+      "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "delivery:subscribe"
+        },
+        "direction": {
+          "const": "client-to-server"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "minLength": 6,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          },
+          "required": [
+            "orderId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "event",
+        "direction",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "delivery:subscribe",
+      "x-contract-status": "implementation-ready",
+      "x-client-generation-ready": true,
+      "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "delivery:snapshot"
+        },
+        "direction": {
+          "const": "server-to-client"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "disabled",
+                "development",
+                "test",
+                "live"
+              ]
+            },
+            "orderId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "number": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "PAYMENT_PENDING",
+                "PLACED",
+                "ACCEPTED",
+                "PREPARING",
+                "READY_FOR_PICKUP",
+                "PICKED_UP",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED",
+                "REJECTED",
+                "CANCELLED",
+                "EXPIRED"
+              ]
+            },
+            "paymentState": {
+              "type": "string",
+              "enum": [
+                "UNPAID",
+                "CAPTURED",
+                "REFUND_PENDING",
+                "PARTIALLY_REFUNDED",
+                "REFUNDED"
+              ]
+            },
+            "restaurantId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "restaurantName": {
+              "type": "string"
+            },
+            "pickup": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "type": "string"
+                },
+                "point": {
+                  "type": "object",
+                  "properties": {
+                    "latitude": {
+                      "type": "number",
+                      "minimum": 6,
+                      "maximum": 38
+                    },
+                    "longitude": {
+                      "type": "number",
+                      "minimum": 68,
+                      "maximum": 98
+                    }
+                  },
+                  "required": [
+                    "latitude",
+                    "longitude"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "address",
+                "point"
+              ],
+              "additionalProperties": false
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "selection": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "quantity",
+                  "selection"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "preparationMinutes": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "acceptedAt": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "readyAt": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "deliveredAt": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "assignment": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "riderId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "riderName": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "assignedAt": {
+                      "type": "string"
+                    },
+                    "arrived": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "riderId",
+                    "riderName",
+                    "version",
+                    "assignedAt",
+                    "arrived"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "dispatchState": {
+              "type": "string",
+              "enum": [
+                "WAITING",
+                "SEARCHING",
+                "ASSIGNED",
+                "NO_RIDER",
+                "CLOSED"
+              ]
+            },
+            "pickupCode": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "deliveryCode": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "proofExpiresAt": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "dropoff": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "street": {
+                      "type": "string"
+                    },
+                    "apartment": {
+                      "type": "string"
+                    },
+                    "landmark": {
+                      "type": "string"
+                    },
+                    "instructions": {
+                      "type": "string"
+                    },
+                    "recipient": {
+                      "type": "string"
+                    },
+                    "phone": {
+                      "type": "string"
+                    },
+                    "point": {
+                      "type": "object",
+                      "properties": {
+                        "latitude": {
+                          "type": "number",
+                          "minimum": 6,
+                          "maximum": 38
+                        },
+                        "longitude": {
+                          "type": "number",
+                          "minimum": 68,
+                          "maximum": 98
+                        }
+                      },
+                      "required": [
+                        "latitude",
+                        "longitude"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "street",
+                    "apartment",
+                    "landmark",
+                    "instructions",
+                    "recipient",
+                    "phone",
+                    "point"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "latestLocation": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "point": {
+                      "type": "object",
+                      "properties": {
+                        "latitude": {
+                          "type": "number",
+                          "minimum": 6,
+                          "maximum": 38
+                        },
+                        "longitude": {
+                          "type": "number",
+                          "minimum": 68,
+                          "maximum": 98
+                        }
+                      },
+                      "required": [
+                        "latitude",
+                        "longitude"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "accuracy": {
+                      "type": "number"
+                    },
+                    "capturedAt": {
+                      "type": "string"
+                    },
+                    "receivedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "point",
+                    "accuracy",
+                    "capturedAt",
+                    "receivedAt"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "trackingStale": {
+              "type": "boolean"
+            },
+            "timeline": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "at": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "at",
+                  "status",
+                  "message"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "mode",
+            "orderId",
+            "number",
+            "version",
+            "status",
+            "paymentState",
+            "restaurantId",
+            "restaurantName",
+            "pickup",
+            "items",
+            "preparationMinutes",
+            "acceptedAt",
+            "readyAt",
+            "deliveredAt",
+            "assignment",
+            "dispatchState",
+            "pickupCode",
+            "deliveryCode",
+            "proofExpiresAt",
+            "dropoff",
+            "latestLocation",
+            "trackingStale",
+            "timeline"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "event",
+        "direction",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "delivery:snapshot",
+      "x-contract-status": "implementation-ready",
+      "x-client-generation-ready": true,
+      "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {
+          "const": "delivery:forbidden"
+        },
+        "direction": {
+          "const": "server-to-client"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "event",
+        "direction",
+        "data"
+      ],
+      "additionalProperties": false,
+      "title": "delivery:forbidden",
+      "x-contract-status": "implementation-ready",
+      "x-client-generation-ready": true,
       "x-authorization": "Validate session and resource entitlement; never accept client-selected room names. Location requires active rider assignment."
     }
   ],
-  "description": "Logical event descriptors; Socket.IO sends event name separately from data. Client events use acknowledgement {ok:true,data} or {ok:false,error:{code,message,requestId,retryable}}. Business writes persist before fanout."
+  "description": "Logical event descriptors; Socket.IO sends event name separately from data. Implemented delivery:subscribe acknowledges {subscribed:boolean}; other event names retain planned scope. Business writes persist before fanout."
 }

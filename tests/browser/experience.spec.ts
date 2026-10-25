@@ -75,9 +75,7 @@ test('city search changes location, survives reload, and never claims live deliv
   await dialog.getByRole('button', { name: 'Hyderabad Telangana' }).click();
   await expect(page).toHaveURL(/city=hyderabad/);
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Hello, Hyderabad.');
-  await expect(page.locator('.service-notice')).toContainText(
-    'test orders do not dispatch a delivery',
-  );
+  await expect(page.locator('.service-notice')).toContainText('Choose a delivery address');
   await page.reload();
   await expect(
     page.getByRole('button', { name: 'Change city, currently Hyderabad' }),

@@ -1,0 +1,437 @@
+# Review compute/storage charges before applying this Blueprint. No development adapters or seeds.
+services:
+  - type: web
+    name: cravecart-gateway
+    runtime: docker
+    region: singapore
+    plan: 0.5c-512mb
+    dockerfilePath: ./infra/docker/Dockerfile
+    dockerContext: .
+    dockerCommand: node apps/gateway/dist/index.js
+    numInstances: 1
+    healthCheckPath: /health/live
+    envVars:
+      - fromGroup: cravecart-hosted
+      - key: CLAMD_HOST
+        fromService:
+          name: cravecart-scanner
+          type: pserv
+          property: host
+      - key: SERVICE_NAME
+        value: gateway
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      - key: AUTH_HOSTPORT
+        fromService:
+          name: cravecart-auth
+          type: pserv
+          property: hostport
+      - key: RESTAURANT_HOSTPORT
+        fromService:
+          name: cravecart-restaurant
+          type: pserv
+          property: hostport
+      - key: RIDER_HOSTPORT
+        fromService:
+          name: cravecart-rider
+          type: pserv
+          property: hostport
+      - key: ADMIN_HOSTPORT
+        fromService:
+          name: cravecart-admin
+          type: pserv
+          property: hostport
+      - key: REALTIME_HOSTPORT
+        fromService:
+          name: cravecart-realtime
+          type: web
+          property: hostport
+      - key: UTILS_HOSTPORT
+        fromService:
+          name: cravecart-utils
+          type: pserv
+          property: hostport
+  - type: pserv
+    name: cravecart-auth
+    runtime: docker
+    region: singapore
+    plan: 0.5c-512mb
+    dockerfilePath: ./infra/docker/Dockerfile
+    dockerContext: .
+    dockerCommand: node services/auth/dist/index.js
+    numInstances: 1
+    healthCheckPath: /health/live
+    envVars:
+      - fromGroup: cravecart-hosted
+      - key: CLAMD_HOST
+        fromService:
+          name: cravecart-scanner
+          type: pserv
+          property: host
+      - key: SERVICE_NAME
+        value: auth
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      - key: AUTH_HOSTPORT
+        fromService:
+          name: cravecart-auth
+          type: pserv
+          property: hostport
+      - key: RESTAURANT_HOSTPORT
+        fromService:
+          name: cravecart-restaurant
+          type: pserv
+          property: hostport
+      - key: RIDER_HOSTPORT
+        fromService:
+          name: cravecart-rider
+          type: pserv
+          property: hostport
+      - key: ADMIN_HOSTPORT
+        fromService:
+          name: cravecart-admin
+          type: pserv
+          property: hostport
+      - key: REALTIME_HOSTPORT
+        fromService:
+          name: cravecart-realtime
+          type: web
+          property: hostport
+      - key: UTILS_HOSTPORT
+        fromService:
+          name: cravecart-utils
+          type: pserv
+          property: hostport
+  - type: pserv
+    name: cravecart-restaurant
+    runtime: docker
+    region: singapore
+    plan: 0.5c-512mb
+    dockerfilePath: ./infra/docker/Dockerfile
+    dockerContext: .
+    dockerCommand: node services/restaurant/dist/index.js
+    numInstances: 1
+    healthCheckPath: /health/live
+    envVars:
+      - fromGroup: cravecart-hosted
+      - key: CLAMD_HOST
+        fromService:
+          name: cravecart-scanner
+          type: pserv
+          property: host
+      - key: SERVICE_NAME
+        value: restaurant
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      - key: AUTH_HOSTPORT
+        fromService:
+          name: cravecart-auth
+          type: pserv
+          property: hostport
+      - key: RESTAURANT_HOSTPORT
+        fromService:
+          name: cravecart-restaurant
+          type: pserv
+          property: hostport
+      - key: RIDER_HOSTPORT
+        fromService:
+          name: cravecart-rider
+          type: pserv
+          property: hostport
+      - key: ADMIN_HOSTPORT
+        fromService:
+          name: cravecart-admin
+          type: pserv
+          property: hostport
+      - key: REALTIME_HOSTPORT
+        fromService:
+          name: cravecart-realtime
+          type: web
+          property: hostport
+      - key: UTILS_HOSTPORT
+        fromService:
+          name: cravecart-utils
+          type: pserv
+          property: hostport
+  - type: pserv
+    name: cravecart-rider
+    runtime: docker
+    region: singapore
+    plan: 0.5c-512mb
+    dockerfilePath: ./infra/docker/Dockerfile
+    dockerContext: .
+    dockerCommand: node services/rider/dist/index.js
+    numInstances: 1
+    healthCheckPath: /health/live
+    envVars:
+      - fromGroup: cravecart-hosted
+      - key: CLAMD_HOST
+        fromService:
+          name: cravecart-scanner
+          type: pserv
+          property: host
+      - key: SERVICE_NAME
+        value: rider
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      - key: AUTH_HOSTPORT
+        fromService:
+          name: cravecart-auth
+          type: pserv
+          property: hostport
+      - key: RESTAURANT_HOSTPORT
+        fromService:
+          name: cravecart-restaurant
+          type: pserv
+          property: hostport
+      - key: RIDER_HOSTPORT
+        fromService:
+          name: cravecart-rider
+          type: pserv
+          property: hostport
+      - key: ADMIN_HOSTPORT
+        fromService:
+          name: cravecart-admin
+          type: pserv
+          property: hostport
+      - key: REALTIME_HOSTPORT
+        fromService:
+          name: cravecart-realtime
+          type: web
+          property: hostport
+      - key: UTILS_HOSTPORT
+        fromService:
+          name: cravecart-utils
+          type: pserv
+          property: hostport
+  - type: pserv
+    name: cravecart-admin
+    runtime: docker
+    region: singapore
+    plan: 0.5c-512mb
+    dockerfilePath: ./infra/docker/Dockerfile
+    dockerContext: .
+    dockerCommand: node services/admin/dist/index.js
+    numInstances: 1
+    healthCheckPath: /health/live
+    envVars:
+      - fromGroup: cravecart-hosted
+      - key: CLAMD_HOST
+        fromService:
+          name: cravecart-scanner
+          type: pserv
+          property: host
+      - key: SERVICE_NAME
+        value: admin
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      - key: AUTH_HOSTPORT
+        fromService:
+          name: cravecart-auth
+          type: pserv
+          property: hostport
+      - key: RESTAURANT_HOSTPORT
+        fromService:
+          name: cravecart-restaurant
+          type: pserv
+          property: hostport
+      - key: RIDER_HOSTPORT
+        fromService:
+          name: cravecart-rider
+          type: pserv
+          property: hostport
+      - key: ADMIN_HOSTPORT
+        fromService:
+          name: cravecart-admin
+          type: pserv
+          property: hostport
+      - key: REALTIME_HOSTPORT
+        fromService:
+          name: cravecart-realtime
+          type: web
+          property: hostport
+      - key: UTILS_HOSTPORT
+        fromService:
+          name: cravecart-utils
+          type: pserv
+          property: hostport
+  - type: web
+    name: cravecart-realtime
+    runtime: docker
+    region: singapore
+    plan: 0.5c-512mb
+    dockerfilePath: ./infra/docker/Dockerfile
+    dockerContext: .
+    dockerCommand: node services/realtime/dist/index.js
+    numInstances: 1
+    healthCheckPath: /health/live
+    envVars:
+      - fromGroup: cravecart-hosted
+      - key: CLAMD_HOST
+        fromService:
+          name: cravecart-scanner
+          type: pserv
+          property: host
+      - key: SERVICE_NAME
+        value: realtime
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      - key: AUTH_HOSTPORT
+        fromService:
+          name: cravecart-auth
+          type: pserv
+          property: hostport
+      - key: RESTAURANT_HOSTPORT
+        fromService:
+          name: cravecart-restaurant
+          type: pserv
+          property: hostport
+      - key: RIDER_HOSTPORT
+        fromService:
+          name: cravecart-rider
+          type: pserv
+          property: hostport
+      - key: ADMIN_HOSTPORT
+        fromService:
+          name: cravecart-admin
+          type: pserv
+          property: hostport
+      - key: REALTIME_HOSTPORT
+        fromService:
+          name: cravecart-realtime
+          type: web
+          property: hostport
+      - key: UTILS_HOSTPORT
+        fromService:
+          name: cravecart-utils
+          type: pserv
+          property: hostport
+  - type: pserv
+    name: cravecart-utils
+    runtime: docker
+    region: singapore
+    plan: 0.5c-512mb
+    dockerfilePath: ./infra/docker/Dockerfile
+    dockerContext: .
+    dockerCommand: node services/utils/dist/index.js
+    numInstances: 1
+    healthCheckPath: /health/live
+    envVars:
+      - fromGroup: cravecart-hosted
+      - key: CLAMD_HOST
+        fromService:
+          name: cravecart-scanner
+          type: pserv
+          property: host
+      - key: SERVICE_NAME
+        value: utils
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      - key: AUTH_HOSTPORT
+        fromService:
+          name: cravecart-auth
+          type: pserv
+          property: hostport
+      - key: RESTAURANT_HOSTPORT
+        fromService:
+          name: cravecart-restaurant
+          type: pserv
+          property: hostport
+      - key: RIDER_HOSTPORT
+        fromService:
+          name: cravecart-rider
+          type: pserv
+          property: hostport
+      - key: ADMIN_HOSTPORT
+        fromService:
+          name: cravecart-admin
+          type: pserv
+          property: hostport
+      - key: REALTIME_HOSTPORT
+        fromService:
+          name: cravecart-realtime
+          type: web
+          property: hostport
+      - key: UTILS_HOSTPORT
+        fromService:
+          name: cravecart-utils
+          type: pserv
+          property: hostport
+    disk:
+      name: private-uploads
+      mountPath: /var/lib/cravecart/uploads
+      sizeGB: 5
+  - type: pserv
+    name: cravecart-scanner
+    runtime: image
+    image:
+      url: docker.io/clamav/clamav:stable
+    region: singapore
+    plan: 1c-2g
+    disk:
+      name: scanner-signatures
+      mountPath: /var/lib/clamav
+      sizeGB: 1
+envVarGroups:
+  - name: cravecart-hosted
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DEV_ADAPTERS
+        value: 'false'
+      - key: COMMERCE_MODE
+        value: test
+      - key: PAYMENT_LIVE_CONFIRMED
+        value: 'false'
+      - key: MONGO_DB_PREFIX
+        value: cravecart_staging
+      - key: UPLOAD_SCAN_MODE
+        value: clamav
+      - key: UPLOAD_DIRECTORY
+        value: /var/lib/cravecart/uploads
+      - key: INTERNAL_TOKEN
+        generateValue: true
+      - key: METRICS_TOKEN
+        generateValue: true
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: AUTH_ENCRYPTION_KEY
+        generateValue: true
+      - key: UPLOAD_ENCRYPTION_KEY
+        generateValue: true
+      - key: APP_ORIGIN
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: RABBITMQ_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: SMTP_URL
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: RAZORPAY_ACCOUNT_ID
+        sync: false
+      - key: CLAMD_PORT
+        value: 3310

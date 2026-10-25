@@ -4,6 +4,10 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(4001),
   HOST: z.string().default('127.0.0.1'),
+  MONGO_DB_PREFIX: z
+    .string()
+    .regex(/^[a-zA-Z][a-zA-Z0-9_]{2,45}$/)
+    .default('cravecart'),
   MONGO_URI: z.string().default('mongodb://127.0.0.1:27017/?directConnection=true&replicaSet=rs0'),
   RABBITMQ_URL: z.string().default('amqp://cravecart:local-only@127.0.0.1:5672/cravecart'),
   REDIS_URL: z.string().default('redis://127.0.0.1:6379'),
@@ -33,11 +37,23 @@ const schema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_API_VERSION: z.string().optional(),
+  WEB_PUSH_PUBLIC_KEY: z.string().optional(),
+  WEB_PUSH_PRIVATE_KEY: z.string().optional(),
+  WEB_PUSH_SUBJECT: z.string().optional(),
+  ASSISTANT_PROVIDER: z.enum(['builtin','openai']).default('builtin'),
+  OPENAI_API_KEY: z.string().optional(),
+  ASSISTANT_MODEL: z.string().max(120).optional(),
+  ASSISTANT_WRITES_ENABLED: z.enum(['true','false']).default('false'),
+  ASSISTANT_WRITES_REVIEWED: z.enum(['true','false']).default('false'),
+  ASSISTANT_DAILY_MESSAGES: z.coerce.number().int().min(1).max(500).default(60),
+  ASSISTANT_DAILY_PROVIDER_CALLS: z.coerce.number().int().min(1).max(10000).default(100),
 });
 export type Config = z.infer<typeof schema>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const config = schema.parse(env);
+  if(config.ASSISTANT_PROVIDER==='openai'&&(!config.OPENAI_API_KEY||!config.ASSISTANT_MODEL))throw new Error('OpenAI assistant requires a server API key and explicit model');
+  if(config.ASSISTANT_WRITES_ENABLED==='true'&&config.ASSISTANT_WRITES_REVIEWED!=='true')throw new Error('Assistant action enablement requires recorded human review');
   if (
     config.COMMERCE_MODE === 'development' &&
     (config.NODE_ENV === 'production' || config.DEV_ADAPTERS !== 'true')
@@ -60,6 +76,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       throw new Error('Development adapters are forbidden in production');
     if (config.UPLOAD_SCAN_MODE !== 'clamav')
       throw new Error('Production uploads require malware scanning');
+    if (!env.UPLOAD_DIRECTORY || /(^|[\\/])\.local([\\/]|$)/.test(config.UPLOAD_DIRECTORY))
+      throw new Error('Production requires configured persistent private upload storage');
     for (const key of ['AUTH_SECRET', 'AUTH_ENCRYPTION_KEY', 'UPLOAD_ENCRYPTION_KEY'] as const) {
       if (!env[key] || /development|change-me/i.test(config[key]))
         throw new Error(`Production secret required: ${key}`);
@@ -98,7 +116,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       'REALTIME_URL',
       'UTILS_URL',
     ]) {
-      if (env.SERVICE_NAME === 'gateway' && !env[key])
+      if (!env[key] && !env[key.replace('_URL', '_HOSTPORT')])
         throw new Error(`Missing upstream configuration: ${key}`);
     }
   }

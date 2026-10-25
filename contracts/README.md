@@ -1,11 +1,13 @@
 # Discovery contracts
 
-Version: `0.1.0`. `GET /platform` and the promoted identity/onboarding, catalog/cart and checkout/payment operations are implemented and exported from shared Zod schemas. The remaining operations retain their declared baseline status. See [identity runtime coverage](../docs/engineering/IDENTITY-AND-ONBOARDING.md) for all executing endpoints. JSON files support scripts and contract tooling without a YAML dependency.
+Version: `0.1.0`. `GET /platform` and the promoted identity/onboarding, catalog/cart, checkout/payment and fulfillment/tracking operations are implemented and exported from shared Zod schemas. The remaining operations retain their declared baseline status. See [identity runtime coverage](../docs/engineering/IDENTITY-AND-ONBOARDING.md) for all executing endpoints. JSON files support scripts and contract tooling without a YAML dependency.
 
 | File | Purpose |
 |---|---|
+| [operations.openapi.json](operations.openapi.json) | Exported support, order messaging, reviews/moderation, teams, accounting records, reports and promotion oversight |
 | [routes.json](routes.json) | Frontend page identity, access/workspace policy, states and aliases |
 | [actions.json](actions.json) | Every critical CTA linked to real declared API operations, success and recovery behavior |
+| [fulfillment.openapi.json](fulfillment.openapi.json) | Exported kitchen, rider operations/GPS, customer tracking, realtime ticket, inbox and push contracts |
 | [commerce.openapi.json](commerce.openapi.json) | Exported quote, order, payment, refund, pricing policy and financial operations contracts |
 | [catalog.openapi.json](catalog.openapi.json) | Exported client-ready discovery, addresses, zones, seller catalog, uploads and cart contracts |
 | [identity.openapi.json](identity.openapi.json) | Exported client-ready identity/onboarding subset merged into OpenAPI |

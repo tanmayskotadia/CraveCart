@@ -2,7 +2,7 @@
 
 Updated: 25 October 2026. Local environment: Windows, Node 24.14.1, npm 11.11.0, Python 3.12. Docker Engine/Desktop is not installed on this machine.
 
-## Executed results
+## Foundation evidence (historical)
 
 | Check | Result | Evidence |
 |---|---|---|
@@ -18,7 +18,7 @@ Updated: 25 October 2026. Local environment: Windows, Node 24.14.1, npm 11.11.0,
 | Dependency outage behavior | Passed | Every owner and aggregate gateway readiness correctly returned unavailable with dependencies absent |
 | Planning contracts | Passed | 2,115 structural/example/coverage checks; 90 routes, 199 HTTP operations, 37 broker events, 12 socket events, 19 critical CTAs, 53 traceability rows |
 
-The browser suite intercepts its capability endpoint to exercise deterministic page states. The live smoke check separately exercises actual API transport. Identity is separately verified by the real-database and live-browser suites below. Ordering is not implemented.
+The foundation browser suite intercepts its capability endpoint to exercise deterministic page states. The live smoke check separately exercised actual API transport. The later sections record implemented identity, ordering and fulfillment; foundation-era capability restrictions below describe that earlier checkpoint.
 
 The national redesign was visually inspected at 1440px desktop and 390px mobile widths, including the login dialog. The market contract now declares India/national scope rather than one global city; the selected city is independent browsing context. All generated food assets are local optimized WebP files with provenance in `design/ASSETS.md`.
 
@@ -65,7 +65,7 @@ See [identity setup and detailed scope](IDENTITY-AND-ONBOARDING.md). No actual S
 | Browser regression | Passed: 20 tests | Landing, national city navigation, OTP dialog states, protected pages, keyboard, outages and reduced motion |
 | Contracts | Passed: 2,115 checks | 90 frontend routes and 199 HTTP operations; source Zod exports merged into the baseline, preserving existing operation IDs |
 
-The local seed contains 18 explicitly labelled fictional restaurants and 72 illustrative dishes across six cities; these are not live restaurant affiliations. Sample stores/zones are excluded in production. See [discovery, catalog and cart setup](CATALOG-AND-CART.md). That catalog milestone did not include ordering. Checkout, reservations, payment, redemption and refunds are now covered by the money milestone below; dispatch and tracking remain unimplemented. Community map tiles, live scanners/providers, scaling and hosted deployment remain separate qualification gates.
+The development seed contains 18 explicitly labelled fictional restaurants and 72 illustrative dishes across six cities; these are not live restaurant affiliations. Sample stores/zones are excluded in production. See [discovery, catalog and cart setup](CATALOG-AND-CART.md). Checkout, reservations, payment, redemption and refunds are covered by the money milestone below; dispatch and tracking are covered by the fulfillment evidence. Licensed map tiles, live scanners/providers, scaling and hosted deployment remain separate qualification gates.
 
 ## Orders and financial evidence
 
@@ -83,14 +83,44 @@ The local seed contains 18 explicitly labelled fictional restaurants and 72 illu
 
 The executed suites contain **108 passing tests**. The two development-run skips are provider-boundary cases that pass in the provider run. Source and live services use the explicit development simulator locally; no actual payment, provider request or delivery was made. The raw gateway adapters are verified through HTTP fixtures, not qualified against hosted merchant accounts. RabbitMQ consumers are implemented with transactional inbox deduplication and persistent wake-ups; actual RabbitMQ/Redis delivery, Docker launch and cloud operation remain unexecuted gates below. See [orders, checkout and financial operations](ORDERS-AND-PAYMENTS.md).
 
-## Unexecuted release gates
+## Fulfillment and hosting evidence
+
+The current implementation connects the customer, restaurant, rider and admin using actual service handlers and durable MongoDB records. Tests use isolated temporary infrastructure and explicitly simulated payments/contact delivery; no real restaurant, charge, SMS/email or push-provider delivery was created.
+
+| Check | Result | Evidence |
+|---|---|---|
+| Fulfillment and push controls | Passed: 13 tests | Real MongoDB transactions, exclusive competing rider acceptance, complete pickup/delivery, code guess lockout and restaurant renewal, privacy and ownership, GPS validation, lost assignment response recovery, bounded no-rider/operator retry, cancellation race, partial-refund preparation/rejection, additional branch approval boundary, real Socket.IO ticket replay/ownership/session revocation, push allowlist and injected transport deduplication/session revocation |
+| End-to-end delivery | Passed: desktop and mobile | Isolated gateway and six owners; actual onboarding/MFA/approval, menu publication, address/cart/checkout, simulated capture, kitchen preparation, foreground GPS fixtures, rider assignment, wrong and valid pickup proof, navigation link, customer tracking, operator incident resolution and customer-code delivery; no horizontal overflow |
+| National UI regression | Passed: 20 tests | Production preview, city/search continuity, login/signup, protected routes, keyboard, outage recovery and reduced motion |
+| Contract registry | Passed: 2,237 checks | 93 frontend routes, 223 HTTP operations, 38 broker events, 15 socket contracts (three implemented delivery events and twelve explicitly planned), 19 critical CTAs and 53 traceability rows |
+| Render configuration | Schema validation passed | Blueprint checked against Render’s official JSON schema; this does not validate account entitlement or create resources |
+| Hosting preparation | Implemented | Managed dependency settings, private service discovery, persistent encrypted upload disk/scanner, Vercel API rewrite generator, read-only hosted preflight, admin bootstrap and hosting credential inventory |
+
+Build, type checks, lint, formatting and the 15 platform tests are also rerun for this change. The current browser harness starts disposable test processes and removes its isolated databases afterward. Existing developer servers are not a deployment artifact. The Vite build retains a non-blocking main-bundle size warning. See [fulfillment details](FULFILLMENT-AND-TRACKING.md) and [Vercel/Render deployment](HOSTING.md).
+
+## Role-operation evidence
+
+| Check | Result | Evidence |
+|---|---|---|
+| Role operations and fulfillment | Passed: 21 tests | Shared real-MongoDB harness and strict response schemas; support ownership/reply/replay/closure/escalation and fresh MFA, customer–rider messages/moderation/closed delivery, verified review uniqueness/eligibility and derived public ratings, team kitchen/manager/owner isolation and revocation, dated records, promotion versions, audited export replay, limited staff grants/session revocation and restricted operator denials, plus prior fulfillment/socket/push cases |
+| Platform/calendar | Passed: 17 tests | HTTP/tracing regressions plus impossible report dates, bounded/reversed ranges and exclusive India-day UTC boundaries |
+| Identity/catalog | Passed: 34 tests | Existing workflows with the expanded catalog rating schema, seller access and scoped internal authentication |
+| Money regression | Passed: 22, two intentional external-only skips | Existing quote/capture/refund/ledger workflows; provider-boundary tests retain their separate historical evidence above |
+| Desktop/mobile role journey | Passed: 2 scenarios | Actual seven-process HTTP/Socket.IO path, customer–rider replies, verified delivery, customer review, restaurant response, requester ticket and agent reply, closure, financial records, reports and audit; production React preview and synthetic contacts/payments/GPS |
+| National UI | Passed: 20 tests | Production preview; discovery/navigation/auth/outage/accessibility regressions |
+| Contracts | Passed: 2,392 checks | 94 routes and 246 HTTP operations; role-operation registry promoted without marking remaining inventory as implemented |
+| Quality and visual review | Passed | Build/type/lint/format checks; desktop financial records and mobile support screenshots inspected; no horizontal overflow in checked role screens. Main JS bundle retains a non-blocking size warning |
+
+See [role operations](ROLE-OPERATIONS.md). These tests do not qualify bank payouts or contractual partner earnings: commission/payable remain null and statements explicitly show UNRECONCILED. Support staffing, message retention/deletion, hosted provider execution and assistant functionality remain separate work. No new API key or seventh owner service was introduced. Automated browser services and data are disposable.
+
+## Remaining release gates
 
 | Gate | Why it is open | Next executable proof |
 |---|---|---|
 | Docker image/Compose launch | Docker is absent locally | Docker-capable runner executes `npm run infra:up` and `node scripts/smoke.mjs --ready` |
 | Real dependency transaction/replay/ack test | RabbitMQ and Redis are not running locally; identity transactions have separate real-MongoDB coverage | Run `npm run test:integration` with documented URLs; CI includes this job |
-| Hosted CI | Workflow is committed locally; no remote push/run requested | Inspect actual run result after repository publication |
-| Staging deployment / Render-to-AWS TLS | No account, region, credentials or budget supplied | Deploy isolated services and run provider register probes N-01 through N-07 |
+| Hosted CI | Workflow prepared; no remote run observed | Inspect actual run result after repository publication |
+| Vercel + Render staging deployment | Providers selected; accounts are not connected and managed dependency/provider secrets are not configured | Review quoted costs, connect accounts, apply hosting guide, run preflight and hosted full journey |
 | Production qualification | Remaining commerce features, approved policies, live OTP delivery, real ClamAV checks, private storage/retention, HA/restore/load/security qualification remain open | Follow the quality/launch checklist |
 
-The foundation implementation is available locally; the full infrastructure exit gate is not claimed passed. CI configuration is an executable check, not evidence that the check has already run.
+The implementation and hosting configuration are present in the repository. Deployment, real provider delivery, physical-device GPS, licensed maps, Docker/ClamAV, broker recovery, load and production operations require the proofs above. Foreground web GPS is implemented; continuous background tracking is not claimed. CI configuration is an executable check, not evidence that the check has already run.
