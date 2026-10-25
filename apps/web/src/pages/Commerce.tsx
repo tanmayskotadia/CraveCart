@@ -1,11 +1,22 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import type { Order, Quote, PaymentAttempt, Refund, Gateway, Totals } from '@cravecart/contracts';
+import type {
+  Order,
+  Quote,
+  PaymentAttempt,
+  Refund,
+  Gateway,
+  Totals,
+  Address,
+  ReorderPreview,
+  FinancialApproval,
+} from '@cravecart/contracts';
 import { api } from '../api';
 import { WorkspaceShell, ErrorNotice } from '../components/WorkspaceShell';
 import { Field, money } from '../components/CatalogFields';
 import type { CartState } from './Catalog';
+import { useSession } from '../components/SessionProvider';
 
 type Capabilities = { enabled: boolean; development: boolean; mode: string; gateways: Gateway[] };
 const key = () => ({ 'Idempotency-Key': crypto.randomUUID() });
@@ -48,6 +59,7 @@ export function CheckoutPage() {
     queryFn: () => api<Capabilities>('/payments/capabilities'),
   });
   const [quote, setQuote] = useState<Quote>();
+  const [policiesAccepted, setPoliciesAccepted] = useState(false);
   const [offerCode, setOffer] = useState('');
   const [tipMinor, setTip] = useState(0);
   const [gateway, setGateway] = useState<Gateway>('razorpay');
@@ -58,6 +70,7 @@ export function CheckoutPage() {
     setBusy(true);
     setError(undefined);
     setQuote(undefined);
+    setPoliciesAccepted(false);
     try {
       const current = await cart.refetch();
       if (!current.data?.cart)
@@ -91,7 +104,13 @@ export function CheckoutPage() {
       const order = await api<Order>('/orders', {
         method: 'POST',
         headers: orderKey,
-        body: { quoteId: quote.id, gateway },
+        body: {
+          quoteId: quote.id,
+          gateway,
+          ...(quote.policies?.length
+            ? { acceptedPolicyIds: quote.policies.map((policy) => policy.id) }
+            : {}),
+        },
       });
       navigate(`/orders/${order.id}`);
     } catch (e) {
@@ -198,12 +217,41 @@ export function CheckoutPage() {
                 </fieldset>
                 <button
                   className="red-button"
-                  disabled={busy || !caps.data?.gateways.includes(gateway)}
+                  disabled={
+                    busy ||
+                    !caps.data?.gateways.includes(gateway) ||
+                    Boolean(quote.policies?.length && !policiesAccepted)
+                  }
                   onClick={() => void place()}
                 >
                   Continue to payment · {money(quote.totals.totalMinor)}
                 </button>
                 <p className="small-help">Your order remains pending until payment is verified.</p>
+                {Boolean(quote.policies?.length) && (
+                  <div>
+                    <label className="check-label">
+                      <input
+                        type="checkbox"
+                        checked={policiesAccepted}
+                        onChange={(event) => setPoliciesAccepted(event.target.checked)}
+                      />
+                      I accept the published checkout policies
+                    </label>
+                    <ul>
+                      {quote.policies?.map((policy) => (
+                        <li key={policy.id}>
+                          <Link
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            to={`/legal/${policy.kind}?revision=${policy.id}`}
+                          >
+                            {policy.kind} · version {policy.version}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </>
             ) : (
               <p>Review your final total to see offers, fees and taxes before payment.</p>
@@ -427,7 +475,153 @@ export function OrdersPage({ admin = false }: { admin?: boolean }) {
     </WorkspaceShell>
   );
 }
+function ReorderPanel({ order }: { order: Order }) {
+  const navigate = useNavigate();
+  const addresses = useQuery({
+    queryKey: ['addresses'],
+    queryFn: () => api<Address[]>('/addresses'),
+  });
+  const [addressId, setAddress] = useState('');
+  const [preview, setPreview] = useState<ReorderPreview>();
+  const [confirmed, setConfirmed] = useState(false);
+  const [replace, setReplace] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>();
+  const [command, setCommand] = useState(key);
+  const selected =
+    addressId ||
+    addresses.data?.find((address) => address.id === order.quote.address.id)?.id ||
+    addresses.data?.find((address) => address.isDefault)?.id ||
+    '';
+  return (
+    <form
+      className="workspace-panel"
+      onSubmit={(event) => {
+        event.preventDefault();
+        setBusy(true);
+        setError(undefined);
+        void (async () => {
+          try {
+            if (!preview) {
+              const value = await api<ReorderPreview>(`/orders/${order.id}/reorder/preview`, {
+                method: 'POST',
+                body: { addressId: selected },
+              });
+              setPreview(value);
+              setConfirmed(false);
+              setReplace(false);
+              setCommand(key());
+            } else {
+              await api(`/orders/${order.id}/reorder/confirm`, {
+                method: 'POST',
+                headers: command,
+                body: { previewId: preview.id, expectedCartVersion: preview.cartVersion, replace },
+              });
+              navigate('/cart');
+            }
+          } catch (cause) {
+            setError(cause);
+          } finally {
+            setBusy(false);
+          }
+        })();
+      }}
+    >
+      <h2>Order these dishes again</h2>
+      <p>
+        Review today’s availability and prices before adding the same selections to your cart.
+        Checkout calculates current fees, offers and payment separately.
+      </p>
+      <ErrorNotice error={error ?? addresses.error} />
+      <Field label="Reorder delivery address">
+        <select
+          className="form-input"
+          value={selected}
+          disabled={busy || Boolean(preview)}
+          onChange={(event) => setAddress(event.target.value)}
+        >
+          <option value="">Choose an address</option>
+          {addresses.data?.map((address) => (
+            <option key={address.id} value={address.id}>
+              {address.label} · {address.street}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Link className="inline-link" to="/addresses">
+        Manage delivery addresses
+      </Link>
+      {preview && (
+        <>
+          {preview.lines.map((line, index) => (
+            <div className="cart-line" key={index}>
+              <span>
+                {line.quantity} × {line.name}
+                <small>{line.selection.join(' · ')}</small>
+              </span>
+              <strong>{money(line.quantity * line.unitPriceMinor)}</strong>
+            </div>
+          ))}
+          <p>
+            Current items subtotal: <strong>{money(preview.subtotalMinor)}</strong>
+          </p>
+          {preview.issues.map((issue) => (
+            <p className="small-help" key={issue}>
+              {issue}
+            </p>
+          ))}
+          {preview.replacesCart && (
+            <label className="check-label">
+              <input
+                type="checkbox"
+                checked={replace}
+                onChange={(event) => setReplace(event.target.checked)}
+              />
+              Replace the items already in my cart
+            </label>
+          )}
+          <label className="check-label">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(event) => setConfirmed(event.target.checked)}
+            />
+            I reviewed the current selections and prices
+          </label>
+          <button
+            className="text-link"
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setPreview(undefined);
+              setError(undefined);
+            }}
+          >
+            Change address or refresh prices
+          </button>
+        </>
+      )}
+      <p>
+        <button
+          className="red-button"
+          disabled={
+            busy ||
+            !selected ||
+            Boolean(preview && (!confirmed || (preview.replacesCart && !replace)))
+          }
+        >
+          {busy ? 'Checking…' : preview ? 'Confirm reorder to cart' : 'Review reorder'}
+        </button>
+      </p>
+      <Link className="inline-link" to={`/restaurants/${order.quote.restaurant.slug}`}>
+        Browse the current menu
+      </Link>
+    </form>
+  );
+}
+
 export function OrderPage({ admin = false }: { admin?: boolean }) {
+  const { session } = useSession();
   const { orderId } = useParams();
   const query = useQuery({
     queryKey: ['order', orderId, admin],
@@ -451,6 +645,7 @@ export function OrderPage({ admin = false }: { admin?: boolean }) {
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
   const [commandKey, setCommandKey] = useState(key);
+  const [approvalNotice, setApprovalNotice] = useState('');
   async function cancel() {
     setBusy(true);
     setError(undefined);
@@ -479,6 +674,9 @@ export function OrderPage({ admin = false }: { admin?: boolean }) {
       {order && (
         <>
           <Environment mode={order.quote.mode} />
+          {!admin && ['DELIVERED', 'CANCELLED', 'REJECTED', 'EXPIRED'].includes(order.status) && (
+            <ReorderPanel key={order.id} order={order} />
+          )}
           <div className="cart-layout">
             <div className="workspace-panel">
               <h2>{order.quote.restaurant.name}</h2>
@@ -581,13 +779,13 @@ export function OrderPage({ admin = false }: { admin?: boolean }) {
                   </button>
                 </div>
               )}
-              {admin && (
+              {admin && session?.principal.permissions.includes('finance:write') && (
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
                     setBusy(true);
                     setError(undefined);
-                    void api(`/admin/orders/${orderId}/refund`, {
+                    void api<{ approval?: FinancialApproval }>(`/admin/orders/${orderId}/refund`, {
                       method: 'POST',
                       headers: commandKey,
                       body: {
@@ -596,7 +794,12 @@ export function OrderPage({ admin = false }: { admin?: boolean }) {
                         reason,
                       },
                     })
-                      .then(async () => {
+                      .then(async (result) => {
+                        setApprovalNotice(
+                          result.approval
+                            ? 'Refund request saved. A different authorized finance account must approve it before funds are authorized.'
+                            : 'Refund authorized. Gateway processing is tracked separately.',
+                        );
                         setCommandKey(key());
                         await query.refetch();
                       })
@@ -604,7 +807,7 @@ export function OrderPage({ admin = false }: { admin?: boolean }) {
                       .finally(() => setBusy(false));
                   }}
                 >
-                  {['ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'].includes(order.status) && (
+                  {order.status === 'READY_FOR_PICKUP' && (
                     <div>
                       <button
                         className="outline-button"
@@ -630,9 +833,15 @@ export function OrderPage({ admin = false }: { admin?: boolean }) {
                     </div>
                   )}
                   <h3>Authorize refund</h3>
+                  {approvalNotice && (
+                    <p role="status">
+                      {approvalNotice} <Link to="/admin/finance">Open financial approvals</Link>
+                    </p>
+                  )}
                   <p className="small-help">
                     Requires a fresh authenticator check. Amount cannot exceed the remaining
-                    captured balance.
+                    captured balance. Requests meeting the cumulative approval threshold wait for a
+                    second finance account.
                   </p>
                   <Field label="Refund amount in rupees">
                     <input
@@ -656,7 +865,7 @@ export function OrderPage({ admin = false }: { admin?: boolean }) {
                     />
                   </Field>
                   <button className="red-button" disabled={busy}>
-                    Authorize refund
+                    Request refund authorization
                   </button>
                 </form>
               )}

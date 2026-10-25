@@ -5,7 +5,7 @@ import { loadConfig } from '@cravecart/config';
 import { platformSchema } from '@cravecart/contracts';
 import { syntheticAdapters } from '@cravecart/adapters';
 import { payloadHash, validateEvent } from '@cravecart/persistence';
-import { canEnter } from '../../apps/web/src/access.js';
+import { canEnter, workspaceHome } from '../../apps/web/src/access.js';
 
 const config = loadConfig({ NODE_ENV: 'test' });
 const resources: Resources = {
@@ -217,6 +217,27 @@ describe('safety and ownership', () => {
     expect(canEnter({ workspace: 'admin', grants: ['customer'] }, ['admin'])).toBe(false);
     expect(canEnter({ workspace: 'rider', grants: ['rider'] }, ['admin'])).toBe(false);
     expect(canEnter({ workspace: 'rider', grants: ['rider'] }, ['rider'])).toBe(true);
+  });
+  it('defaults to two-person finance approval and rejects invalid thresholds', () => {
+    expect(loadConfig({ NODE_ENV: 'test' }).FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR).toBe(0);
+    expect(
+      loadConfig({ NODE_ENV: 'test', FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR: '1500' })
+        .FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR,
+    ).toBe(1500);
+    for (const value of ['-1', '1.5', 'NaN', '100000001'])
+      expect(() =>
+        loadConfig({ NODE_ENV: 'test', FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR: value }),
+      ).toThrow();
+  });
+  it('lands limited staff on a workspace permitted by their grants', () => {
+    expect(workspaceHome('admin', ['support:read'])).toBe('/admin/support');
+    expect(workspaceHome('admin', ['users:read'])).toBe('/admin/users');
+    expect(workspaceHome('admin', ['assistant:read'])).toBe('/admin/assistant');
+    expect(workspaceHome('admin', ['verifications:read', 'finance:read'])).toBe('/admin/dashboard');
+    expect(workspaceHome('admin', [])).toBe('/workspaces');
+    expect(workspaceHome('seller')).toBe('/seller/restaurants');
+    expect(workspaceHome('rider')).toBe('/rider/dashboard');
+    expect(workspaceHome('customer')).toBe('/profile');
   });
   it('prevents synthetic adapters in production even if toggled on', () => {
     vi.stubEnv('NODE_ENV', 'production');

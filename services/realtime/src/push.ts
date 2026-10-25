@@ -126,88 +126,88 @@ export function installPush(
       json(res, { unsubscribed: true });
     },
   );
-  let busy = false;
-  async function tick() {
-    if (!enabled || busy) return;
-    busy = true;
+  let running: Promise<void> | undefined;
+  async function runTick() {
+    if (!enabled) return;
+    await ready();
+    const subscription = await subscriptions.findOneAndUpdate(
+      { nextAt: { $lte: new Date() }, leaseUntil: { $lte: new Date() }, failures: { $lt: 5 } },
+      { $set: { leaseUntil: new Date(Date.now() + 30000) } },
+      { returnDocument: 'after' },
+    );
+    if (!subscription) return;
     try {
-      await ready();
-      const subscription = await subscriptions.findOneAndUpdate(
-        { nextAt: { $lte: new Date() }, leaseUntil: { $lte: new Date() }, failures: { $lt: 5 } },
-        { $set: { leaseUntil: new Date(Date.now() + 30000) } },
-        { returnDocument: 'after' },
+      const principal = await internalCall<{ userId: string }>(
+        ctx,
+        'auth',
+        '/internal/v1/sessions/inspect',
+        { sessionId: subscription.sessionId },
       );
-      if (!subscription) return;
-      try {
-        const principal = await internalCall<{ userId: string }>(
-          ctx,
-          'auth',
-          '/internal/v1/sessions/inspect',
-          { sessionId: subscription.sessionId },
-        );
-        if (principal.userId !== subscription.userId) {
-          await subscriptions.deleteOne({ _id: subscription._id });
-          return;
-        }
-        const values = (
-          await Promise.all(
-            ['restaurant', 'rider'].map((owner) =>
-              internalCall<DeliveryNotification[]>(
-                ctx,
-                owner as 'restaurant',
-                `/internal/v1/${owner === 'restaurant' ? 'fulfillment' : 'delivery'}/notifications`,
-                { userId: subscription.userId },
-              ),
-            ),
-          )
-        )
-          .flat()
-          .filter((n) => !n.readAt && Date.now() - Date.parse(n.at) < 3600000)
-          .sort((a, b) => b.at.localeCompare(a.at))
-          .slice(0, 5);
-        for (const note of values) {
-          const id = hash(`${subscription._id}:${note.id}`),
-            old = await sent.findOne({ _id: id });
-          if (old?.state === 'SENT' || (old?.attempts ?? 0) >= 5) continue;
-          await sent.updateOne(
-            { _id: id },
-            { $inc: { attempts: 1 }, $setOnInsert: { state: 'PENDING' } },
-            { upsert: true },
-          );
-          await send(
-            { endpoint: subscription.endpoint, keys: subscription.keys },
-            JSON.stringify({
-              id: note.id,
-              title: 'CraveCart update',
-              body: 'Open your account to see your latest order or delivery update.',
-              href: note.href,
-            }),
-            { TTL: 60, timeout: 10000 },
-          );
-          await sent.updateOne({ _id: id }, { $set: { state: 'SENT' } });
-        }
-        await subscriptions.updateOne({ _id: subscription._id }, { $set: { failures: 0 } });
-      } catch (error) {
-        const status = (error as { statusCode?: number }).statusCode;
-        if (
-          status === 404 ||
-          status === 410 ||
-          (error instanceof HttpError && error.status === 401)
-        )
-          await subscriptions.deleteOne({ _id: subscription._id });
-        else await subscriptions.updateOne({ _id: subscription._id }, { $inc: { failures: 1 } });
-      } finally {
-        await subscriptions.updateOne(
-          { _id: subscription._id },
-          { $set: { leaseUntil: new Date(0), nextAt: new Date(Date.now() + 15000) } },
-        );
+      if (principal.userId !== subscription.userId) {
+        await subscriptions.deleteOne({ _id: subscription._id });
+        return;
       }
+      const values = (
+        await Promise.all(
+          ['restaurant', 'rider'].map((owner) =>
+            internalCall<DeliveryNotification[]>(
+              ctx,
+              owner as 'restaurant',
+              `/internal/v1/${owner === 'restaurant' ? 'fulfillment' : 'delivery'}/notifications`,
+              { userId: subscription.userId },
+            ),
+          ),
+        )
+      )
+        .flat()
+        .filter((n) => !n.readAt && Date.now() - Date.parse(n.at) < 3600000)
+        .sort((a, b) => b.at.localeCompare(a.at))
+        .slice(0, 5);
+      for (const note of values) {
+        const id = hash(`${subscription._id}:${note.id}`),
+          old = await sent.findOne({ _id: id });
+        if (old?.state === 'SENT' || (old?.attempts ?? 0) >= 5) continue;
+        await sent.updateOne(
+          { _id: id },
+          { $inc: { attempts: 1 }, $setOnInsert: { state: 'PENDING' } },
+          { upsert: true },
+        );
+        await send(
+          { endpoint: subscription.endpoint, keys: subscription.keys },
+          JSON.stringify({
+            id: note.id,
+            title: 'CraveCart update',
+            body: 'Open your account to see your latest order or delivery update.',
+            href: note.href,
+          }),
+          { TTL: 60, timeout: 10000 },
+        );
+        await sent.updateOne({ _id: id }, { $set: { state: 'SENT' } });
+      }
+      await subscriptions.updateOne({ _id: subscription._id }, { $set: { failures: 0 } });
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode;
+      if (status === 404 || status === 410 || (error instanceof HttpError && error.status === 401))
+        await subscriptions.deleteOne({ _id: subscription._id });
+      else await subscriptions.updateOne({ _id: subscription._id }, { $inc: { failures: 1 } });
     } finally {
-      busy = false;
+      await subscriptions.updateOne(
+        { _id: subscription._id },
+        { $set: { leaseUntil: new Date(0), nextAt: new Date(Date.now() + 15000) } },
+      );
     }
+  }
+  function tick(): Promise<void> {
+    running ??= runTick().finally(() => {
+      running = undefined;
+    });
+    return running;
   }
   const timer = setInterval(() => void tick().catch(() => {}), 5000);
   timer.unref();
-  ctx.onClose?.(async () => clearInterval(timer));
+  ctx.onClose?.(async () => {
+    clearInterval(timer);
+    await running;
+  });
   return { tick };
 }

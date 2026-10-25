@@ -16,6 +16,14 @@ import {
   merchantLaunchQuerySchema,
   merchantLaunchRecordSchema,
   merchantLaunchListSchema,
+  financialApprovalSchema,
+  financialApprovalDecisionSchema,
+  financialApprovalQuerySchema,
+  financialApprovalListSchema,
+  reorderInputSchema,
+  reorderConfirmSchema,
+  reorderPreviewSchema,
+  cartSchema,
 } from '../packages/contracts/src/index.js';
 const paths: Record<string, Record<string, unknown>> = {};
 const schema = (value: z.ZodType) =>
@@ -147,6 +155,16 @@ add('restaurant', 'get', '/orders', z.array(orderSchema));
 add('restaurant', 'get', '/orders/{orderId}', orderSchema);
 add(
   'restaurant',
+  'post',
+  '/orders/{orderId}/reorder/preview',
+  reorderPreviewSchema,
+  reorderInputSchema,
+);
+add('restaurant', 'post', '/orders/{orderId}/reorder/confirm', cartSchema, reorderConfirmSchema, {
+  idempotent: true,
+});
+add(
+  'restaurant',
   'get',
   '/orders/{orderId}/cancellation-preview',
   z
@@ -235,16 +253,39 @@ add(
   'admin',
   'post',
   '/admin/orders/{orderId}/refund',
-  z.object({ refundId: uuid, order: orderSchema }).strict(),
+  z.union([
+    z.object({ refundId: uuid, order: orderSchema }).strict(),
+    z
+      .object({ refundId: z.null(), approval: financialApprovalSchema, order: orderSchema })
+      .strict(),
+  ]),
   z.object({ expectedVersion: version, amountMinor: z.number().int().positive(), reason }).strict(),
   {
     idempotent: true,
     status: 202,
     policy:
-      'finance:write plus fresh TOTP; server bounds total requested refunds to captured funds.',
+      'finance:write plus fresh TOTP. Refunds at the configured cumulative order threshold create a pending approval and do not authorize funds. A different current finance writer with fresh MFA must approve the bound order version.',
   },
 );
 add('admin', 'get', '/admin/refunds', z.array(refundSchema));
+add('admin', 'get', '/admin/finance/approvals', financialApprovalListSchema, undefined, {
+  query: financialApprovalQuerySchema,
+  policy:
+    'Current finance:read. Paged requests for this commerce mode; requester session identifiers are never returned.',
+});
+add(
+  'admin',
+  'post',
+  '/admin/finance/approvals/{approvalId}/decision',
+  z.object({ approval: financialApprovalSchema, order: orderSchema.nullable() }).strict(),
+  financialApprovalDecisionSchema,
+  {
+    status: 202,
+    idempotent: true,
+    policy:
+      'Current finance:write plus fresh MFA; different requester and reviewer user identities, active requesting authority, unexpired request and unchanged captured order. No provider call occurs inside the transaction.',
+  },
+);
 add('admin', 'get', '/admin/refunds/{refundId}', refundSchema);
 add('admin', 'get', '/admin/commerce/policy', pricingPolicySchema.nullable());
 add(

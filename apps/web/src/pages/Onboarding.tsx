@@ -603,9 +603,12 @@ export function RiderWorkspace() {
               <dd>{query.data.vehicleRegistration ?? 'Not required'}</dd>
             </dl>
             <p className="small-help">
-              Delivery offers and live navigation will open when dispatch is available. You are not
-              accepting deliveries yet.
+              Open your delivery tasks to manage availability, share your location and receive
+              nearby offers. Your verified profile alone does not put you online.
             </p>
+            <Link className="red-button" to="/rider/dashboard">
+              Open delivery tasks
+            </Link>
           </div>
         )
       )}

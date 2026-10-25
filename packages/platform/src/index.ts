@@ -13,6 +13,7 @@ import { ZodError } from 'zod';
 import { HttpError, upstream, type DomainContext } from './security.js';
 import { IdempotencyConflict } from '@cravecart/persistence';
 export * from './security.js';
+export * from './privacy-owner.js';
 import { loadConfig, type Config } from '@cravecart/config';
 import {
   emptyQuerySchema,
@@ -307,6 +308,8 @@ export function createApp({
         favorites: 'restaurant',
         offers: 'restaurant',
         serviceability: 'admin',
+        policies: 'admin',
+        privacy: 'auth',
         quotes: 'restaurant',
         orders: 'restaurant',
         payments: 'utils',

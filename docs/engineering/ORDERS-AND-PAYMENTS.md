@@ -1,6 +1,10 @@
 # Orders, checkout and financial operations
 
-CraveCart now has server-authoritative quotes, transactional reservations, pending orders, verified payment placement, cancellation, refunds and a double-entry ledger. This is a locally verified implementation, not a live delivery launch. Restaurant acceptance, preparation, dispatch and tracking are the next milestone. Captured orders stop at `PLACED`.
+CraveCart has server-authoritative quotes, transactional reservations, pending orders, verified payment placement, cancellation, refunds and a double-entry ledger. Verified capture places the order and persists private customer/restaurant notifications in the same transaction. The connected [fulfillment flow](FULFILLMENT-AND-TRACKING.md) then handles acceptance, preparation, ready-only dispatch, verified pickup and delivery. This implementation still needs hosted provider and release qualification.
+
+Terminal customer orders expose a reorder preview and confirmation. Only item/variant/add-on selections, quantities and customer instructions are copied. Current menu prices, stock, opening status, delivery address and active zones are checked again. Preview changes or expiry fail visibly; a nonempty cart requires explicit replacement and its current version. An idempotency key preserves the cart result after a lost response. Checkout separately quotes current fees, taxes, promotions and tip, then creates a new order/payment. Removed selections are not silently replaced.
+
+Administrative discretionary refunds now use [independent financial approval](FINANCIAL-APPROVALS.md) when the cumulative per-order threshold is reached. The default threshold is zero. The first finance writer creates a pending proposal without changing the refund amount; a different current finance writer with fresh MFA approves the bound order version or rejects it. Provider processing remains asynchronous and separately reconciled. Automatic policy/compensation refunds retain their existing recovery flow.
 
 ## Local walkthrough
 

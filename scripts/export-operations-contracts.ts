@@ -17,6 +17,15 @@ import {
   staffChangeSchema,
   statementSchema,
   offerInputSchema,
+  settingsSchema,
+  policyKindSchema,
+  publishedPolicySchema,
+  policyAdminSchema,
+  policyDraftSchema,
+  policyPublishSchema,
+  privacyRequestInputSchema,
+  privacyRequestSchema,
+  privacyDecisionSchema,
 } from '../packages/contracts/src/index.js';
 const paths: Record<string, Record<string, unknown>> = {};
 function add(
@@ -36,7 +45,11 @@ function add(
       name: m[1],
       required: true,
       schema:
-        m[1] === 'slug' ? { type: 'string', maxLength: 100 } : { type: 'string', format: 'uuid' },
+        m[1] === 'kind'
+          ? { type: 'string', enum: policyKindSchema.options }
+          : m[1] === 'slug'
+            ? { type: 'string', maxLength: 100 }
+            : { type: 'string', format: 'uuid' },
     }),
   );
   if (method !== 'get')
@@ -118,6 +131,56 @@ const page = <T extends z.ZodRawShape>(fields: T) =>
   z
     .object({ ...fields, total: z.number().int().nonnegative(), page: z.number().int().positive() })
     .strict();
+add(
+  'admin',
+  'get',
+  '/policies/{kind}',
+  publishedPolicySchema,
+  undefined,
+  z.object({ revision: z.string().uuid().optional() }).strict(),
+  true,
+);
+add('admin', 'get', '/admin/settings', settingsSchema);
+add('auth', 'get', '/privacy/requests', z.array(privacyRequestSchema));
+add('auth', 'post', '/privacy/requests', privacyRequestSchema, privacyRequestInputSchema);
+add(
+  'auth',
+  'post',
+  '/privacy/requests/{requestId}/cancel',
+  privacyRequestSchema,
+  z.object({ expectedVersion: z.number().int().positive() }).strict(),
+);
+add(
+  'admin',
+  'get',
+  '/admin/privacy/requests',
+  z
+    .object({
+      requests: z.array(privacyRequestSchema),
+      total: z.number().int().nonnegative(),
+      page: z.number().int().positive(),
+      pageSize: z.literal(20),
+      retentionConfigured: z.boolean(),
+    })
+    .strict(),
+  undefined,
+  z.object({ page: z.coerce.number().int().min(1).max(10000).default(1) }).strict(),
+);
+add(
+  'admin',
+  'post',
+  '/admin/privacy/requests/{requestId}/decision',
+  privacyRequestSchema,
+  privacyDecisionSchema,
+);
+add('admin', 'put', '/admin/settings/policies/{kind}', policyAdminSchema, policyDraftSchema);
+add(
+  'admin',
+  'post',
+  '/admin/settings/policies/{kind}/publish',
+  policyAdminSchema,
+  policyPublishSchema,
+);
 for (const prefix of ['/support/tickets', '/admin/support/tickets']) {
   add('admin', 'get', prefix, page({ tickets: z.array(ticketSchema) }), undefined, pageQuerySchema);
   add('admin', 'get', prefix + '/{ticketId}', ticketDetailSchema, undefined, pageQuerySchema);

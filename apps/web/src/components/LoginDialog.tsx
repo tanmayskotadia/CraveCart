@@ -8,7 +8,7 @@ import { useSession } from './SessionProvider';
 import { Modal } from './Modal';
 import { Icon } from './Icon';
 import { AuthenticatorQr, RecoveryCodes } from './Authenticator';
-import { safeReturnPath } from '../access';
+import { safeReturnPath, workspaceHome } from '../access';
 
 interface Challenge {
   challengeId: string;
@@ -83,19 +83,9 @@ export function AuthModal() {
             ? '/rider/dashboard'
             : '/rider/onboarding'
           : workspace === 'admin'
-            ? session.principal.permissions.includes('verifications:read')
-              ? '/admin/dashboard'
-              : session.principal.permissions.includes('support:read')
-                ? '/admin/support'
-                : session.principal.permissions.includes('reports:read')
-                  ? '/admin/reports'
-                  : session.principal.permissions.includes('finance:read')
-                    ? '/admin/finance'
-                    : session.principal.permissions.includes('audit:read')
-                      ? '/admin/audit'
-                      : '/admin/delivery-operations'
+            ? workspaceHome('admin', session.principal.permissions)
             : ((state?.from && state.from !== '/' ? safeReturnPath(state.from, roles) : null) ??
-              `/search?city=${city?.slug ?? 'chennai'}`));
+              (city ? `/search?city=${city.slug}` : '/search')));
     navigate(destination, { replace: true });
   }
   async function requestCode() {
@@ -204,6 +194,15 @@ export function AuthModal() {
         >
           {!challenge && !mfa ? (
             <>
+              <p className="auth-context">
+                {workspace === 'seller'
+                  ? 'Manage your kitchen, menu and incoming orders. New restaurants start with a verified application.'
+                  : workspace === 'rider'
+                    ? 'Manage delivery offers, pickups and drop-offs. New delivery partners need approval before going online.'
+                    : workspace === 'admin'
+                      ? 'Authorized team members only. Review partner applications and manage operations within your assigned permissions.'
+                      : 'Discover restaurants, place an order and follow your delivery.'}
+              </p>
               {signup && (
                 <>
                   <label className="field-label" htmlFor="auth-name">
@@ -386,6 +385,9 @@ export function AuthModal() {
                   </Link>
                 </p>
               )}
+              <p className="auth-access-link">
+                <Link to="/access">Choose a different workspace</Link>
+              </p>
             </>
           )}
         </form>

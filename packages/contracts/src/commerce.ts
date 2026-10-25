@@ -1,5 +1,71 @@
 import { z } from 'zod';
-import { addressSchema, cartLineInputSchema } from './catalog.js';
+import { addressSchema, cartLineInputSchema, cartSchema } from './catalog.js';
+import { policyReferenceSchema } from './settings.js';
+export const reorderInputSchema = z.object({ addressId: z.string().uuid() }).strict();
+export const reorderConfirmSchema = z
+  .object({
+    previewId: z.string().uuid(),
+    expectedCartVersion: z.number().int().nonnegative(),
+    replace: z.boolean(),
+  })
+  .strict();
+export const reorderPreviewSchema = z
+  .object({
+    id: z.string().uuid(),
+    orderId: z.string().uuid(),
+    restaurantName: z.string(),
+    addressId: z.string().uuid(),
+    lines: cartSchema.shape.lines,
+    subtotalMinor: z.number().int().nonnegative(),
+    issues: z.array(z.string()),
+    cartVersion: z.number().int().nonnegative(),
+    replacesCart: z.boolean(),
+    expiresAt: z.string().datetime(),
+  })
+  .strict();
+export type ReorderPreview = z.infer<typeof reorderPreviewSchema>;
+export const financialApprovalSchema = z
+  .object({
+    id: z.string().uuid(),
+    orderId: z.string().uuid(),
+    orderNumber: z.string(),
+    orderVersion: z.number().int().positive(),
+    amountMinor: z.number().int().positive(),
+    reason: z.string(),
+    requestedBy: z.string().uuid(),
+    requestedAt: z.string().datetime(),
+    expiresAt: z.string().datetime(),
+    status: z.enum(['PENDING', 'AUTHORIZED', 'REJECTED', 'EXPIRED']),
+    version: z.number().int().positive(),
+    reviewedBy: z.string().uuid().nullable(),
+    reviewReason: z.string().nullable(),
+    reviewedAt: z.string().datetime().nullable(),
+    refundId: z.string().uuid().nullable(),
+    thresholdMinor: z.number().int().nonnegative(),
+    mode: z.enum(['disabled', 'development', 'test', 'live']),
+  })
+  .strict();
+export const financialApprovalDecisionSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    decision: z.enum(['approve', 'reject']),
+    reason: z.string().trim().min(5).max(500),
+  })
+  .strict();
+export const financialApprovalQuerySchema = z
+  .object({ page: z.coerce.number().int().min(1).max(10000).default(1) })
+  .strict();
+export const financialApprovalListSchema = z
+  .object({
+    approvals: z.array(financialApprovalSchema),
+    page: z.number().int().positive(),
+    pageSize: z.literal(20),
+    total: z.number().int().nonnegative(),
+    thresholdMinor: z.number().int().nonnegative(),
+  })
+  .strict();
+export type FinancialApproval = z.infer<typeof financialApprovalSchema>;
+export type FinancialApprovalList = z.infer<typeof financialApprovalListSchema>;
 export const gatewaySchema = z.enum(['razorpay', 'stripe']);
 export const commerceModeSchema = z.enum(['disabled', 'development', 'test', 'live']);
 export type Gateway = z.infer<typeof gatewaySchema>;
@@ -107,6 +173,7 @@ export const quoteSchema = z
     mode: commerceModeSchema,
     development: z.boolean(),
     warnings: z.array(z.string()),
+    policies: z.array(policyReferenceSchema).max(3).optional(),
   })
   .strict();
 export type Quote = z.infer<typeof quoteSchema>;
@@ -154,7 +221,11 @@ export const orderSchema = z
   .strict();
 export type Order = z.infer<typeof orderSchema>;
 export const createOrderSchema = z
-  .object({ quoteId: z.string().uuid(), gateway: gatewaySchema })
+  .object({
+    quoteId: z.string().uuid(),
+    gateway: gatewaySchema,
+    acceptedPolicyIds: z.array(z.string().uuid()).max(3).optional(),
+  })
   .strict();
 export const cancelOrderSchema = z
   .object({

@@ -20,6 +20,25 @@ test('customer, restaurant and rider complete a verified delivery', async ({
     riderPage: Page | undefined,
     merchantId = '',
     paidOrderId = '';
+  let receivedMovingLocation = false;
+  page.on('websocket', (socket) =>
+    socket.on('framereceived', ({ payload }) => {
+      const frame = String(payload);
+      if (!frame.startsWith('42')) return;
+      try {
+        const [event, value] = JSON.parse(frame.slice(2));
+        if (
+          event === 'delivery:snapshot' &&
+          value.orderId === paidOrderId &&
+          value.latestLocation?.point.latitude === 13.0801 &&
+          value.latestLocation?.point.longitude === 80.2701
+        )
+          receivedMovingLocation = true;
+      } catch {
+        /* Ignore unrelated Engine.IO protocol frames. */
+      }
+    }),
+  );
   const zoneIds: string[] = [];
   const prefix = `browser-${randomUUID()}`;
   const supportSubject = `Order receipt question · ${testInfo.project.name} · ${prefix}`;
@@ -62,7 +81,8 @@ test('customer, restaurant and rider complete a verified delivery', async ({
       .toEqual([]);
   }
   async function signIn(target: Page, path: string, email: string, signup = false) {
-    await target.goto(path);
+    await target.goto('/access');
+    await target.locator(`main a[href="${path}"]`).click();
     const dialog = target.getByRole('dialog');
     await dialog.getByRole('button', { name: 'Continue with email', exact: true }).click();
     if (signup) await dialog.getByLabel('Full name').fill('Browser Partner');
@@ -76,9 +96,22 @@ test('customer, restaurant and rider complete a verified delivery', async ({
   }
   try {
     await signIn(page, '/signup', `${prefix}-customer@example.test`, true);
-    await expect(page).toHaveURL(/\/search\?city=chennai/);
+    await expect(page).toHaveURL(/\/search$/);
+    await page.getByRole('button', { name: 'Choose a city', exact: false }).click();
+    await page.getByRole('dialog').getByRole('searchbox').fill('Chennai');
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Chennai Tamil Nadu', exact: true })
+      .click();
     await page.reload();
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Hello, Chennai.');
+    await page.goto('/access');
+    await expect(page.getByRole('link', { name: 'View restaurant application' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Open administration workspace' })).toHaveCount(
+      0,
+    );
+    await page.getByRole('button', { name: 'Open customer workspace' }).click();
+    await expect(page).toHaveURL(/\/profile$/);
     await page.goto('/admin/dashboard');
     await expect(
       page.getByRole('heading', { name: 'This workspace isn’t available to you.' }),
@@ -94,6 +127,9 @@ test('customer, restaurant and rider complete a verified delivery', async ({
     await admin.getByRole('button', { name: 'Verify and continue' }).click();
     await expect(admin.getByRole('heading', { name: 'Save your recovery codes' })).toBeVisible();
     await admin.getByRole('button', { name: 'I’ve saved my recovery codes' }).click();
+    await expect(admin.getByRole('heading', { name: 'Verification overview' })).toBeVisible();
+    await admin.goto('/access');
+    await admin.getByRole('button', { name: 'Open administration workspace' }).click();
     await expect(admin.getByRole('heading', { name: 'Verification overview' })).toBeVisible();
 
     const bytes = await sharp({
@@ -194,6 +230,19 @@ test('customer, restaurant and rider complete a verified delivery', async ({
           `/api/v1/seller/restaurants/${restaurantId}/catalog`,
         );
         const slug = (await details.json()).data.restaurant.slug;
+        await partner.addInitScript(() => {
+          const original = AudioContext.prototype.createOscillator;
+          AudioContext.prototype.createOscillator = function () {
+            const root = document.documentElement;
+            root.dataset.soundEvents = String(Number(root.dataset.soundEvents ?? '0') + 1);
+            return original.call(this);
+          };
+        });
+        await partner.goto(`/seller/restaurants/${restaurantId}/orders`);
+        await expect(partner.getByText('Your kitchen is ready.', { exact: true })).toBeVisible();
+        await partner
+          .getByRole('button', { name: 'Enable sound notifications', exact: true })
+          .click();
         const me = await admin.request.get('/api/v1/auth/me');
         const csrf = (await me.json()).data.csrfToken;
         const zone = await admin.request.post('/api/v1/admin/zones', {
@@ -297,6 +346,22 @@ test('customer, restaurant and rider complete a verified delivery', async ({
           .getByRole('button', { name: 'Simulate successful payment', exact: true })
           .click();
         await expect(page.locator('.commerce-status')).toContainText('PLACED · CAPTURED');
+        await expect(partner.locator('.kitchen-order .status-badge')).toContainText('PLACED', {
+          timeout: 12000,
+        });
+        await expect
+          .poll(() =>
+            partner.evaluate(() => Number(document.documentElement.dataset.soundEvents ?? '0')),
+          )
+          .toBeGreaterThan(0);
+        const inbox = await partner.request.get('/api/v1/notifications');
+        expect(inbox.status()).toBe(200);
+        expect(
+          (await inbox.json()).data.some(
+            (note: { href: string; title: string }) =>
+              note.href.endsWith(paidOrderId) && note.title.includes('placed'),
+          ),
+        ).toBe(true);
         await page.reload();
         await expect(page.locator('.commerce-status')).toContainText('PLACED · CAPTURED');
         await mkdir('.local/qa', { recursive: true });
@@ -328,6 +393,9 @@ test('customer, restaurant and rider complete a verified delivery', async ({
     await driver.getByRole('link', { name: 'Open delivery', exact: true }).click();
     await expect(driver.locator('.commerce-status')).toContainText('READY FOR PICKUP');
     await page.goto(`/orders/${paidOrderId}/track`);
+    await expect(
+      page.locator('.delivery-map .leaflet-overlay-pane svg path').first(),
+    ).toBeVisible();
     await expect(page.locator('.commerce-status')).toContainText('READY FOR PICKUP');
     await audit(kitchen, 'seller-kitchen');
     await audit(driver, 'rider-task');
@@ -382,6 +450,11 @@ test('customer, restaurant and rider complete a verified delivery', async ({
     await expect(page.getByText('Rider location updated', { exact: false })).toBeVisible({
       timeout: 15000,
     });
+    await expect(page.locator('.delivery-map')).toHaveAttribute('data-rider-latitude', '13.0801', {
+      timeout: 15000,
+    });
+    await expect(page.locator('.delivery-map')).toHaveAttribute('data-rider-longitude', '80.2701');
+    await expect.poll(() => receivedMovingLocation, { timeout: 15000 }).toBe(true);
     await expect(
       driver.getByRole('link', { name: 'Open navigation to customer', exact: true }),
     ).toHaveAttribute('href', /^https:\/\/www\.google\.com\/maps\/dir\//);
@@ -431,6 +504,16 @@ test('customer, restaurant and rider complete a verified delivery', async ({
       fullPage: true,
       animations: 'disabled',
     });
+    await page.goto(`/orders/${paidOrderId}`);
+    await page.getByRole('button', { name: 'Review reorder', exact: true }).click();
+    await page.getByLabel('I reviewed the current selections and prices', { exact: true }).check();
+    await page.getByRole('button', { name: 'Confirm reorder to cart', exact: true }).click();
+    await expect(page).toHaveURL(/\/cart$/);
+    await expect(
+      page.getByRole('heading', { name: 'Browser Test Biryani', exact: true }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Clear cart', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirm clear cart', exact: true }).click();
     await page.goto(`/orders/${paidOrderId}/review`);
     await page.getByRole('combobox', { name: 'Rating', exact: true }).selectOption('4');
     await page
@@ -656,6 +739,79 @@ test('customer, restaurant and rider complete a verified delivery', async ({
     await page.getByRole('button', { name: 'Sign out', exact: true }).click();
     await page.goto('/profile');
     await expect(page.getByRole('heading', { name: 'Sign in to continue' })).toBeVisible();
+    // Default policy requires two distinct finance accounts, even for this small test adjustment.
+    await admin.goto(`/admin/orders/${paidOrderId}`);
+    await admin.getByLabel('Refund amount in rupees', { exact: true }).fill('1');
+    await admin
+      .getByLabel('Refund reason', { exact: true })
+      .fill('Browser discretionary refund review fixture');
+    await admin.getByRole('button', { name: 'Request refund authorization', exact: true }).click();
+    await expect(admin.getByText('Refund request saved.', { exact: false })).toBeVisible();
+    expect(
+      await mongo
+        .db(`${dbPrefix}_restaurant`)
+        .collection('refund_intents')
+        .countDocuments({ orderId: paidOrderId }),
+    ).toBe(0);
+    const pendingApproval = (
+      await (await admin.request.get('/api/v1/admin/finance/approvals')).json()
+    ).data.approvals.find(
+      (value: { orderId: string; status: string }) =>
+        value.orderId === paidOrderId && value.status === 'PENDING',
+    );
+    expect(pendingApproval).toBeTruthy();
+    await admin.goto('/admin/finance');
+    await expect(
+      admin.getByText('Another finance account must review your request.', { exact: true }),
+    ).toBeVisible();
+    const reviewerId = randomUUID(),
+      reviewerContact = `${prefix}-finance-reviewer@example.test`;
+    await auth.collection('users').insertOne({
+      _id: reviewerId as never,
+      contact: reviewerContact,
+      name: 'Independent Browser Finance Reviewer',
+      roles: ['customer', 'admin'],
+      permissions: adminPermissions,
+      status: 'ACTIVE',
+      createdAt: new Date(),
+    });
+    const reviewerContext = await browser.newContext({ viewport: page.viewportSize()! });
+    contexts.push(reviewerContext);
+    const reviewer = await reviewerContext.newPage();
+    await signIn(reviewer, '/admin/login', reviewerContact);
+    await expect(reviewer.getByAltText('Authenticator enrollment QR code')).toBeVisible();
+    const reviewerSecret = await reviewer.getByTestId('totp-secret').textContent();
+    await reviewer.locator('#auth-code').fill(totp(reviewerSecret!.trim()));
+    await reviewer.getByRole('button', { name: 'Verify and continue' }).click();
+    await reviewer.getByRole('button', { name: 'I’ve saved my recovery codes' }).click();
+    await expect(reviewer.getByRole('heading', { name: 'Verification overview' })).toBeVisible();
+    await reviewer.goto('/admin/finance');
+    await reviewer
+      .getByRole('button', {
+        name: `Review request for ${pendingApproval.orderNumber}`,
+        exact: true,
+      })
+      .click();
+    await reviewer
+      .getByLabel('Financial review reason', { exact: true })
+      .fill('Independent reviewer confirmed fixture adjustment');
+    await reviewer.getByRole('button', { name: 'Approve refund request', exact: true }).click();
+    await expect(reviewer.getByText('Second approval recorded.', { exact: false })).toBeVisible();
+    const authorized = (
+      await (await reviewer.request.get('/api/v1/admin/finance/approvals')).json()
+    ).data.approvals.find((value: { id: string }) => value.id === pendingApproval.id);
+    expect(authorized.status).toBe('AUTHORIZED');
+    expect(authorized.requestedBy).toBe(adminId);
+    expect(authorized.reviewedBy).toBe(reviewerId);
+    await audit(reviewer, 'financial-approval-review');
+    await reviewer.screenshot({
+      path: `.local/qa/financial-approval-${testInfo.project.name}.png`,
+      fullPage: true,
+    });
+    await reviewer.goto(`/admin/orders/${paidOrderId}`);
+    await expect(reviewer.locator('.commerce-status')).toContainText('PARTIALLY REFUNDED', {
+      timeout: 15000,
+    });
   } finally {
     for (const context of contexts) await context.close().catch(() => {});
     const users = await auth
@@ -693,6 +849,7 @@ test('customer, restaurant and rider complete a verified delivery', async ({
     await utils.collection('outbox').deleteMany({ 'event.data.orderId': { $in: orderIds } });
     for (const name of ['orders', 'quotes', 'refund_intents'])
       await commerce.collection(name).deleteMany({ userId: { $in: ids } });
+    await commerce.collection('financial_approvals').deleteMany({ orderId: { $in: orderIds } });
     await commerce.collection('outbox').deleteMany({ 'event.data.orderId': { $in: orderIds } });
     await commerce.collection('carts').deleteMany({ _id: { $in: ids } as never });
     for (const name of ['menu_items', 'offers'])

@@ -37,6 +37,9 @@ import {
 } from '@cravecart/platform';
 import { executeOnce, payloadHash, enqueueEvent } from '@cravecart/persistence';
 import { priceLine } from './catalog.js';
+import { persistOrderNotifications } from './notifications.js';
+import { installFinancialApprovals } from './financial-approvals.js';
+import { installRestaurantPrivacy } from './privacy.js';
 
 interface QuoteRecord extends Quote {
   _id: string;
@@ -57,6 +60,7 @@ export interface OrderRecord extends Order {
   offerId: string | null;
   captureRef?: string;
   cancellationSeconds: number;
+  privacyErased?: boolean;
 }
 interface RefundIntent {
   _id: string;
@@ -107,6 +111,7 @@ const developmentPolicy: PricingPolicy = {
   development: true,
 };
 export function installOrders(app: Express, ctx: DomainContext) {
+  installRestaurantPrivacy(app, ctx);
   const { db, client, config } = ctx,
     quotes = db.collection<QuoteRecord>('quotes'),
     orders = db.collection<OrderRecord>('orders'),
@@ -163,6 +168,12 @@ export function installOrders(app: Express, ctx: DomainContext) {
     return quote;
   }
   function present(record: OrderRecord): Order {
+    if (record.privacyErased)
+      throw new HttpError(
+        410,
+        'ORDER_DATA_REMOVED',
+        'Personal order details were removed after the reviewed retention period',
+      );
     const {
       _id: _id,
       userId: _userId,
@@ -204,6 +215,7 @@ export function installOrders(app: Express, ctx: DomainContext) {
     res?: Response,
     extra: Record<string, unknown> = {},
   ) {
+    await persistOrderNotifications(db, session, order);
     await enqueueEvent(db, session, {
       eventId: randomUUID(),
       eventType: type,
@@ -349,6 +361,15 @@ export function installOrders(app: Express, ctx: DomainContext) {
         'ORDER_AMOUNT_LIMIT',
         'The order total is outside the configured checkout limits',
       );
+    const legal =
+      config.COMMERCE_MODE === 'live'
+        ? await internalCall<{ policies: NonNullable<Quote['policies']> }>(
+            ctx,
+            'admin',
+            '/internal/v1/policies/checkout',
+            {},
+          )
+        : { policies: [] };
     const id = randomUUID(),
       quote: QuoteRecord = {
         _id: id,
@@ -393,6 +414,7 @@ export function installOrders(app: Express, ctx: DomainContext) {
             : ['Test checkout — no real delivery or live charge.'],
         expiresAt: new Date(Date.now() + policy.quoteSeconds * 1000).toISOString(),
         digest: '',
+        policies: legal.policies,
       };
     quote.digest = payloadHash({
       cartVersion: cart.version,
@@ -405,6 +427,7 @@ export function installOrders(app: Express, ctx: DomainContext) {
       offerId: quote.offerId,
       offerVersion: quote.offerVersion,
       mode: quote.mode,
+      policies: quote.policies,
     });
     return quote;
   }
@@ -650,6 +673,17 @@ export function installOrders(app: Express, ctx: DomainContext) {
     }
     if (original.expiresAt <= new Date().toISOString())
       throw new HttpError(409, 'QUOTE_EXPIRED', 'Refresh the quote and review its prices');
+    if (
+      original.mode === 'live' &&
+      (!original.policies?.length ||
+        input.acceptedPolicyIds?.length !== original.policies.length ||
+        original.policies.some((policy) => !input.acceptedPolicyIds?.includes(policy.id)))
+    )
+      throw new HttpError(
+        422,
+        'POLICY_ACCEPTANCE_REQUIRED',
+        'Review and accept the published checkout policies',
+      );
     const current = await compute(userId, {
       cartVersion: original.cartVersion,
       offerCode: original.offerCode ?? undefined,
@@ -681,6 +715,14 @@ export function installOrders(app: Express, ctx: DomainContext) {
         key,
         input,
         async (session) => {
+          const fence = await db
+            .collection('privacy_subjects')
+            .findOne({ _id: userId as never }, { session });
+          if (fence?.closing)
+            throw new HttpError(409, 'ACCOUNT_CLOSING', 'Account closure has begun');
+          await db
+            .collection('privacy_subjects')
+            .updateOne({ _id: userId as never }, { $inc: { epoch: 1 } }, { upsert: true, session });
           if (
             !(await db
               .collection('carts')
@@ -798,6 +840,17 @@ export function installOrders(app: Express, ctx: DomainContext) {
               cancellationSeconds: original.policy.cancellationSeconds,
             };
           await orders.insertOne(order, { session });
+          if (original.policies?.length)
+            await db.collection('policy_acceptances').insertOne(
+              {
+                _id: order.id as never,
+                userId,
+                quoteId: original.id,
+                policies: original.policies,
+                acceptedAt: now,
+              },
+              { session },
+            );
           await event(session, order, 'order.payment-pending.v1', res);
           return present(order);
         },
@@ -925,6 +978,7 @@ export function installOrders(app: Express, ctx: DomainContext) {
       '/orders/admin-read',
       '/orders/retry-refunds',
       '/orders/admin-refund',
+      '/orders/financial-approvals',
       '/commerce',
     ],
     internalOnly(ctx, ['utils', 'admin']),
@@ -1236,6 +1290,12 @@ export function installOrders(app: Express, ctx: DomainContext) {
     });
     json(res, { retried: result.modifiedCount });
   });
+  const financialApprovals = installFinancialApprovals(internal, ctx, {
+    orders,
+    verifyAdmin,
+    present,
+    authorizeRefund,
+  });
   internal.post('/orders/admin-refund', async (req, res) => {
     if (res.locals.caller !== 'admin') throw new HttpError(403, 'SERVICE_DENIED', 'Service denied');
     const input = z
@@ -1250,10 +1310,11 @@ export function installOrders(app: Express, ctx: DomainContext) {
       .strict()
       .parse(req.body);
     const principal = await verifyAdmin(input.actorSessionId);
+    await financialApprovals.ready();
     const result = await executeOnce(
       client,
       db,
-      `admin-refund:${input.orderId}`,
+      `admin-refund:${principal.userId}:${input.orderId}`,
       input.commandId,
       {
         orderId: input.orderId,
@@ -1263,7 +1324,11 @@ export function installOrders(app: Express, ctx: DomainContext) {
       },
       async (session) => {
         const order = await orders.findOne(
-          { _id: input.orderId, version: input.expectedVersion },
+          {
+            _id: input.orderId,
+            version: input.expectedVersion,
+            'quote.mode': config.COMMERCE_MODE,
+          },
           { session },
         );
         if (!order || !order.captureRef)
@@ -1272,6 +1337,15 @@ export function installOrders(app: Express, ctx: DomainContext) {
             'REFUND_UNAVAILABLE',
             'Order changed or has no verified capture',
           );
+        const approval = await financialApprovals.propose(
+          order,
+          principal,
+          input.amountMinor,
+          input.reason,
+          session,
+          String(res.locals.requestId ?? order.id),
+        );
+        if (approval) return { approval, refundId: null, order: present(order) };
         order.version++;
         const refundId = await authorizeRefund(order, input.amountMinor, input.reason, session);
         await orders.replaceOne({ _id: order._id }, order, { session });

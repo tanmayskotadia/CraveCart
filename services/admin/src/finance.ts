@@ -4,6 +4,8 @@ import {
   pricingPolicyInputSchema,
   merchantLaunchInputSchema,
   merchantLaunchQuerySchema,
+  financialApprovalQuerySchema,
+  financialApprovalDecisionSchema,
 } from '@cravecart/contracts';
 import {
   remoteSession,
@@ -211,6 +213,37 @@ export function installFinance(app: Express, ctx: DomainContext) {
         await internalCall(ctx, 'restaurant', '/internal/v1/orders/admin-refund', {
           ...body,
           orderId: checkedId(req.params.orderId),
+          actorSessionId: currentPrincipal(res).sessionId,
+          commandId: requireIdempotency(req),
+        }),
+        202,
+      );
+    },
+  );
+  router.get(
+    '/finance/approvals',
+    remoteSession(ctx, { permission: 'finance:read' }),
+    async (req, res) => {
+      const query = financialApprovalQuerySchema.parse(req.query);
+      json(
+        res,
+        await internalCall(ctx, 'restaurant', '/internal/v1/orders/financial-approvals/list', {
+          actorSessionId: currentPrincipal(res).sessionId,
+          ...query,
+        }),
+      );
+    },
+  );
+  router.post(
+    '/finance/approvals/:approvalId/decision',
+    remoteSession(ctx, { permission: 'finance:write', stepUp: true, mutation: true }),
+    async (req, res) => {
+      const body = financialApprovalDecisionSchema.parse(req.body);
+      json(
+        res,
+        await internalCall(ctx, 'restaurant', '/internal/v1/orders/financial-approvals/decide', {
+          ...body,
+          approvalId: checkedId(req.params.approvalId),
           actorSessionId: currentPrincipal(res).sessionId,
           commandId: requireIdempotency(req),
         }),

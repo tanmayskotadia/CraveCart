@@ -32,6 +32,27 @@
       "runtimeStatus": "partial"
     },
     {
+      "id": "page_access",
+      "path": "/access",
+      "workspace": "public",
+      "sessionRequired": false,
+      "roles": [],
+      "policy": "Public",
+      "purpose": "Customer, restaurant, delivery partner and admin access; granted workspace switch or partner application",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": true,
+      "runtimeStatus": "available-locally"
+    },
+    {
       "id": "page_location",
       "path": "/location",
       "workspace": "public",

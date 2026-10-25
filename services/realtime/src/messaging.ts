@@ -32,6 +32,7 @@ export function installMessaging(app: Express, ctx: DomainContext) {
       orderId: string;
       sequence: number;
       author: 'customer' | 'rider';
+      authorId?: string;
       text: string;
       at: string;
       hidden?: boolean;
@@ -71,7 +72,7 @@ export function installMessaging(app: Express, ctx: DomainContext) {
           .skip((page - 1) * 50)
           .limit(50)
           .toArray()
-      ).map(({ _id, orderId: _o, hidden, ...m }) => ({
+      ).map(({ _id, orderId: _o, hidden, authorId: _author, ...m }) => ({
         id: _id,
         ...m,
         text: hidden ? 'Message removed after review.' : m.text,
@@ -126,6 +127,7 @@ export function installMessaging(app: Express, ctx: DomainContext) {
               orderId: id,
               sequence: input.expectedVersion + 1,
               author: value.role as 'customer' | 'rider',
+              authorId: actor.userId,
               text: input.text,
               at: new Date().toISOString(),
             };
@@ -135,7 +137,7 @@ export function installMessaging(app: Express, ctx: DomainContext) {
               { upsert: true, session },
             );
             await messages.insertOne(message, { session });
-            const { _id, orderId: _o, ...m } = message;
+            const { _id, orderId: _o, authorId: _author, ...m } = message;
             return { id: _id, ...m };
           },
         ),

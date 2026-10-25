@@ -87,12 +87,13 @@ export function useDelivery(orderId: string | undefined) {
       : query.data;
   return { ...query, data, live };
 }
-export function SoundControl({ ids }: { ids: string[] }) {
+export function SoundControl({ ids, ready = true }: { ids: string[]; ready?: boolean }) {
   const [enabled, setEnabled] = useState(false),
     context = useRef<AudioContext | null>(null),
     seen = useRef(new Set<string>()),
     initialized = useRef(false);
   useEffect(() => {
+    if (!ready) return;
     const unseen = ids.filter((id) => !seen.current.has(id));
     for (const id of ids) seen.current.add(id);
     if (initialized.current && enabled && unseen.length && context.current) {
@@ -105,8 +106,8 @@ export function SoundControl({ ids }: { ids: string[] }) {
       oscillator.start();
       oscillator.stop(context.current.currentTime + 0.2);
     }
-    if (ids.length) initialized.current = true;
-  }, [ids, enabled]);
+    initialized.current = true;
+  }, [ids, enabled, ready]);
   useEffect(
     () => () => {
       void context.current?.close();
@@ -236,6 +237,8 @@ export function DeliveryMap({ snapshot }: { snapshot: FulfillmentSnapshot }) {
       <div
         ref={root}
         className="delivery-map"
+        data-rider-latitude={snapshot.latestLocation?.point.latitude}
+        data-rider-longitude={snapshot.latestLocation?.point.longitude}
         aria-label="Restaurant, delivery address and authorized rider position"
       />
       {!tile && (

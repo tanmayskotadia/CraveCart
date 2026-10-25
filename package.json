@@ -40,6 +40,7 @@
     "test:fulfillment": "vitest run --config vitest.fulfillment.config.ts",
     "test:assistant": "vitest run --config vitest.fulfillment.config.ts",
     "hosting:configure": "node scripts/configure-hosting.mjs",
+    "hosting:prepare-env": "node scripts/prepare-hosted-env.mjs",
     "hosting:check": "node scripts/check-hosting.mjs",
     "test:delivery:browser": "npm run build && node scripts/test-delivery-browser.mjs",
     "test:tooling": "node --test tests/tooling/*.test.mjs",

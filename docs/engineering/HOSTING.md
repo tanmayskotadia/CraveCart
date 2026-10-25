@@ -18,6 +18,7 @@ Set backend values in the **cravecart-hosted** Render environment group. Use [.e
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Razorpay **test-mode** API pair for staging (`rzp_test_...`) |
 | `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_ACCOUNT_ID` | Configure the matching test account and signed webhook endpoint |
 | `APP_ORIGIN` | Exact Vercel frontend HTTPS origin; no wildcard. Preview deployments need their own matching environment |
+| `FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR` | Default `0` requires two distinct finance users for every discretionary refund. Any positive cumulative per-order threshold is INR paise and requires a reviewed finance policy; keep all Restaurant instances consistent |
 | Five application secrets | Blueprint generates distinct `INTERNAL_TOKEN`, `METRICS_TOKEN`, `AUTH_SECRET`, `AUTH_ENCRYPTION_KEY`, `UPLOAD_ENCRYPTION_KEY`; keep these in hosting secret settings |
 | `UPLOAD_DIRECTORY` | `/var/lib/cravecart/uploads`, backed by the Utils service’s Render disk; encrypted files never go into the ephemeral application checkout |
 | `CLAMD_HOST`, `CLAMD_PORT` | Blueprint wires the private scanner hostname and port 3310; keep scanner traffic on the private network |

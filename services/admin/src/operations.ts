@@ -1,4 +1,6 @@
 import type { Express } from 'express';
+import { installSettings } from './settings.js';
+import { installAdminPrivacy } from './privacy.js';
 import { randomUUID } from 'node:crypto';
 import { executeOnce } from '@cravecart/persistence';
 import { z } from 'zod';
@@ -18,6 +20,8 @@ import {
   type DomainContext,
 } from '@cravecart/platform';
 export function installAdminOperations(app: Express, ctx: DomainContext) {
+  installSettings(app, ctx);
+  installAdminPrivacy(app, ctx);
   app.post(
     '/api/v1/admin/reports/export',
     remoteSession(ctx, { permission: 'reports:read', stepUp: true, mutation: true }),

@@ -1,4 +1,5 @@
 import type { Express } from 'express';
+import { installRealtimePrivacy } from './privacy.js';
 import { z } from 'zod';
 import type { Principal, FulfillmentSnapshot, DeliveryNotification } from '@cravecart/contracts';
 import {
@@ -13,6 +14,7 @@ import {
   lazyIndexes,
 } from '@cravecart/platform';
 export function installRealtime(app: Express, ctx: DomainContext) {
+  installRealtimePrivacy(app, ctx);
   const { db } = ctx,
     tickets = db.collection<{
       _id: string;

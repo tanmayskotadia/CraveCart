@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import type { FulfillmentSnapshot, DeliveryOffer } from '@cravecart/contracts';
+import { cityDirectory, type FulfillmentSnapshot, type DeliveryOffer } from '@cravecart/contracts';
 import { api } from '../api';
 import { WorkspaceShell, ErrorNotice } from '../components/WorkspaceShell';
 import { Field } from '../components/CatalogFields';
@@ -59,7 +59,10 @@ export function SellerOrdersPage() {
         <Link className="text-link" to={`/seller/restaurants/${restaurantId}/menu`}>
           Manage menu
         </Link>
-        <SoundControl ids={query.data?.map((o) => `${o.orderId}:${o.version}`) ?? []} />
+        <SoundControl
+          ready={query.isSuccess}
+          ids={query.data?.map((o) => `${o.orderId}:${o.version}`) ?? []}
+        />
       </div>
       <ErrorNotice error={error ?? query.error} />
       {query.isPending && <p role="status">Loading orders…</p>}
@@ -318,13 +321,15 @@ export function RiderDeliveriesPage() {
   const { deliveryId } = useParams();
   const [error, setError] = useState<unknown>(),
     [busy, setBusy] = useState(false),
-    [city, setCity] = useState('chennai'),
+    [city, setCity] = useState(''),
     [sharing, setSharing] = useState(false),
     [gps, setGps] = useState('Location sharing is off.'),
     [code, setCode] = useState(''),
     [reason, setReason] = useState(''),
     [operation, setOperation] = useState<Operation>();
   const watch = useRef<number | null>(null),
+    heartbeat = useRef<ReturnType<typeof setInterval> | null>(null),
+    activeStream = useRef<string | null>(null),
     sequence = useRef(0),
     lastSent = useRef(0),
     sending = useRef(false);
@@ -336,6 +341,11 @@ export function RiderDeliveriesPage() {
       ),
     refetchInterval: 10000,
   });
+  const profile = useQuery({
+    queryKey: ['rider-delivery-profile'],
+    queryFn: () => api<{ city: string }>('/rider/profile'),
+  });
+  const selectedCity = city || availability.data?.city || profile.data?.city || '';
   const offers = useQuery({
     queryKey: ['rider-offers'],
     queryFn: () => api<DeliveryOffer[]>('/rider/offers'),
@@ -363,7 +373,9 @@ export function RiderDeliveriesPage() {
   const pending = currentOp?.state === 'PENDING';
   useEffect(
     () => () => {
+      activeStream.current = null;
       if (watch.current !== null) navigator.geolocation.clearWatch(watch.current);
+      if (heartbeat.current !== null) clearInterval(heartbeat.current);
     },
     [],
   );
@@ -371,53 +383,67 @@ export function RiderDeliveriesPage() {
     setError(undefined);
     try {
       if (!navigator.geolocation) throw new Error('GPS is not available on this device.');
+      if (!selectedCity) throw new Error('Choose your delivery city before going online.');
       const value = await api<{ streamId: string }>('/rider/availability', {
         method: 'POST',
-        body: { online: true, city },
+        body: { online: true, city: selectedCity },
       });
       setSharing(true);
+      activeStream.current = value.streamId;
       setGps('Waiting for an accurate GPS fix…');
       if (watch.current !== null) navigator.geolocation.clearWatch(watch.current);
       sequence.current = 0;
-      watch.current = navigator.geolocation.watchPosition(
-        (position) => {
-          if (sending.current || Date.now() - lastSent.current < 4000) return;
-          if (position.coords.accuracy > 100) {
-            setGps('GPS accuracy is too low. Move to an open area before accepting offers.');
-            return;
-          }
-          sending.current = true;
-          lastSent.current = Date.now();
-          void api('/rider/location', {
-            method: 'POST',
-            body: {
-              streamId: value.streamId,
-              sequence: ++sequence.current,
-              capturedAt: new Date(position.timestamp).toISOString(),
-              point: { latitude: position.coords.latitude, longitude: position.coords.longitude },
-              accuracy: position.coords.accuracy,
-            },
+      const report = (position: GeolocationPosition) => {
+        if (activeStream.current !== value.streamId) return;
+        if (sending.current || Date.now() - lastSent.current < 4000) return;
+        if (position.coords.accuracy > 100) {
+          setGps('GPS accuracy is too low. Move to an open area before accepting offers.');
+          return;
+        }
+        sending.current = true;
+        lastSent.current = Date.now();
+        void api('/rider/location', {
+          method: 'POST',
+          body: {
+            streamId: value.streamId,
+            sequence: ++sequence.current,
+            capturedAt: new Date(position.timestamp).toISOString(),
+            point: { latitude: position.coords.latitude, longitude: position.coords.longitude },
+            accuracy: position.coords.accuracy,
+          },
+        })
+          .then(() =>
+            setGps(
+              `Location shared at ${new Date().toLocaleTimeString('en-IN')}; keep this page open.`,
+            ),
+          )
+          .catch((e) => {
+            setError(e);
+            setGps('Location update failed. Offers and tracking may become stale.');
           })
-            .then(() =>
-              setGps(
-                `Location shared at ${new Date().toLocaleTimeString('en-IN')}; keep this page open.`,
-              ),
-            )
-            .catch((e) => {
-              setError(e);
-              setGps('Location update failed. Offers and tracking may become stale.');
-            })
-            .finally(() => {
-              sending.current = false;
-            });
-        },
-        () => {
-          setGps(
-            'GPS permission denied or unavailable. Enable precise location to receive offers.',
-          );
-          setSharing(false);
-        },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
+          .finally(() => {
+            sending.current = false;
+          });
+      };
+      const denied = (failure: GeolocationPositionError) => {
+        if (activeStream.current !== value.streamId) return;
+        if (failure.code !== 1) {
+          setGps('Waiting for a fresh GPS fix. Tracking may become stale until location recovers.');
+          return;
+        }
+        activeStream.current = null;
+        if (watch.current !== null) navigator.geolocation.clearWatch(watch.current);
+        if (heartbeat.current !== null) clearInterval(heartbeat.current);
+        setGps('GPS permission denied or unavailable. Enable precise location to receive offers.');
+        setSharing(false);
+      };
+      const options = { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 };
+      watch.current = navigator.geolocation.watchPosition(report, denied, options);
+      if (heartbeat.current !== null) clearInterval(heartbeat.current);
+      // Request a new physical fix while stationary; never refresh an old coordinate's timestamp.
+      heartbeat.current = setInterval(
+        () => navigator.geolocation.getCurrentPosition(report, denied, options),
+        15000,
       );
       await availability.refetch();
     } catch (e) {
@@ -448,12 +474,14 @@ export function RiderDeliveriesPage() {
       description="Real tasks, verified handovers, and clear navigation."
     >
       <ErrorNotice
-        error={error ?? availability.error ?? offers.error ?? tasks.error ?? task.error}
+        error={
+          error ?? availability.error ?? profile.error ?? offers.error ?? tasks.error ?? task.error
+        }
       />
       <div className="workspace-panel">
         <div className="panel-title-row">
           <h2>{availability.data?.online ? 'You are online' : 'You are offline'}</h2>
-          <SoundControl ids={offers.data?.map((o) => o.id) ?? []} />
+          <SoundControl ready={offers.isSuccess} ids={offers.data?.map((o) => o.id) ?? []} />
         </div>
         <p>{gps}</p>
         <p className="small-help">
@@ -461,29 +489,18 @@ export function RiderDeliveriesPage() {
           background or screen-off tracking is not guaranteed.
         </p>
         <Field label="Your delivery city">
-          <select className="form-input" value={city} onChange={(e) => setCity(e.target.value)}>
-            {[
-              'chennai',
-              'mumbai',
-              'delhi',
-              'bengaluru',
-              'hyderabad',
-              'kochi',
-              'pune',
-              'kolkata',
-              'ahmedabad',
-              'jaipur',
-              'chandigarh',
-              'lucknow',
-              'indore',
-              'surat',
-              'coimbatore',
-              'panaji',
-              'bhubaneswar',
-              'thiruvananthapuram',
-            ].map((c) => (
-              <option key={c} value={c}>
-                {c}
+          <select
+            className="form-input"
+            value={selectedCity}
+            disabled={sharing || availability.data?.online}
+            onChange={(e) => setCity(e.target.value)}
+          >
+            <option value="" disabled>
+              Choose your delivery city
+            </option>
+            {cityDirectory.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.name}
               </option>
             ))}
           </select>
@@ -491,7 +508,7 @@ export function RiderDeliveriesPage() {
         <div className="button-row">
           <button
             className="red-button"
-            disabled={busy || sharing}
+            disabled={busy || sharing || !selectedCity}
             onClick={() => void startSharing()}
           >
             Go online and share location
@@ -501,9 +518,14 @@ export function RiderDeliveriesPage() {
             disabled={busy || availability.data?.busy}
             onClick={() => {
               setBusy(true);
-              void api('/rider/availability', { method: 'POST', body: { online: false, city } })
+              void api('/rider/availability', {
+                method: 'POST',
+                body: { online: false, city: selectedCity },
+              })
                 .then(async () => {
+                  activeStream.current = null;
                   if (watch.current !== null) navigator.geolocation.clearWatch(watch.current);
+                  if (heartbeat.current !== null) clearInterval(heartbeat.current);
                   setSharing(false);
                   setGps('Location sharing is off.');
                   await availability.refetch();

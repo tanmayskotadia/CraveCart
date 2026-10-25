@@ -80,3 +80,5 @@ export function isRequestId(value: unknown): value is string {
 }
 export * from './operations.js';
 export * from './assistant.js';
+export * from './settings.js';
+export * from './privacy.js';

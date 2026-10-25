@@ -1,15 +1,15 @@
 # Discovery validation evidence
 
-Executed locally on 25 October 2026 using `python scripts/validate_contracts.py`.
+Executed locally on 26 October 2026 using `python scripts/validate_contracts.py`.
 
-Result: **PASS — 2433 structural/example/coverage checks.**
+Result: **PASS — 2466 structural/example/coverage checks.**
 
 ## Artifact counts
 
 | Artifact | Count |
 |---|---|
-| frontend routes | 94 |
-| HTTP operations | 254 |
+| frontend routes | 95 |
+| HTTP operations | 258 |
 | critical HTTP schemas | 2 |
 | broker events | 38 |
 | socket events | 15 |

@@ -49,7 +49,7 @@ def envelope(schema):
 
 
 # Local route coverage is separate from the full proposed product scope and release qualification.
-AVAILABLE_PAGES = {"/assistant", "/admin/assistant",
+AVAILABLE_PAGES = {"/access", "/assistant", "/admin/assistant",
     "/admin/users/:userId", "/admin/restaurants", "/admin/restaurants/:restaurantId", "/admin/riders", "/admin/riders/:riderId", "/verify", "/forgot-password", "/reset-password",
     "/support", "/support/tickets/:ticketId", "/orders/:orderId/messages", "/orders/:orderId/review",
     "/admin/support", "/admin/support/:ticketId", "/admin/reviews", "/admin/team", "/admin/promotions", "/admin/reports", "/admin/audit",

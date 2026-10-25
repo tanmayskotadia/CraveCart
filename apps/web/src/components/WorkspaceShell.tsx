@@ -117,12 +117,16 @@ const navigation = {
     ['Promotions', '/admin/promotions'],
     ['Staff access', '/admin/team'],
     ['Assistant knowledge', '/admin/assistant'],
+    ['Policies & settings', '/admin/settings'],
+    ['Privacy reviews', '/admin/privacy'],
     ['Security', '/settings'],
     ['Workspaces', '/workspaces'],
   ],
 } as const;
 const adminNavigationPermissions: Record<string, string> = {
   'Assistant knowledge': 'assistant:read',
+  'Policies & settings': 'staff:read',
+  'Privacy reviews': 'users:read',
   Overview: 'verifications:read',
   Verifications: 'verifications:read',
   Accounts: 'users:read',

@@ -430,7 +430,9 @@ export function installAssistant(
         [
           {
             label: 'Search restaurants',
-            href: '/search?' + new URLSearchParams({ city: context.city ?? 'chennai' }),
+            href: context.city
+              ? '/search?' + new URLSearchParams({ city: context.city })
+              : '/location',
           },
           { label: 'Contact support', href: '/support' },
         ],

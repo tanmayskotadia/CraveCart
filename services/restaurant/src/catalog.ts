@@ -1,4 +1,5 @@
 import express, { type Express, type Response } from 'express';
+import { installReorder } from './reorder.js';
 import { randomUUID } from 'node:crypto';
 import type { ClientSession } from 'mongodb';
 import { z } from 'zod';
@@ -768,7 +769,7 @@ export function installCatalog(app: Express, ctx: DomainContext) {
       subtotalMinor < record.minimumOrderMinor
         ? `Add ₹${((record.minimumOrderMinor - subtotalMinor) / 100).toFixed(2)} more to meet this restaurant’s minimum items subtotal.`
         : null;
-    return { record, priced, subtotalMinor, minimumIssue };
+    return { record, priced, subtotalMinor, minimumIssue, address, service };
   }
   app.get('/api/v1/cart', remoteSession(ctx), async (_req, res) => {
     const userId = currentPrincipal(res).userId,
@@ -804,7 +805,24 @@ export function installCatalog(app: Express, ctx: DomainContext) {
     userId: string,
     session?: ClientSession,
     expectedSubtotalMinor?: number,
-  ) {
+  ): Promise<Cart> {
+    if (!session) {
+      const local = client.startSession();
+      try {
+        return await local.withTransaction(() =>
+          saveCart(input, userId, local, expectedSubtotalMinor),
+        );
+      } finally {
+        await local.endSession();
+      }
+    }
+    const fence = await db
+      .collection('privacy_subjects')
+      .findOne({ _id: userId as never }, { session });
+    if (fence?.closing) throw new HttpError(409, 'ACCOUNT_CLOSING', 'Account closure has begun');
+    await db
+      .collection('privacy_subjects')
+      .updateOne({ _id: userId as never }, { $inc: { epoch: 1 } }, { upsert: true, session });
     const { record, priced, subtotalMinor, minimumIssue } = await validateCart(
       input.restaurantId,
       input.addressId,
@@ -884,5 +902,6 @@ export function installCatalog(app: Express, ctx: DomainContext) {
       throw new HttpError(409, 'VERSION_CONFLICT', 'Cart changed. Reload before clearing it');
     json(res, { cleared: true, version: expectedVersion + 1 });
   });
+  installReorder(app, ctx, { saveCart, validateCart });
   return { saveCart, validateCart };
 }

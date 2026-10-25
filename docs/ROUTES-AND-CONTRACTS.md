@@ -2,6 +2,10 @@
 
 Launch preparation adds `GET /api/v1/admin/commerce/merchants` (paged, optional exact `restaurantId`), `PUT /api/v1/admin/commerce/merchants/:restaurantId` (versioned explicit live-order approval/revocation), and an authoritative `GET /api/v1/admin/users/:userId`. Finance read/write or user-read permissions are enforced again by the owning service; mutations require fresh MFA, CSRF and a review reason. The exported commerce/identity schemas describe the exact request/response shapes.
 
+Reorder uses `POST /api/v1/orders/:orderId/reorder/preview` with an owned delivery address and `POST /api/v1/orders/:orderId/reorder/confirm` with preview identity, current cart version, explicit replacement decision and an idempotency key. Only the customer's terminal order is eligible. Preview and confirmation revalidate current selections, stock, restaurant, address and delivery zones. Previews expire after five minutes; changed data requires fresh review. Confirmation creates only a cart; quote, fees, promotions, tip and payment are new checkout decisions. Removed dishes/options fail visibly rather than being silently substituted. Exact schemas are exported in the commerce contract.
+
+Financial approval adds `GET /api/v1/admin/finance/approvals` and idempotent `POST /api/v1/admin/finance/approvals/:approvalId/decision`. Administrative refund creation now returns a pending proposal when the cumulative threshold is met, without authorizing funds. A different current finance writer with fresh MFA reviews the bound order version and requesting authority. The default threshold is zero, so all discretionary refunds require independent approval. See [financial approvals](engineering/FINANCIAL-APPROVALS.md) and exported commerce schemas; an `AUTHORIZED` approval is not provider-confirmed refund completion or a bank payout.
+
 Operational build checks are outside the `/api/v1` business API: `GET /health/release` on backends returns a no-store deployment fingerprint; the gateway additionally verifies matching identities on all six owners and returns 503 for missing/mixed releases. Frontend `/release.json` contains the matching generated identity. Neither endpoint exposes secrets, runtime configuration or customer data.
 
 `/admin/restaurants` and its detail route show real merchant launch controls, `/admin/riders` opens the filtered verification queue and its detail alias opens the canonical application, `/admin/users/:userId` loads that account, and `/settings/privacy` submits a private account support case. Verification/password-recovery aliases redirect to passwordless login. Privacy requests are tracked intake, not an assertion that records have already been exported or erased.
@@ -25,6 +29,7 @@ This is the implementation inventory, not a claim that routes already exist. Dis
 | Route | Access | Purpose and primary actions |
 |---|---|---|
 | `/` | Public | Location selector, search, nearby discovery; restaurant card → detail |
+| `/access` | Public | Customer, restaurant, delivery partner and admin access; granted workspace switch or partner application |
 | `/location` | Public | GPS/manual address and map pin → serviceability → safe return |
 | `/search` | Public | Query/filter/sort in URL; dish result → restaurant and dish anchor |
 | `/restaurants/:slug` | Public | Restaurant/menu/reviews; configure dish → cart |

@@ -4,6 +4,28 @@ export interface Session {
   workspace: Workspace;
   grants: Workspace[];
 }
+// A staff role does not imply access to every administrative dashboard.
+export function workspaceHome(workspace: Workspace, permissions: readonly string[] = []) {
+  if (workspace === 'seller') return '/seller/restaurants';
+  if (workspace === 'rider') return '/rider/dashboard';
+  if (workspace === 'customer') return '/profile';
+  const destinations = [
+    ['verifications:read', '/admin/dashboard'],
+    ['support:read', '/admin/support'],
+    ['reports:read', '/admin/reports'],
+    ['finance:read', '/admin/finance'],
+    ['audit:read', '/admin/audit'],
+    ['dispatch:read', '/admin/delivery-operations'],
+    ['users:read', '/admin/users'],
+    ['zones:read', '/admin/zones'],
+    ['promotions:read', '/admin/promotions'],
+    ['staff:read', '/admin/team'],
+    ['assistant:read', '/admin/assistant'],
+  ] as const;
+  return (
+    destinations.find(([permission]) => permissions.includes(permission))?.[1] ?? '/workspaces'
+  );
+}
 export function canEnter(session: Session | null, roles: string[]) {
   return (
     session !== null &&

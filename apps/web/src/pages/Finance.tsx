@@ -6,10 +6,13 @@ import type {
   PricingPolicy,
   MerchantLaunchList,
   MerchantLaunchRecord,
+  FinancialApproval,
+  FinancialApprovalList,
 } from '@cravecart/contracts';
 import { api } from '../api';
 import { ErrorNotice, WorkspaceShell } from '../components/WorkspaceShell';
 import { Field, money } from '../components/CatalogFields';
+import { useSession } from '../components/SessionProvider';
 interface Report {
   mode: string;
   balances: Array<{
@@ -208,9 +211,168 @@ export function FinancePage() {
         />
       )}
       <MerchantLaunchPanel />
+      <FinancialApprovalsPanel />
     </WorkspaceShell>
   );
 }
+function FinancialApprovalsPanel() {
+  const { session } = useSession();
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<FinancialApproval>();
+  const [reason, setReason] = useState('');
+  const [command, setCommand] = useState(() => crypto.randomUUID());
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>();
+  const [notice, setNotice] = useState('');
+  const query = useQuery({
+    queryKey: ['financial-approvals', page],
+    queryFn: () => api<FinancialApprovalList>(`/admin/finance/approvals?page=${page}`),
+    refetchInterval: 10000,
+  });
+  async function decide(decision: 'approve' | 'reject') {
+    if (!selected) return;
+    setBusy(true);
+    setError(undefined);
+    setNotice('');
+    try {
+      const result = await api<{ approval: FinancialApproval }>(
+        `/admin/finance/approvals/${selected.id}/decision`,
+        {
+          method: 'POST',
+          headers: { 'Idempotency-Key': command },
+          body: { expectedVersion: selected.version, decision, reason },
+        },
+      );
+      setNotice(
+        result.approval.status === 'AUTHORIZED'
+          ? 'Second approval recorded. Refund authorized; provider processing is tracked separately.'
+          : 'Financial request rejected. No refund was authorized.',
+      );
+      setSelected(undefined);
+      setReason('');
+      setCommand(crypto.randomUUID());
+      await query.refetch();
+    } catch (cause) {
+      setError(cause);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="workspace-panel" aria-labelledby="financial-approvals-title">
+      <h2 id="financial-approvals-title">Financial approvals</h2>
+      <p>
+        Requests wait for a different authorized finance account. Both actions require fresh
+        authenticator verification. Approval authorizes a refund; it does not mean the gateway has
+        paid it.
+      </p>
+      {query.data && (
+        <p className="small-help">
+          Cumulative refund threshold:{' '}
+          {query.data.thresholdMinor === 0
+            ? 'Every discretionary refund requires two people'
+            : money(query.data.thresholdMinor)}
+          . Requests expire after 15 minutes; changed orders need a fresh request.
+        </p>
+      )}
+      <ErrorNotice error={error ?? query.error} />
+      {notice && <p role="status">{notice}</p>}
+      {query.isPending && <p role="status">Loading financial approvals…</p>}
+      {query.data?.approvals.length === 0 && <p>No financial approval requests.</p>}
+      {query.data?.approvals.map((approval) => (
+        <article className="workspace-panel" key={approval.id}>
+          <div className="panel-title-row">
+            <Link to={`/admin/orders/${approval.orderId}`}>{approval.orderNumber}</Link>
+            <strong>{money(approval.amountMinor)}</strong>
+          </div>
+          <p>
+            {approval.status} · {approval.mode}
+          </p>
+          <p>{approval.reason}</p>
+          <p className="small-help">
+            Requested by {approval.requestedBy} · Expires{' '}
+            {new Date(approval.expiresAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+          </p>
+          {approval.reviewReason && <p>Review: {approval.reviewReason}</p>}
+          {approval.status === 'PENDING' &&
+            session?.principal.permissions.includes('finance:write') &&
+            (approval.requestedBy === session.principal.userId ? (
+              <p className="small-help">Another finance account must review your request.</p>
+            ) : (
+              <button
+                className="outline-button"
+                disabled={busy}
+                onClick={() => {
+                  setSelected(approval);
+                  setReason('');
+                  setCommand(crypto.randomUUID());
+                  setError(undefined);
+                }}
+              >
+                Review request for {approval.orderNumber}
+              </button>
+            ))}
+        </article>
+      ))}
+      {selected && (
+        <div className="confirm-inline">
+          <h3>
+            Review {selected.orderNumber}: {money(selected.amountMinor)}
+          </h3>
+          <p>Requested reason: {selected.reason}</p>
+          <Field label="Financial review reason">
+            <textarea
+              className="form-input"
+              value={reason}
+              minLength={5}
+              maxLength={500}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          </Field>
+          <div className="button-row">
+            <button
+              className="red-button"
+              disabled={busy || reason.trim().length < 5}
+              onClick={() => void decide('approve')}
+            >
+              Approve refund request
+            </button>
+            <button
+              className="outline-button"
+              disabled={busy || reason.trim().length < 5}
+              onClick={() => void decide('reject')}
+            >
+              Reject refund request
+            </button>
+            <button className="text-link" disabled={busy} onClick={() => setSelected(undefined)}>
+              Close review
+            </button>
+          </div>
+        </div>
+      )}
+      {query.data && query.data.total > 20 && (
+        <nav aria-label="Financial approval pages">
+          <button
+            className="outline-button"
+            disabled={page === 1 || busy}
+            onClick={() => setPage(page - 1)}
+          >
+            Previous approvals
+          </button>
+          <span> Page {page} </span>
+          <button
+            className="outline-button"
+            disabled={page * 20 >= query.data.total || busy}
+            onClick={() => setPage(page + 1)}
+          >
+            Next approvals
+          </button>
+        </nav>
+      )}
+    </section>
+  );
+}
+
 function MerchantLaunchPanel() {
   const { restaurantId } = useParams();
   const [page, setPage] = useState(1),

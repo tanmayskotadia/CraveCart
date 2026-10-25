@@ -25,7 +25,7 @@ import {
 } from '@cravecart/platform';
 import { executeOnce } from '@cravecart/persistence';
 type Ticket = SupportTicket & { _id: string };
-type Message = OperationMessage & { _id: string; ticketId: string };
+type Message = OperationMessage & { _id: string; ticketId: string; authorId?: string };
 export function installSupport(app: Express, ctx: DomainContext) {
   const { db, client } = ctx,
     tickets = db.collection<Ticket>('support_tickets'),
@@ -54,7 +54,7 @@ export function installSupport(app: Express, ctx: DomainContext) {
       );
   }
   const present = ({ _id: _id, ...value }: Ticket) => value;
-  const publicMessage = ({ _id: _id, ticketId: _t, ...value }: Message) => value;
+  const publicMessage = ({ _id: _id, ticketId: _t, authorId: _author, ...value }: Message) => value;
   async function createTicket(
     input: ReturnType<typeof ticketInputSchema.parse>,
     userId: string,
@@ -96,6 +96,7 @@ export function installSupport(app: Express, ctx: DomainContext) {
             ticketId: id,
             sequence: 1,
             author: 'requester',
+            authorId: userId,
             text: input.text,
             at: now,
           },
@@ -206,6 +207,7 @@ export function installSupport(app: Express, ctx: DomainContext) {
                   ticketId: id,
                   sequence: ticket.version + 1,
                   author: admin ? 'agent' : 'requester',
+                  authorId: actor.userId,
                   text: input.text,
                   at: now,
                 };

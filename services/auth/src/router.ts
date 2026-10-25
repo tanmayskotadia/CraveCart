@@ -34,6 +34,8 @@ import {
 } from '@cravecart/platform';
 import { enqueueEvent } from '@cravecart/persistence';
 import { newTotpSecret, matchingCounter } from './totp.js';
+import { installPrivacy } from './privacy.js';
+import { installAuthPrivacyData } from './privacy-data.js';
 
 export interface IdentityUser {
   _id: string;
@@ -119,6 +121,8 @@ export const adminPermissions = [
 ];
 
 export function installAuth(app: Express, ctx: DomainContext) {
+  const privacy = installPrivacy(app, ctx);
+  installAuthPrivacyData(app, ctx);
   const { db, client, config } = ctx;
   const users = db.collection<IdentityUser>('users'),
     sessions = db.collection<SessionRecord>('sessions'),
@@ -1123,4 +1127,5 @@ export function installAuth(app: Express, ctx: DomainContext) {
     },
     internal,
   );
+  return { privacy };
 }

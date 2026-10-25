@@ -397,6 +397,8 @@ envVarGroups:
         value: test
       - key: PAYMENT_LIVE_CONFIRMED
         value: 'false'
+      - key: FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR
+        value: '0'
       - key: MONGO_DB_PREFIX
         value: cravecart_staging
       - key: UPLOAD_SCAN_MODE

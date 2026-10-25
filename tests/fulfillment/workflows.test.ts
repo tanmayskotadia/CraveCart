@@ -363,6 +363,7 @@ beforeAll(async () => {
       NODE_ENV: 'test',
       SERVICE_NAME: name,
       COMMERCE_MODE: external ? 'test' : 'development',
+      FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR: '100000000',
       RAZORPAY_KEY_ID: 'rzp_test_fixture',
       RAZORPAY_KEY_SECRET: 'fixture-key-secret',
       RAZORPAY_WEBHOOK_SECRET: 'fixture-webhook-secret',
@@ -813,7 +814,32 @@ describe('transactional checkout, payments and refunds', () => {
     expect(placed.status).toBe('PLACED');
     expect(placed.dropoff).toBeNull();
     expect(placed.deliveryCode).toBeNull();
+    expect(
+      await databases
+        .restaurant!.collection('delivery_notifications')
+        .countDocuments({ _id: `${order.id}:${placed.version}:seller` as never }),
+    ).toBe(1);
     await merchantAction(order.id, 'accept', { preparationMinutes: 15 });
+    await deliveryWorker.dispatch();
+    for (const user of [first, second]) {
+      expect(
+        (await call('rider', 'get', '/api/v1/rider/offers', user)).body.data.filter(
+          (offer: { orderId: string }) => offer.orderId === order.id,
+        ),
+      ).toHaveLength(0);
+    }
+    expect(
+      (await call('restaurant', 'get', `/api/v1/orders/${order.id}/tracking`, customer)).body.data
+        .dispatchState,
+    ).toBe('WAITING');
+    await merchantAction(order.id, 'preparing');
+    await deliveryWorker.dispatch();
+    expect(
+      (await call('rider', 'get', '/api/v1/rider/offers', first)).body.data.filter(
+        (offer: { orderId: string }) => offer.orderId === order.id,
+      ),
+    ).toHaveLength(0);
+    let ready = await merchantAction(order.id, 'ready');
     await deliveryWorker.dispatch();
     const offerLists = await Promise.all(
       [first, second].map((p) => call('rider', 'get', '/api/v1/rider/offers', p)),
@@ -856,8 +882,6 @@ describe('transactional checkout, payments and refunds', () => {
         })
       ).status,
     ).toBe(409);
-    await merchantAction(order.id, 'preparing');
-    let ready = await merchantAction(order.id, 'ready');
     expect(ready.pickupCode).toMatch(/^\d{6}$/);
     let tracking = (
       await call('restaurant', 'get', `/api/v1/orders/${order.id}/tracking`, customer)
@@ -1132,6 +1156,7 @@ describe('transactional checkout, payments and refunds', () => {
       { order, attempt } = await pending();
     await outcome(attempt.id, 'captured');
     await merchantAction(order.id, 'accept');
+    await merchantAction(order.id, 'ready');
     await deliveryWorker.dispatch();
     const offer = (await call('rider', 'get', '/api/v1/rider/offers', user)).body.data.find(
       (o: { orderId: string }) => o.orderId === order.id,
@@ -1174,6 +1199,7 @@ describe('transactional checkout, payments and refunds', () => {
     const { order, attempt } = await pending();
     await outcome(attempt.id, 'captured');
     await merchantAction(order.id, 'accept');
+    await merchantAction(order.id, 'ready');
     for (let i = 0; i < 4; i++) {
       await databases
         .rider!.collection('dispatch_rounds')

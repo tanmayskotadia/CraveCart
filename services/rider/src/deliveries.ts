@@ -1,4 +1,5 @@
 import express, { type Express } from 'express';
+import { installRiderPrivacy } from './privacy.js';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { createClient } from 'redis';
@@ -79,6 +80,7 @@ interface Round {
   state: 'SEARCHING' | 'ASSIGNED' | 'NO_RIDER';
 }
 export function installDeliveries(app: Express, ctx: DomainContext) {
+  installRiderPrivacy(app, ctx);
   const { db, client, config } = ctx,
     profiles = db.collection<Profile>('availability'),
     offers = db.collection<Offer>('offers'),

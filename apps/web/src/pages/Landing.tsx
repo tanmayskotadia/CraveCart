@@ -321,6 +321,9 @@ export function Landing() {
               <span>Greater possibilities.</span>
             </h2>
             <p>Good things happen when we come together.</p>
+            <Link className="inline-link" to="/access">
+              Choose your workspace →
+            </Link>
           </div>
           <div className="partner-links reveal">
             <Link to="/seller/login">

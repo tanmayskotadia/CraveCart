@@ -2,6 +2,7 @@ import './fulfillment.css';
 import './operations.css';
 import './assistant.css';
 import './commerce.css';
+import './pages/access.css';
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { Link, Navigate, Route, Routes, matchPath, useLocation } from 'react-router-dom';
 import manifest from '../../../contracts/routes.json';
@@ -13,6 +14,15 @@ import { Explore } from './pages/Explore';
 import { useSession } from './components/SessionProvider';
 import { RequireSession } from './components/WorkspaceShell';
 const AccountPage = lazy(() => import('./pages/Account').then((m) => ({ default: m.AccountPage })));
+const AccessPage = lazy(() => import('./pages/Access').then((m) => ({ default: m.AccessPage })));
+const SettingsPage = lazy(() =>
+  import('./pages/Settings').then((m) => ({ default: m.SettingsPage })),
+);
+const PolicyPage = lazy(() => import('./pages/Settings').then((m) => ({ default: m.PolicyPage })));
+const HelpPage = lazy(() => import('./pages/Settings').then((m) => ({ default: m.HelpPage })));
+const PrivacyAdminPage = lazy(() =>
+  import('./pages/Privacy').then((m) => ({ default: m.PrivacyAdminPage })),
+);
 const PrivacyPage = lazy(() => import('./pages/Account').then((m) => ({ default: m.PrivacyPage })));
 const SecurityPage = lazy(() =>
   import('./pages/Account').then((m) => ({ default: m.SecurityPage })),
@@ -239,6 +249,7 @@ function Footer() {
             <Link to="/#discover">Our story</Link>
             <Link to="/#cities">Explore cities</Link>
             <Link to="/help">Help & support</Link>
+            <Link to="/access">Choose your workspace</Link>
           </div>
           <div>
             <h2>FOR RESTAURANTS</h2>
@@ -376,7 +387,12 @@ function RoutePage({
     ),
     '/admin/settings': (
       <RequireSession roles={['admin']}>
-        <FinancePage />
+        <SettingsPage />
+      </RequireSession>
+    ),
+    '/admin/privacy': (
+      <RequireSession roles={['admin']}>
+        <PrivacyAdminPage />
       </RequireSession>
     ),
     '/admin/promotions': (
@@ -675,6 +691,7 @@ function RoutePage({
 }
 function PublicPage({ path }: { path: string }) {
   if (path === '/') return <Landing />;
+  if (path === '/access') return <AccessPage />;
   if (['/verify', '/forgot-password', '/reset-password'].includes(path))
     return <Navigate to="/login" replace />;
   if (authPaths.includes(path))
@@ -705,44 +722,8 @@ function PublicPage({ path }: { path: string }) {
       </MessagePage>
     );
   if (path.startsWith('/legal/'))
-    return (
-      <MessagePage title="Our policies are being prepared">
-        <p>
-          Approved terms, privacy and cancellation policies will be published before ordering opens.
-          Development checkout is for simulation only. Live ordering requires approved policies and
-          operational qualification.
-        </p>
-      </MessagePage>
-    );
-  if (path === '/help')
-    return (
-      <MessagePage title="A little help, right here.">
-        <div className="help-questions">
-          <details>
-            <summary>Can I order food right now?</summary>
-            <p>
-              You can browse menus and try labelled development checkout in configured areas. Test
-              payments do not charge money or dispatch a delivery. Live ordering will open after
-              operational qualification.
-            </p>
-          </details>
-          <details>
-            <summary>Is CraveCart only for Chennai?</summary>
-            <p>
-              No. CraveCart is being built for India, with city-specific delivery areas. Explore the
-              city directory to choose your city.
-            </p>
-          </details>
-          <details>
-            <summary>Why didn’t I receive a login code?</summary>
-            <p>
-              In local development, the code is shown on the verification screen and no message is
-              sent. Live SMS and email delivery require configured providers.
-            </p>
-          </details>
-        </div>
-      </MessagePage>
-    );
+    return <PolicyPage kind={path.split('/').at(-1) as 'terms' | 'privacy' | 'cancellations'} />;
+  if (path === '/help') return <HelpPage />;
   return (
     <MessagePage title="Something good is on its way">
       <p>

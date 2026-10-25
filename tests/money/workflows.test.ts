@@ -69,6 +69,7 @@ let repl: MongoMemoryReplSet | undefined, client: MongoClient;
 let orderWorker: ReturnType<typeof installOrders>,
   paymentWorker: ReturnType<typeof installPayments>;
 let failNextRoleGrant = false;
+let financeConfig: ReturnType<typeof loadConfig>;
 interface Actor {
   cookies: Map<string, string>;
   csrf: string;
@@ -306,6 +307,7 @@ beforeAll(async () => {
       NODE_ENV: 'test',
       SERVICE_NAME: name,
       COMMERCE_MODE: external ? 'test' : 'development',
+      FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR: '100000000',
       RAZORPAY_KEY_ID: 'rzp_test_fixture',
       RAZORPAY_KEY_SECRET: 'fixture-key-secret',
       RAZORPAY_WEBHOOK_SECRET: 'fixture-webhook-secret',
@@ -314,6 +316,7 @@ beforeAll(async () => {
       STRIPE_WEBHOOK_SECRET: 'whsec_fixture',
       UPLOAD_DIRECTORY: uploadDirectory,
     });
+    if (name === 'restaurant') financeConfig = config;
     const ctx: DomainContext = { config, db, client, fetcher, onClose: (fn) => closers.push(fn) };
     apps[name] = createApp({
       name: name as 'auth',
@@ -1239,5 +1242,374 @@ describe('transactional checkout, payments and refunds', () => {
     expect(await databases.utils!.collection('refunds').countDocuments({ orderId: order.id })).toBe(
       1,
     );
+  });
+  it('requires independent finance approval before authorizing refunds and preserves review decisions on replay', async () => {
+    const second = (await administrator()).value;
+    const { order, attempt } = await pending();
+    await outcome(attempt.id, 'captured');
+    await flush();
+    const originalThreshold = financeConfig.FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR;
+    financeConfig.FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR = 0;
+    const refundPath = `/api/v1/admin/orders/${order.id}/refund`;
+    const decisionPath = (id: string) => `/api/v1/admin/finance/approvals/${id}/decision`;
+    async function propose(amountMinor: number) {
+      const current = (await call('admin', 'get', `/api/v1/admin/orders/${order.id}`, admin)).body
+        .data;
+      return call(
+        'admin',
+        'post',
+        refundPath,
+        admin,
+        {
+          expectedVersion: current.version,
+          amountMinor,
+          reason: 'Reviewed discretionary service adjustment',
+        },
+        { 'Idempotency-Key': randomUUID() },
+      );
+    }
+    try {
+      const current = (await call('admin', 'get', `/api/v1/admin/orders/${order.id}`, admin)).body
+        .data;
+      const input = {
+        expectedVersion: current.version,
+        amountMinor: 1000,
+        reason: 'Reviewed discretionary service adjustment',
+      };
+      const headers = { 'Idempotency-Key': randomUUID() };
+      const requested = await call('admin', 'post', refundPath, admin, input, headers);
+      expect(requested.status, JSON.stringify(requested.body)).toBe(202);
+      const approval = requested.body.data.approval;
+      expect(approval.status).toBe('PENDING');
+      expect(requested.body.data.refundId).toBeNull();
+      expect(requested.body.data.order.version).toBe(current.version);
+      expect(
+        (await call('admin', 'post', refundPath, admin, input, headers)).body.data.approval.id,
+      ).toBe(approval.id);
+      expect(
+        await databases
+          .restaurant!.collection('refund_intents')
+          .countDocuments({ orderId: order.id }),
+      ).toBe(0);
+      expect((await call('admin', 'get', '/api/v1/admin/finance/approvals', customer)).status).toBe(
+        403,
+      );
+      const listed = await call('admin', 'get', '/api/v1/admin/finance/approvals?page=1', second);
+      expect(listed.status, JSON.stringify(listed.body)).toBe(200);
+      expect(
+        listed.body.data.approvals.some((value: { id: string }) => value.id === approval.id),
+      ).toBe(true);
+      expect(JSON.stringify(approval)).not.toContain(admin.data.principal.sessionId);
+      const review = {
+        expectedVersion: 1,
+        decision: 'approve',
+        reason: 'Independent finance review completed',
+      };
+      const reviewerUser = await databases
+        .auth!.collection('users')
+        .findOne({ _id: second.data.principal.userId as never });
+      try {
+        await databases
+          .auth!.collection('users')
+          .updateOne(
+            { _id: second.data.principal.userId as never },
+            { $set: { permissions: ['finance:read'] } },
+          );
+        expect((await call('admin', 'get', '/api/v1/admin/finance/approvals', second)).status).toBe(
+          200,
+        );
+        expect(
+          (
+            await call('admin', 'post', decisionPath(approval.id), second, review, {
+              'Idempotency-Key': randomUUID(),
+            })
+          ).status,
+        ).toBe(403);
+        expect(
+          (
+            await call('admin', 'post', refundPath, second, input, {
+              'Idempotency-Key': randomUUID(),
+            })
+          ).status,
+        ).toBe(403);
+      } finally {
+        await databases
+          .auth!.collection('users')
+          .updateOne(
+            { _id: second.data.principal.userId as never },
+            { $set: { permissions: reviewerUser!.permissions } },
+          );
+      }
+      const reviewerSession = await databases
+        .auth!.collection('sessions')
+        .findOne({ _id: second.data.principal.sessionId as never });
+      try {
+        await databases
+          .auth!.collection('sessions')
+          .updateOne(
+            { _id: second.data.principal.sessionId as never },
+            { $set: { mfaVerifiedAt: new Date(0) } },
+          );
+        expect(
+          (
+            await call('admin', 'post', decisionPath(approval.id), second, review, {
+              'Idempotency-Key': randomUUID(),
+            })
+          ).body.error.code,
+        ).toBe('MFA_REQUIRED');
+      } finally {
+        await databases
+          .auth!.collection('sessions')
+          .updateOne(
+            { _id: second.data.principal.sessionId as never },
+            { $set: { mfaVerifiedAt: reviewerSession!.mfaVerifiedAt } },
+          );
+      }
+      expect(
+        (
+          await call('admin', 'post', decisionPath(approval.id), admin, review, {
+            'Idempotency-Key': randomUUID(),
+          })
+        ).status,
+      ).toBe(403);
+      expect(
+        (
+          await call('admin', 'post', decisionPath(approval.id), customer, review, {
+            'Idempotency-Key': randomUUID(),
+          })
+        ).status,
+      ).toBe(403);
+      const keys = [{ 'Idempotency-Key': randomUUID() }, { 'Idempotency-Key': randomUUID() }];
+      const results = await Promise.all(
+        keys.map((key) => call('admin', 'post', decisionPath(approval.id), second, review, key)),
+      );
+      expect(results.map((result) => result.status).sort()).toEqual([202, 409]);
+      const winner = results.findIndex((result) => result.status === 202);
+      expect(results[winner]!.body.data.approval.reviewedBy).toBe(second.data.principal.userId);
+      expect(results[winner]!.body.data.approval.requestedBy).toBe(admin.data.principal.userId);
+      const refundId = results[winner]!.body.data.approval.refundId;
+      expect(refundId).toMatch(/^[a-f0-9-]{36}$/);
+      const audit = await databases
+        .restaurant!.collection('commerce_audit')
+        .find({ approvalId: approval.id })
+        .sort({ at: 1 })
+        .toArray();
+      expect(audit.map((record) => record.action)).toEqual([
+        'refund.approval.requested',
+        'refund.approval.authorized',
+      ]);
+      expect(audit[0]!.actorId).toBe(admin.data.principal.userId);
+      expect(audit[1]!.actorId).toBe(second.data.principal.userId);
+      expect(audit[1]!.before.refundRequestedMinor).toBe(0);
+      expect(audit[1]!.after.refundRequestedMinor).toBe(1000);
+      for (const entry of audit) expect(entry.correlationId).toMatch(/^[a-f0-9-]{36}$/);
+      await databases
+        .restaurant!.collection('financial_approvals')
+        .updateOne({ _id: approval.id as never }, { $set: { expiresAt: new Date(0) } });
+      expect(
+        (await call('admin', 'post', decisionPath(approval.id), second, review, keys[winner]!)).body
+          .data.approval.refundId,
+      ).toBe(refundId);
+      expect(
+        await databases
+          .restaurant!.collection('refund_intents')
+          .countDocuments({ orderId: order.id }),
+      ).toBe(1);
+      await flush();
+      expect(
+        (await call('admin', 'get', `/api/v1/admin/orders/${order.id}`, admin)).body.data
+          .refundedMinor,
+      ).toBe(1000);
+
+      const rejected = await propose(500);
+      expect(rejected.status, JSON.stringify(rejected.body)).toBe(202);
+      const refusal = await call(
+        'admin',
+        'post',
+        decisionPath(rejected.body.data.approval.id),
+        second,
+        {
+          ...review,
+          decision: 'reject',
+          reason: 'Adjustment not justified after independent review',
+        },
+        { 'Idempotency-Key': randomUUID() },
+      );
+      expect(refusal.body.data.approval.status).toBe('REJECTED');
+      expect(refusal.body.data.order).toBeNull();
+      expect(
+        await databases
+          .restaurant!.collection('refund_intents')
+          .countDocuments({ orderId: order.id }),
+      ).toBe(1);
+
+      const expired = await propose(500);
+      await databases
+        .restaurant!.collection('financial_approvals')
+        .updateOne(
+          { _id: expired.body.data.approval.id as never },
+          { $set: { expiresAt: new Date(0) } },
+        );
+      expect(
+        (
+          await call('admin', 'post', decisionPath(expired.body.data.approval.id), second, review, {
+            'Idempotency-Key': randomUUID(),
+          })
+        ).body.error.code,
+      ).toBe('APPROVAL_EXPIRED');
+      const changed = await propose(500);
+      await databases
+        .restaurant!.collection('orders')
+        .updateOne({ _id: order.id as never }, { $inc: { version: 1 } });
+      expect(
+        (
+          await call('admin', 'post', decisionPath(changed.body.data.approval.id), second, review, {
+            'Idempotency-Key': randomUUID(),
+          })
+        ).body.error.code,
+      ).toBe('ORDER_CHANGED');
+
+      financeConfig.FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR = 1500;
+      const cumulative = await propose(500);
+      expect(cumulative.body.data.approval.status).toBe('PENDING');
+      expect(cumulative.body.data.approval.thresholdMinor).toBe(1500);
+      const user = await databases
+        .auth!.collection('users')
+        .findOne({ _id: admin.data.principal.userId as never });
+      try {
+        await databases
+          .auth!.collection('users')
+          .updateOne(
+            { _id: admin.data.principal.userId as never },
+            { $set: { permissions: ['finance:read'] } },
+          );
+        const revoked = await call(
+          'admin',
+          'post',
+          decisionPath(cumulative.body.data.approval.id),
+          second,
+          review,
+          { 'Idempotency-Key': randomUUID() },
+        );
+        expect(revoked.body.error.code).toBe('REQUESTER_UNAVAILABLE');
+      } finally {
+        await databases
+          .auth!.collection('users')
+          .updateOne(
+            { _id: admin.data.principal.userId as never },
+            { $set: { permissions: user!.permissions } },
+          );
+      }
+      expect(
+        await databases
+          .restaurant!.collection('refund_intents')
+          .countDocuments({ orderId: order.id }),
+      ).toBe(1);
+    } finally {
+      financeConfig.FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR = originalThreshold;
+    }
+  });
+  it('reorders owned completed orders with current prices, explicit cart replacement and idempotent confirmation', async () => {
+    const prior = await databases
+      .restaurant!.collection<{ _id: string; userId: string; status: string }>('orders')
+      .findOne({ userId: customer.data.principal.userId, status: 'CANCELLED' });
+    expect(prior).toBeTruthy();
+    const base = `/api/v1/orders/${prior!._id}/reorder`,
+      input = { addressId };
+    expect((await call('restaurant', 'post', base + '/preview', otherSeller, input)).status).toBe(
+      404,
+    );
+    let preview = await call('restaurant', 'post', base + '/preview', customer, input);
+    expect(preview.status, JSON.stringify(preview.body)).toBe(200);
+    const menu = databases.restaurant!.collection('menu_items');
+    const item = await menu.findOne({ _id: itemId as never });
+    expect(item).toBeTruthy();
+    try {
+      await menu.updateOne({ _id: itemId as never }, { $inc: { basePriceMinor: 100, version: 1 } });
+      const stale = await call(
+        'restaurant',
+        'post',
+        base + '/confirm',
+        customer,
+        {
+          previewId: preview.body.data.id,
+          expectedCartVersion: preview.body.data.cartVersion,
+          replace: true,
+        },
+        { 'Idempotency-Key': randomUUID() },
+      );
+      expect(stale.status, JSON.stringify(stale.body)).toBe(409);
+      expect(stale.body.error.code).toBe('REORDER_CHANGED');
+      preview = await call('restaurant', 'post', base + '/preview', customer, input);
+      expect(preview.status, JSON.stringify(preview.body)).toBe(200);
+      const body = {
+        previewId: preview.body.data.id,
+        expectedCartVersion: preview.body.data.cartVersion,
+        replace: true,
+      };
+      const headers = { 'Idempotency-Key': randomUUID() };
+      const saved = await call('restaurant', 'post', base + '/confirm', customer, body, headers);
+      expect(saved.status, JSON.stringify(saved.body)).toBe(200);
+      expect(saved.body.data.subtotalMinor).toBe(preview.body.data.subtotalMinor);
+      await databases
+        .restaurant!.collection('reorder_previews')
+        .updateOne({ _id: body.previewId as never }, { $set: { expiresAt: new Date(0) } });
+      expect(
+        (await call('restaurant', 'post', base + '/confirm', customer, body, headers)).body.data
+          .version,
+      ).toBe(saved.body.data.version);
+      const next = await call('restaurant', 'post', base + '/preview', customer, input);
+      expect(next.body.data.replacesCart).toBe(true);
+      const denied = await call(
+        'restaurant',
+        'post',
+        base + '/confirm',
+        customer,
+        {
+          previewId: next.body.data.id,
+          expectedCartVersion: next.body.data.cartVersion,
+          replace: false,
+        },
+        { 'Idempotency-Key': randomUUID() },
+      );
+      expect(denied.body.error.code).toBe('REPLACE_REQUIRED');
+      const advance = await call('restaurant', 'put', '/api/v1/cart', customer, await cartInput());
+      expect(advance.status, JSON.stringify(advance.body)).toBe(200);
+      const changed = await call(
+        'restaurant',
+        'post',
+        base + '/confirm',
+        customer,
+        {
+          previewId: next.body.data.id,
+          expectedCartVersion: next.body.data.cartVersion,
+          replace: true,
+        },
+        { 'Idempotency-Key': randomUUID() },
+      );
+      expect(changed.body.error.code).toBe('VERSION_CONFLICT');
+      await databases
+        .restaurant!.collection('reorder_previews')
+        .updateOne({ _id: next.body.data.id as never }, { $set: { expiresAt: new Date(0) } });
+      const expired = await call(
+        'restaurant',
+        'post',
+        base + '/confirm',
+        customer,
+        {
+          previewId: next.body.data.id,
+          expectedCartVersion: advance.body.data.version,
+          replace: true,
+        },
+        { 'Idempotency-Key': randomUUID() },
+      );
+      expect(expired.body.error.code).toBe('PREVIEW_EXPIRED');
+      await menu.updateOne({ _id: itemId as never }, { $set: { available: false } });
+      expect((await call('restaurant', 'post', base + '/preview', customer, input)).status).toBe(
+        409,
+      );
+    } finally {
+      await menu.replaceOne({ _id: itemId as never }, item!);
+    }
   });
 });

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/v1/restaurants?*', (route) =>
@@ -124,6 +124,50 @@ test('signup and modal deep-link refresh work', async ({ page }) => {
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Every craving.');
 });
+
+test('workspace access connects four distinct sign-ins without public admin registration', async ({
+  page,
+}) => {
+  await page.goto('/access');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(
+    'A place for every appetite.',
+  );
+  await expect(page.locator('.access-card')).toHaveCount(4);
+  await expect(
+    page.getByRole('link', { name: /admin.*(register|create)|register.*admin/i }),
+  ).toHaveCount(0);
+  for (const [label, path, title] of [
+    ['Customer', '/login', 'Log in'],
+    ['Restaurant', '/seller/login', 'Restaurant partner login'],
+    ['Delivery partner', '/rider/login', 'Delivery partner login'],
+    ['Administration', '/admin/login', 'Team login'],
+  ]) {
+    await page
+      .getByRole('main')
+      .getByRole('link', { name: `${label} login`, exact: true })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toHaveAccessibleName(title!);
+    await dialog.getByRole('link', { name: 'Choose a different workspace' }).click();
+    await expect(page).toHaveURL(/\/access$/);
+  }
+  await page.reload();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+});
+test('workspace access has a responsive visual record', async ({ page }, testInfo) => {
+  await page.goto('/access');
+  await expect(page.locator('.access-card')).toHaveCount(4);
+  await page.evaluate(() => document.fonts.ready);
+  await mkdir('.local/qa', { recursive: true });
+  await page.screenshot({
+    path: `.local/qa/workspace-access-${testInfo.project.name}.png`,
+    fullPage: true,
+  });
+});
+
 test('verification and recovery links use the implemented passwordless login', async ({ page }) => {
   for (const path of ['/verify', '/forgot-password', '/reset-password']) {
     await page.goto(path);
@@ -189,6 +233,7 @@ test('public discovery and authentication have no WCAG A/AA automated violations
   await page.emulateMedia({ reducedMotion: 'reduce' });
   for (const path of [
     '/',
+    '/access',
     '/search?city=chennai',
     '/login',
     '/signup',

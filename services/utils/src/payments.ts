@@ -1,4 +1,5 @@
 import express, { type Express } from 'express';
+import { installUtilsPrivacy } from './privacy.js';
 import { randomUUID } from 'node:crypto';
 import type { ClientSession } from 'mongodb';
 import { z } from 'zod';
@@ -96,6 +97,7 @@ export function installPayments(
   ctx: DomainContext,
   options: { gatewayFetch?: typeof fetch } = {},
 ) {
+  installUtilsPrivacy(app, ctx);
   const { db, client, config } = ctx,
     gateways = new Gateways(config, options.gatewayFetch),
     attempts = db.collection<Attempt>('payment_attempts'),

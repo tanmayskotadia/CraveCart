@@ -24,6 +24,7 @@ import {
   type DomainContext,
 } from '@cravecart/platform';
 import { executeOnce } from '@cravecart/persistence';
+import { persistOrderNotifications } from './notifications.js';
 import type { installOrders, OrderRecord } from './orders.js';
 type Ops = ReturnType<typeof installOrders>;
 type Order = OrderRecord;
@@ -65,6 +66,7 @@ export function installFulfillment(app: Express, ctx: DomainContext, ops: Ops) {
       { unique: true, partialFilterExpression: { 'assignment.id': { $type: 'string' } } },
     );
     await notes.createIndex({ userId: 1, at: -1 });
+    await states.createIndex({ dispatchState: 1, readyAt: 1, _id: 1 });
   });
   function initial(id: string): State {
     return {
@@ -107,32 +109,7 @@ export function installFulfillment(app: Express, ctx: DomainContext, ops: Ops) {
     return restaurantAccess(ctx, id, userId, 'kitchen');
   }
   async function notify(value: Order, session: ClientSession) {
-    const merchant = await db
-      .collection('restaurants')
-      .findOne({ _id: value.quote.restaurant.id as never }, { session });
-    for (const [userId, href, role] of [
-      [value.userId, `/orders/${value.id}/track`, 'customer'],
-      [
-        merchant?.userId ? String(merchant.userId) : '',
-        `/seller/restaurants/${value.quote.restaurant.id}/orders/${value.id}`,
-        'seller',
-      ],
-    ]) {
-      if (!userId) continue;
-      await notes.updateOne(
-        { _id: `${value.id}:${value.version}:${role}` },
-        {
-          $setOnInsert: {
-            userId,
-            title: `${value.quote.restaurant.name}: ${value.status.replaceAll('_', ' ').toLowerCase()}`,
-            href,
-            at: new Date().toISOString(),
-            readAt: null,
-          },
-        },
-        { upsert: true, session },
-      );
-    }
+    await persistOrderNotifications(db, session, value);
   }
   async function change(
     value: Order,
@@ -166,6 +143,12 @@ export function installFulfillment(app: Express, ctx: DomainContext, ops: Ops) {
     viewer: { userId: string; role: 'customer' | 'seller' | 'rider' | 'admin' },
     session?: ClientSession,
   ): Promise<FulfillmentSnapshot> {
+    if (value.privacyErased)
+      throw new HttpError(
+        410,
+        'ORDER_DATA_REMOVED',
+        'Personal delivery details were removed after retention',
+      );
     const state = (await states.findOne({ _id: value._id }, { session })) ?? initial(value._id);
     if (viewer.role === 'customer' && value.userId !== viewer.userId)
       throw new HttpError(404, 'ORDER_NOT_FOUND', 'Order not found');
@@ -359,12 +342,13 @@ export function installFulfillment(app: Express, ctx: DomainContext, ops: Ops) {
           } else if (input.action === 'accept' && value.status === 'PLACED') {
             state.preparationMinutes = input.preparationMinutes ?? 25;
             state.acceptedAt = new Date().toISOString();
-            state.dispatchState = 'SEARCHING';
+            state.dispatchState = 'WAITING';
             await change(value, state, 'ACCEPTED', 'Restaurant accepted your order.', session);
           } else if (input.action === 'preparing' && value.status === 'ACCEPTED')
             await change(value, state, 'PREPARING', 'The kitchen is preparing your food.', session);
           else if (input.action === 'ready' && ['ACCEPTED', 'PREPARING'].includes(value.status)) {
             state.readyAt = new Date().toISOString();
+            state.dispatchState = 'SEARCHING';
             state.pickupProof = proof();
             await change(
               value,
@@ -454,24 +438,27 @@ export function installFulfillment(app: Express, ctx: DomainContext, ops: Ops) {
   internal.post('/candidates', async (req, res) => {
     if (res.locals.caller !== 'rider') throw new HttpError(403, 'SERVICE_DENIED', 'Service denied');
     z.object({}).strict().parse(req.body);
-    const values = await ops.orders
-      .find({
-        status: { $in: active },
-        captureRef: { $type: 'string' },
-        'quote.mode': config.COMMERCE_MODE,
-      })
-      .sort({ placedAt: 1 })
-      .limit(50)
+    // Select unassigned work before the batch limit; old assigned orders must not starve it.
+    const queue = await states
+      .aggregate<State & { order: Order }>([
+        { $match: { dispatchState: 'SEARCHING', assignment: null } },
+        { $sort: { readyAt: 1, _id: 1 } },
+        { $lookup: { from: 'orders', localField: '_id', foreignField: '_id', as: 'order' } },
+        { $unwind: '$order' },
+        {
+          $match: {
+            'order.status': 'READY_FOR_PICKUP',
+            'order.captureRef': { $type: 'string' },
+            'order.quote.mode': config.COMMERCE_MODE,
+          },
+        },
+        { $limit: 50 },
+      ])
       .toArray();
     const result = [];
-    for (const value of values) {
-      const state = await states.findOne({ _id: value.id });
-      if (
-        state?.assignment ||
-        state?.dispatchState === 'NO_RIDER' ||
-        value.refundRequestedMinor >= value.quote.totals.totalMinor
-      )
-        continue;
+    for (const state of queue) {
+      const value = state.order;
+      if (!value || value.refundRequestedMinor >= value.quote.totals.totalMinor) continue;
       const merchant = await db
         .collection('restaurants')
         .findOne({ _id: value.quote.restaurant.id as never });
@@ -518,7 +505,7 @@ export function installFulfillment(app: Express, ctx: DomainContext, ops: Ops) {
         const value = await order(input.orderId, session),
           state = (await states.findOne({ _id: value.id }, { session })) ?? initial(value.id);
         if (
-          !active.includes(value.status) ||
+          value.status !== 'READY_FOR_PICKUP' ||
           !value.captureRef ||
           value.refundRequestedMinor >= value.quote.totals.totalMinor ||
           state.assignment
@@ -753,8 +740,8 @@ export function installFulfillment(app: Express, ctx: DomainContext, ops: Ops) {
     const { requirePermission } = await import('@cravecart/platform');
     requirePermission(principal, 'dispatch:write', true);
     const value = await order(input.orderId);
-    if (!active.includes(value.status))
-      throw new HttpError(409, 'DISPATCH_UNAVAILABLE', 'Only a pre-pickup order can be dispatched');
+    if (value.status !== 'READY_FOR_PICKUP')
+      throw new HttpError(409, 'DISPATCH_UNAVAILABLE', 'Only food marked ready can be dispatched');
     await states.updateOne(
       { _id: value.id, assignment: null },
       { $set: { dispatchState: 'SEARCHING' } },
@@ -788,19 +775,30 @@ export function installFulfillment(app: Express, ctx: DomainContext, ops: Ops) {
     );
   });
   app.use('/internal/v1/fulfillment', internal);
-  // Order creation/placement predates fulfillment. Derive missing notifications durably on a sweep.
+  // One-time keyset repair for orders created before transactional notifications existed.
+  const repairs = db.collection<{ _id: string; cursor: string; complete: boolean }>(
+    'fulfillment_repairs',
+  );
+  const repairId = `transactional-notifications:${config.COMMERCE_MODE}`;
   let working = false;
+  let repaired = false;
   async function tick() {
-    if (working) return;
+    if (working || repaired) return;
     working = true;
     try {
       await ready();
+      const repair = await repairs.findOne({ _id: repairId });
+      if (repair?.complete) {
+        repaired = true;
+        return;
+      }
       const recent = await ops.orders
         .find({
+          ...(repair?.cursor ? { _id: { $gt: repair.cursor } } : {}),
           'quote.mode': config.COMMERCE_MODE,
           status: { $nin: ['PAYMENT_PENDING', 'EXPIRED'] },
         })
-        .sort({ createdAt: -1 })
+        .sort({ _id: 1 })
         .limit(100)
         .toArray();
       for (const value of recent) {
@@ -811,6 +809,17 @@ export function installFulfillment(app: Express, ctx: DomainContext, ops: Ops) {
           await session.endSession();
         }
       }
+      await repairs.updateOne(
+        { _id: repairId },
+        {
+          $set: {
+            cursor: recent.at(-1)?.id ?? repair?.cursor ?? '',
+            complete: recent.length < 100,
+          },
+        },
+        { upsert: true },
+      );
+      repaired = recent.length < 100;
     } finally {
       working = false;
     }
