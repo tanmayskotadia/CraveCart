@@ -5,7 +5,13 @@ import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/playwright-report/**', '**/test-results/**'],
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
+      '.local/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -21,6 +27,9 @@ export default tseslint.config(
         setInterval: 'readonly',
         clearInterval: 'readonly',
         fetch: 'readonly',
+        performance: 'readonly',
+        Response: 'readonly',
+        structuredClone: 'readonly',
         AbortSignal: 'readonly',
         URL: 'readonly',
         document: 'readonly',

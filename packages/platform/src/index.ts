@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
 import { timingSafeEqual } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -60,6 +61,8 @@ interface AppOptions {
   resources: Resources;
   fetcher?: typeof fetch;
   configure?: (app: express.Express) => void;
+  isDraining?: () => boolean;
+  buildIdentity?: string | null;
 }
 const timeout = async <T>(promise: Promise<T>, ms = 1200): Promise<T> => {
   let timer: NodeJS.Timeout | undefined;
@@ -81,8 +84,21 @@ function tokenMatches(given: string | undefined, expected: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export function createApp({ name, config, resources, fetcher = fetch, configure }: AppOptions) {
+export function createApp({
+  name,
+  config,
+  resources,
+  fetcher = fetch,
+  configure,
+  isDraining = () => false,
+  buildIdentity,
+}: AppOptions) {
   const app = express();
+  if (name === 'gateway' && config.TRUSTED_PROXY_CIDRS)
+    app.set(
+      'trust proxy',
+      config.TRUSTED_PROXY_CIDRS.split(',').map((value) => value.trim()),
+    );
   const logger = createLogger(name);
   let requests = 0;
   app.disable('x-powered-by');
@@ -121,12 +137,72 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
     context.with(trace.setSpan(parent, span), next);
   }) satisfies RequestHandler);
   app.get('/health/live', (_req, res) => res.json({ status: 'up', service: name }));
+  app.get('/health/release', async (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    let fingerprint = buildIdentity;
+    if (fingerprint === undefined) {
+      try {
+        fingerprint = JSON.parse(
+          readFileSync(new URL('./release.json', import.meta.url), 'utf8'),
+        ).buildSha256;
+      } catch {
+        fingerprint = null;
+      }
+    }
+    const owners: Record<string, boolean> = {};
+    const valid = typeof fingerprint === 'string' && /^[a-f0-9]{64}$/.test(fingerprint);
+    if (name === 'gateway' && valid) {
+      await Promise.all(
+        serviceNames.map(async (owner) => {
+          try {
+            const response = await fetcher(new URL('/health/release', upstream(owner)), {
+              signal: AbortSignal.timeout(1500),
+              redirect: 'error',
+            });
+            const value = await response.json();
+            owners[owner] =
+              response.ok &&
+              value.service === owner &&
+              value.algorithm === 'cravecart-deployment-v1' &&
+              value.buildSha256 === fingerprint;
+          } catch {
+            owners[owner] = false;
+          }
+        }),
+      );
+    }
+    const matched =
+      valid && (name !== 'gateway' || serviceNames.every((owner) => owners[owner] === true));
+    res.status(matched ? 200 : 503).json({
+      service: name,
+      algorithm: 'cravecart-deployment-v1',
+      buildSha256: valid ? fingerprint : null,
+      owners,
+    });
+  });
   app.get('/health/ready', async (_req, res) => {
-    const checks = await resources.check().catch(() => ({ dependencies: false }));
+    res.setHeader('Cache-Control', 'no-store');
+    const checks = isDraining()
+      ? { draining: false }
+      : await timeout(resources.check(), 2000).catch(() => ({ dependencies: false }));
     const ready = Object.values(checks).every(Boolean) && Object.keys(checks).length > 0;
     res
       .status(ready ? 200 : 503)
       .json({ status: ready ? 'ready' : 'not-ready', service: name, checks });
+  });
+  app.use('/api', (_req, res, next) => {
+    // Includes failures, private media and authenticated GETs at every owner and proxy.
+    res.setHeader('Cache-Control', 'private, no-store');
+    if (!isDraining()) return next();
+    res.setHeader('Retry-After', '5');
+    res.status(503).json({
+      error: {
+        code: 'SERVICE_DRAINING',
+        message: 'Service is restarting. Please retry shortly',
+        requestId: res.locals.requestId,
+        retryable: true,
+      },
+    });
   });
   app.get('/metrics', (req, res) => {
     if (!tokenMatches(req.headers.authorization, config.METRICS_TOKEN)) {
@@ -258,6 +334,7 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
           'cookie',
           'origin',
           'content-type',
+          'accept',
           'x-csrf-token',
           'idempotency-key',
           'x-upload-token',
@@ -281,30 +358,47 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
             : Buffer.isBuffer(req.body)
               ? new Uint8Array(req.body).buffer
               : JSON.stringify(req.body ?? {});
-        const disconnect=new AbortController();
-        res.once('close',()=>{if(!res.writableEnded)disconnect.abort();});
+        const disconnect = new AbortController();
+        res.once('close', () => {
+          if (!res.writableEnded) disconnect.abort();
+        });
         const response = await fetcher(new URL(req.originalUrl, upstream(owner)), {
           method: req.method,
           headers,
           body,
-          signal: AbortSignal.any([disconnect.signal,AbortSignal.timeout(segment==='assistant'?45000:20000)]),
+          signal: AbortSignal.any([
+            disconnect.signal,
+            AbortSignal.timeout(segment === 'assistant' ? 45000 : 20000),
+          ]),
           redirect: 'manual',
         });
-        for (const key of ['content-type', 'content-disposition', 'cache-control', 'retry-after']) {
+        for (const key of ['content-type', 'content-disposition', 'retry-after']) {
           const value = response.headers.get(key);
           if (value) res.setHeader(key, value);
         }
         const setCookies = response.headers.getSetCookie();
         if (setCookies.length) res.setHeader('set-cookie', setCookies);
         res.setHeader('x-content-type-options', 'nosniff');
-        if(response.headers.get('content-type')?.startsWith('text/event-stream')&&response.body){
-          res.status(response.status);res.setHeader('X-Accel-Buffering','no');res.flushHeaders();
-          await pipeline(Readable.fromWeb(response.body as import('node:stream/web').ReadableStream),res);return;
+        if (
+          response.headers.get('content-type')?.startsWith('text/event-stream') &&
+          response.body
+        ) {
+          res.status(response.status);
+          res.setHeader('X-Accel-Buffering', 'no');
+          res.flushHeaders();
+          await pipeline(
+            Readable.fromWeb(response.body as import('node:stream/web').ReadableStream),
+            res,
+          );
+          return;
         }
         res.status(response.status).send(Buffer.from(await response.arrayBuffer()));
       } catch (error) {
-        if(res.destroyed)return;
-        if(res.headersSent){res.end();return;}
+        if (res.destroyed) return;
+        if (res.headersSent) {
+          res.end();
+          return;
+        }
         next(error);
       }
     });
@@ -331,8 +425,9 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
       error = new HttpError(409, 'RESOURCE_CONFLICT', 'The resource changed. Refresh and retry.');
     const invalid = error instanceof ZodError || error?.type === 'entity.parse.failed';
     const oversized = error?.type === 'entity.too.large';
+    const unsupported = ['charset.unsupported', 'encoding.unsupported'].includes(error?.type);
     const known = error instanceof HttpError;
-    const status = known ? error.status : oversized ? 413 : invalid ? 400 : 503;
+    const status = known ? error.status : oversized ? 413 : unsupported ? 415 : invalid ? 400 : 503;
     // Log classification only; exceptions can contain connection URLs or request bodies.
     logger.warn(
       {
@@ -347,16 +442,20 @@ export function createApp({ name, config, resources, fetcher = fetch, configure 
           ? error.code
           : oversized
             ? 'PAYLOAD_TOO_LARGE'
-            : invalid
-              ? 'INVALID_REQUEST'
-              : 'DEPENDENCY_UNAVAILABLE',
+            : unsupported
+              ? 'UNSUPPORTED_MEDIA_TYPE'
+              : invalid
+                ? 'INVALID_REQUEST'
+                : 'DEPENDENCY_UNAVAILABLE',
         message: known
           ? error.message
           : oversized
             ? 'Request is too large'
-            : invalid
-              ? 'Check your request and try again'
-              : 'Service temporarily unavailable',
+            : unsupported
+              ? 'Unsupported request encoding'
+              : invalid
+                ? 'Check your request and try again'
+                : 'Service temporarily unavailable',
         requestId: res.locals.requestId,
         retryable: known ? error.retryable : status === 503,
       },
@@ -419,7 +518,8 @@ function localResources(
     }
   };
   const timer = setInterval(() => {
-    work = tick();
+    // Preserve the in-flight promise until completion; a skipped tick must not replace it.
+    if (!running && !stopped) work = tick();
   }, 1000);
   timer.unref();
   return {
@@ -480,12 +580,14 @@ export async function startService(
         }
       : localResources(name, config, logger);
   const closers: Array<() => Promise<void>> = [];
+  let closing = false;
   const socketSetups: Array<(server: Server) => void> = [];
   const server = createServer(
     createApp({
       name,
       config,
       resources,
+      isDraining: () => closing,
       configure:
         install && 'db' in resources
           ? (app) =>
@@ -514,7 +616,6 @@ export async function startService(
     server.listen(config.PORT, config.HOST, resolve);
   });
   logger.info({ port: config.PORT, host: config.HOST }, 'service listening');
-  let closing = false;
   const shutdown = async () => {
     if (closing) return;
     closing = true;

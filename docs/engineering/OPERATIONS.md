@@ -1,5 +1,7 @@
 # Foundation operations
 
+See [current hardening controls](HARDENING.md), [incident/recovery procedures](INCIDENT-RUNBOOKS.md) and [pilot acceptance](../release/PILOT-READINESS.md) for the release run, actual remaining qualification and incident ownership.
+
 ## Health, tracing and shutdown
 
 - `/health/live` proves the process is serving HTTP, independent of MongoDB/RabbitMQ/Redis availability.

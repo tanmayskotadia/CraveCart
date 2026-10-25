@@ -4,6 +4,8 @@ Updated: 25 October 2026. Local environment: Windows, Node 24.14.1, npm 11.11.0,
 
 ## Foundation evidence (historical)
 
+This and the following milestone sections are historical snapshots. The current hardening results appear below; older bundle warnings and lower test counts do not override the latest run.
+
 | Check | Result | Evidence |
 |---|---|---|
 | Dependency installation | Passed | Locked npm workspace install; audit reported zero vulnerabilities at installation |
@@ -111,9 +113,64 @@ Build, type checks, lint, formatting and the 15 platform tests are also rerun fo
 | Contracts | Passed: 2,392 checks | 94 routes and 246 HTTP operations; role-operation registry promoted without marking remaining inventory as implemented |
 | Quality and visual review | Passed | Build/type/lint/format checks; desktop financial records and mobile support screenshots inspected; no horizontal overflow in checked role screens. Main JS bundle retains a non-blocking size warning |
 
-See [role operations](ROLE-OPERATIONS.md). These tests do not qualify bank payouts or contractual partner earnings: commission/payable remain null and statements explicitly show UNRECONCILED. Support staffing, message retention/deletion, hosted provider execution and assistant functionality remain separate work. No new API key or seventh owner service was introduced. Automated browser services and data are disposable.
+See [role operations](ROLE-OPERATIONS.md). These tests do not qualify bank payouts or contractual partner earnings: commission/payable remain null and statements explicitly show UNRECONCILED. The assistant is covered by the subsequent evidence below. Support staffing, wider message retention/deletion and hosted provider execution remain release work. No seventh owner service was introduced. Automated browser services and data are disposable.
 
-## Remaining release gates
+## Assistant evidence
+
+| Check | Result | Evidence |
+|---|---|---|
+| Shared assistant/role/fulfillment suite | Passed: 69 tests | 40 assistant engine/grounding cases, 27 real-MongoDB service workflows and two push allowlist tests; includes prior role/fulfillment coverage |
+| Routing and approved help | Passed | Fixed 26-case intent/refusal evaluation; nine exact approved-help answer/source checks; expired/wrong-audience help and invalid navigation are rejected |
+| Scoped facts and history | Passed | Own delivered/refund records, foreign conversation/order denial, privileged-action refusal, strict context schemas, encrypted/redacted text, replay/version guards, per-user concurrency and owned deletion |
+| Confirmed actions | Passed | Explicit consent; no ticket/cart action before confirmation; token ownership, wrong-token and expiry checks; standard cart pricing/serviceability/version validation; same-command replay and lost-response recovery without duplicate additions |
+| Streaming/cancellation | Passed | Real ephemeral Utils and gateway HTTP servers: progress arrives before the owner response, committed result is streamed, disconnect cancels work before persistence, and JSON/history recover answers |
+| Model boundary | Passed with fixtures | Responses request schema, `store:false`, bounded output, no declared model tools/account records, private-topic bypass, malformed action output rejection, circuit-open fallback; no real provider request or charge |
+| Production frontend journey | Passed: desktop and mobile | Existing food-delivery story plus streamed own-order answer and reload, allergy boundary, menu discovery, confirmed cart addition, consented support ticket and admin routing evaluation; temporary production bundle and services |
+| Regressions | Passed | 17 platform/calendar/tracing tests, 34 identity/catalog tests, 22 money tests with two deliberate external-only skips, and 20 national UI tests |
+| Contracts and quality | Passed | 2,419 checks; 94 routes, 252 HTTP operations, 38 broker and 15 socket contracts; build, type, lint, formatting and import boundaries. The Vite main-bundle size warning remains non-blocking |
+| Visual review | Inspected | Desktop and mobile assistant history, source links, dish cards and confirmation summaries; screenshots in ignored `.local/qa` and no horizontal overflow in the checked journey |
+
+See [assistant setup and limits](ASSISTANT.md). The built-in assistant needs no model key. Optional OpenAI interpretation was tested through synthetic responses only. Assistant actions remain **disabled by default** until the PRD's human review is recorded; fixture flags do not authorize production writes. Routing scores are not a production semantic-answer accuracy certification. Guest chat, real-model quality/spend qualification, deployment/SSE-proxy behavior, backup/key rotation and wider retention/deletion remain open. No paid resource, live charge, email/SMS or real support message was created by these tests.
+
+## Hardening evidence
+
+Executed on 25 October 2026 against isolated synthetic fixtures. `npm run verify:release` completed all 13 checks. Reports and per-command logs are retained under `.local/release-<UUID>/`; each identifies its source fingerprint and timestamps. The first complete run is `.local/release-78988bf5-3365-49a5-ba14-80ac5d19e1cc/`. Final broker/tooling refinements were checked again, including 24 platform/security tests and eight tooling tests; use the newest successful report for a release decision.
+
+| Check | Result | Evidence / limit |
+|---|---|---|
+| Platform/security | Passed: 24 tests | No-store success/error/upstream policy, safe parser errors, readiness deadline/drain, in-flight consumer drain and late old-connection close with a mocked broker transport, prior role/config/tracing/calendar tests |
+| Operational tooling | Passed: eight tests | Bounded probe limits/failure accounting; closed pilot gates, source/review/report completeness; TLS/namespace restore controls, corrupted data/index/TTL detection and a real-MongoDB comparator fixture |
+| Identity/catalog | Passed: 34 tests | Real MongoDB replica-set workflows |
+| Money | Passed: 22, two explicit external-only skips | Capture/refund/ledger/concurrency scenarios; no real merchant requests |
+| Gateway adapters | Passed: 15 tests | Razorpay/Stripe protocol fixtures |
+| Fulfillment/assistant | Passed: 69 tests | Real MongoDB, HTTP/Socket.IO/SSE and scoped domain workflows |
+| Public browser | Passed: 22 scenarios | Desktop/mobile; includes seven-page automated axe WCAG A/AA audits on each viewport |
+| Persisted four-role browser | Passed: 2 complete journeys | Desktop/mobile actual seven-process workflow; five representative authenticated screens audited on each viewport; no axe violations in checked states |
+| Transport probe | Passed: 100/100, zero failures | Four concurrent loopback gateway clients, response-header p95 13.8 ms in this run; not a production capacity/SLO result |
+| Restore comparator | Passed against a real synthetic MongoDB fixture | Equal records/indexes match; same-count changed values and lost indexes fail. This did not perform a backup/PITR restore |
+| Build and repository checks | Passed | Build, typecheck, lint, format and 2,419 contract checks; main bundle 493.28 KB minified after route splitting, prior 525 KB warning removed |
+| Pilot gate | Expected nonzero against unsigned template | Missing hosted evidence/owners cannot pass; no release approval manufactured |
+
+The new real-broker poison-version/drain integration case is prepared for the dependency CI job but has not run here: Docker/RabbitMQ/Redis are unavailable. See [hardening scope](HARDENING.md), [operational recovery](INCIDENT-RUNBOOKS.md) and [pilot readiness](../release/PILOT-READINESS.md). No actual backup/PITR restore, deployment, live payment or independent security approval is claimed.
+
+## Launch preparation evidence
+
+Application work follows the owner's instruction to handle hosting separately. The hosted preflight is tested with injected protocol fixtures; it has not contacted actual Vercel, Render, OTP, payment or model-provider accounts.
+
+| Check | Executed result / scope |
+|---|---|
+| Platform and configuration | 26 passing unit tests, including missing/mixed backend identity rejection, bounded draining and explicitly trusted/untrusted forwarded-IP chains; unrestricted proxy settings rejected |
+| Launch/recovery tooling | 15 passing tests: cross-platform deployment fingerprints, strict hosted mode/safety/header/build checks, complete named evidence, frozen-source requirement, staffed rollout scope, stage observations and existing recovery controls |
+| Commerce | 24 passing tests plus two explicit external-only skips; merchant approval/read scope, customer/seller denial, stale revision, sample/inactive-seller rejection, real account lookup, current seller role at quote creation, and checkout pause preserving an existing capture |
+| Provider fixtures | 17 passing sandbox-protocol cases, including the new launch/pause cases; no real gateway account used |
+| Role browser journey | Complete desktop/mobile journeys pass with actual seven-process persistence: management deep links, merchant approval/revocation, export/deletion-review support cases, reload and seven authenticated axe audit states per viewport |
+| Contracts | 2,433 structural/schema checks; 94 frontend routes and 254 HTTP operations; new merchant/account contracts exported and route implementation scopes recorded |
+| Repository checks | Build, types, lint and formatting pass; main bundle stays below 500 KB. The final release runner records the exact source/build fingerprints and refuses files changed during the run |
+| Prepared operation | Launch handbook, partner/operations training, empty review/observation records and `launch:prepare` operating packet; `launch:gate` is expected to fail until actual evidence, staffing and reviews are supplied |
+
+The complete report is generated under `.local/release-<UUID>/report.json` by `npm run verify:release`; use a report with all checks and both unchanged-source flags passing. Browser JSON attachments/screenshots are persisted for review. Per-check fixture results establish application behavior, not provider readiness, real field-device performance, settlement, policy approval, staffed operation or an executed live pilot. See [launch handbook](../release/LAUNCH-HANDBOOK.md).
+
+## Owner-run qualification
 
 | Gate | Why it is open | Next executable proof |
 |---|---|---|

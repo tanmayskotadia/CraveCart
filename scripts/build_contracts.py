@@ -49,7 +49,8 @@ def envelope(schema):
 
 
 # Local route coverage is separate from the full proposed product scope and release qualification.
-AVAILABLE_PAGES = {
+AVAILABLE_PAGES = {"/assistant", "/admin/assistant",
+    "/admin/users/:userId", "/admin/restaurants", "/admin/restaurants/:restaurantId", "/admin/riders", "/admin/riders/:riderId", "/verify", "/forgot-password", "/reset-password",
     "/support", "/support/tickets/:ticketId", "/orders/:orderId/messages", "/orders/:orderId/review",
     "/admin/support", "/admin/support/:ticketId", "/admin/reviews", "/admin/team", "/admin/promotions", "/admin/reports", "/admin/audit",
     "/seller/restaurants/:restaurantId/reviews", "/seller/restaurants/:restaurantId/staff", "/seller/restaurants/:restaurantId/finance", "/seller/restaurants/:restaurantId/analytics", "/seller/restaurants/:restaurantId/history", "/rider/history", "/rider/earnings",
@@ -63,6 +64,7 @@ AVAILABLE_PAGES = {
     "/seller/restaurants/:restaurantId/menu/:itemId/edit", "/seller/restaurants/:restaurantId/hours", "/403", "*",
 }
 PARTIAL_PAGES = {
+    "/settings/privacy",
     "/", "/search", "/location", "/restaurants/:slug", "/offers", "/cart", "/profile", "/settings",
     "/seller/restaurants", "/seller/restaurants/:restaurantId/profile", "/seller/restaurants/:restaurantId/dashboard",
     "/rider/dashboard", "/rider/profile", "/admin/dashboard", "/admin/users", "/admin/audit", "/seller", "/rider", "/admin",
@@ -109,6 +111,14 @@ def build_routes():
     for route in routes:
         route["runtimeStatus"] = "available-locally" if route["path"] in AVAILABLE_PAGES else "partial" if route["path"] in PARTIAL_PAGES else "planned"
         route["implemented"] = route["runtimeStatus"] == "available-locally"
+        if route["path"] == "/settings/privacy":
+            route["implementationScope"] = "Private export/deletion review requests through tracked support; cross-service fulfillment and retention approval remain operational gates."
+        if route["path"] in {"/verify", "/forgot-password", "/reset-password"}:
+            route["implementationScope"] = "Redirects to implemented passwordless contact verification; password login/reset tokens are not offered."
+        if route["path"].startswith("/admin/restaurants"):
+            route["implementationScope"] = "Paginated real merchant launch records and versioned live-order approval/revocation; verification and incidents use their canonical workspaces."
+        if route["path"].startswith("/admin/riders"):
+            route["implementationScope"] = "Rider-filtered verification queue and canonical application details; dispatch incidents remain in delivery operations."
         if route["path"] == "/cart":
             route["plannedPolicy"] = route["policy"]
             route.update(sessionRequired=True, roles=["customer"], policy="Authenticated owner; saved selection and server-authoritative checkout. Guest cart remains planned.")
@@ -248,7 +258,7 @@ def build_openapi(endpoints):
     implemented = OUT / "platform.openapi.json"
     if implemented.exists():
         paths["/platform"] = json.loads(implemented.read_text(encoding="utf-8"))
-    for name in ["identity.openapi.json", "catalog.openapi.json", "commerce.openapi.json", "fulfillment.openapi.json", "operations.openapi.json"]:
+    for name in ["identity.openapi.json", "catalog.openapi.json", "commerce.openapi.json", "fulfillment.openapi.json", "operations.openapi.json", "assistant.openapi.json"]:
         implemented = OUT / name
         if implemented.exists():
             for path, methods in json.loads(implemented.read_text(encoding="utf-8")).items():

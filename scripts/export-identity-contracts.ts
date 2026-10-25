@@ -258,4 +258,24 @@ add('admin', 'post', '/admin/operations/{operationId}/retry', operation, empty, 
   policy:
     'Admin verifications:write with fresh MFA, origin and CSRF; self-review and concurrent conflicting decisions denied.',
 });
+add(
+  'admin',
+  'get',
+  '/admin/users/{userId}',
+  z
+    .object({
+      id: z.string().uuid(),
+      name: z.string(),
+      contact: z.string(),
+      roles: z.array(roleSchema),
+      status: z.enum(['ACTIVE', 'SUSPENDED']),
+      createdAt: z.string().datetime(),
+    })
+    .strict(),
+  undefined,
+  {
+    policy:
+      'Admin users:read; authoritative single-account read, unknown IDs return 404 and every internal read rechecks the current grant.',
+  },
+);
 writeFileSync('contracts/identity.openapi.json', JSON.stringify(paths, null, 2) + '\n');

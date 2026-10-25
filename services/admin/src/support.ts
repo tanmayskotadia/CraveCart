@@ -55,13 +55,55 @@ export function installSupport(app: Express, ctx: DomainContext) {
   }
   const present = ({ _id: _id, ...value }: Ticket) => value;
   const publicMessage = ({ _id: _id, ticketId: _t, ...value }: Message) => value;
-  async function createTicket(input:ReturnType<typeof ticketInputSchema.parse>,userId:string,key:string,expiresAt?:string){
-    await quota(userId,'create',10);
-    return executeOnce(client,db,userId+':ticket',key,{...input,...(expiresAt?{expiresAt}:{})},async(session)=>{
-      if(expiresAt&&Date.parse(expiresAt)<=Date.now())throw new HttpError(409,'ACTION_EXPIRED','Review a new support proposal');
-      const now=new Date().toISOString(),id=randomUUID(),ticket:Ticket={_id:id,id,requesterId:userId,subject:input.subject,category:input.category,orderId:input.orderId,state:'OPEN',version:1,assignedTo:null,createdAt:now,updatedAt:now,resolution:null};
-      await tickets.insertOne(ticket,{session});const mid=randomUUID();await messages.insertOne({_id:mid,id:mid,ticketId:id,sequence:1,author:'requester',text:input.text,at:now},{session});return present(ticket);
-    });
+  async function createTicket(
+    input: ReturnType<typeof ticketInputSchema.parse>,
+    userId: string,
+    key: string,
+    expiresAt?: string,
+  ) {
+    await quota(userId, 'create', 10);
+    return executeOnce(
+      client,
+      db,
+      userId + ':ticket',
+      key,
+      { ...input, ...(expiresAt ? { expiresAt } : {}) },
+      async (session) => {
+        if (expiresAt && Date.parse(expiresAt) <= Date.now())
+          throw new HttpError(409, 'ACTION_EXPIRED', 'Review a new support proposal');
+        const now = new Date().toISOString(),
+          id = randomUUID(),
+          ticket: Ticket = {
+            _id: id,
+            id,
+            requesterId: userId,
+            subject: input.subject,
+            category: input.category,
+            orderId: input.orderId,
+            state: 'OPEN',
+            version: 1,
+            assignedTo: null,
+            createdAt: now,
+            updatedAt: now,
+            resolution: null,
+          };
+        await tickets.insertOne(ticket, { session });
+        const mid = randomUUID();
+        await messages.insertOne(
+          {
+            _id: mid,
+            id: mid,
+            ticketId: id,
+            sequence: 1,
+            author: 'requester',
+            text: input.text,
+            at: now,
+          },
+          { session },
+        );
+        return present(ticket);
+      },
+    );
   }
   for (const admin of [false, true]) {
     const router = express.Router(),
@@ -94,11 +136,7 @@ export function installSupport(app: Express, ctx: DomainContext) {
             orderId: input.orderId,
           });
         const key = requireIdempotency(req);
-        json(
-          res,
-          await createTicket(input,actor.userId,key),
-          201,
-        );
+        json(res, await createTicket(input, actor.userId, key), 201);
       });
     async function owned(id: string, userId: string) {
       const ticket = await tickets.findOne({ _id: id, ...(admin ? {} : { requesterId: userId }) });
@@ -268,18 +306,52 @@ export function installSupport(app: Express, ctx: DomainContext) {
     );
     app.use(base, router);
   }
-  const assistant=express.Router();assistant.use(internalOnly(ctx,['utils']));
-  assistant.post('/preview',async(req,res)=>{
-    const input=z.object({sessionId:z.string().uuid(),ticket:ticketInputSchema}).strict().parse(req.body);
-    await internalCall(ctx,'auth','/internal/v1/sessions/inspect',{sessionId:input.sessionId});
-    if(input.ticket.orderId)await internalCall(ctx,'restaurant','/internal/v1/operations/order-context',{sessionId:input.sessionId,orderId:input.ticket.orderId});
-    json(res,{valid:true});
+  const assistant = express.Router();
+  assistant.use(internalOnly(ctx, ['utils']));
+  assistant.post('/preview', async (req, res) => {
+    const input = z
+      .object({ sessionId: z.string().uuid(), ticket: ticketInputSchema })
+      .strict()
+      .parse(req.body);
+    await internalCall(ctx, 'auth', '/internal/v1/sessions/inspect', {
+      sessionId: input.sessionId,
+    });
+    if (input.ticket.orderId)
+      await internalCall(ctx, 'restaurant', '/internal/v1/operations/order-context', {
+        sessionId: input.sessionId,
+        orderId: input.ticket.orderId,
+      });
+    json(res, { valid: true });
   });
-  assistant.post('/create',async(req,res)=>{
-    const input=z.object({sessionId:z.string().uuid(),commandId:z.string().uuid(),expiresAt:z.string().datetime(),ticket:ticketInputSchema}).strict().parse(req.body),actor=await internalCall<Principal>(ctx,'auth','/internal/v1/sessions/inspect',{sessionId:input.sessionId});
-    if(ctx.config.ASSISTANT_WRITES_ENABLED!=='true'||ctx.config.ASSISTANT_WRITES_REVIEWED!=='true')throw new HttpError(503,'ASSISTANT_WRITES_DISABLED','Assistant handoff actions are not enabled');
-    if(input.ticket.orderId)await internalCall(ctx,'restaurant','/internal/v1/operations/order-context',{sessionId:input.sessionId,orderId:input.ticket.orderId});
-    const result=await createTicket(input.ticket,actor.userId,input.commandId,input.expiresAt);json(res,{applied:true,href:'/support/tickets/'+result.id});
+  assistant.post('/create', async (req, res) => {
+    const input = z
+        .object({
+          sessionId: z.string().uuid(),
+          commandId: z.string().uuid(),
+          expiresAt: z.string().datetime(),
+          ticket: ticketInputSchema,
+        })
+        .strict()
+        .parse(req.body),
+      actor = await internalCall<Principal>(ctx, 'auth', '/internal/v1/sessions/inspect', {
+        sessionId: input.sessionId,
+      });
+    if (
+      ctx.config.ASSISTANT_WRITES_ENABLED !== 'true' ||
+      ctx.config.ASSISTANT_WRITES_REVIEWED !== 'true'
+    )
+      throw new HttpError(
+        503,
+        'ASSISTANT_WRITES_DISABLED',
+        'Assistant handoff actions are not enabled',
+      );
+    if (input.ticket.orderId)
+      await internalCall(ctx, 'restaurant', '/internal/v1/operations/order-context', {
+        sessionId: input.sessionId,
+        orderId: input.ticket.orderId,
+      });
+    const result = await createTicket(input.ticket, actor.userId, input.commandId, input.expiresAt);
+    json(res, { applied: true, href: '/support/tickets/' + result.id });
   });
-  app.use('/internal/v1/assistant-support',assistant);
+  app.use('/internal/v1/assistant-support', assistant);
 }

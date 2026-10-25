@@ -66,12 +66,10 @@
                           "type": "boolean"
                         },
                         "liveTracking": {
-                          "type": "boolean",
-                          "const": false
+                          "type": "boolean"
                         },
                         "assistant": {
-                          "type": "boolean",
-                          "const": false
+                          "type": "boolean"
                         }
                       },
                       "required": [

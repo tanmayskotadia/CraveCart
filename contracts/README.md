@@ -4,6 +4,7 @@ Version: `0.1.0`. `GET /platform` and the promoted identity/onboarding, catalog/
 
 | File | Purpose |
 |---|---|
+| [assistant.openapi.json](assistant.openapi.json) | Exported assistant conversations, grounded turns, SSE, proposals/confirmation, approved content and synthetic evaluation contracts |
 | [operations.openapi.json](operations.openapi.json) | Exported support, order messaging, reviews/moderation, teams, accounting records, reports and promotion oversight |
 | [routes.json](routes.json) | Frontend page identity, access/workspace policy, states and aliases |
 | [actions.json](actions.json) | Every critical CTA linked to real declared API operations, success and recovery behavior |

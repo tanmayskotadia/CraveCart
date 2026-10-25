@@ -14,6 +14,7 @@
     "../apps/web/src/access.ts",
     "../scripts/export-commerce-contracts.ts",
     "../scripts/export-fulfillment-contracts.ts",
-    "../scripts/export-operations-contracts.ts"
+    "../scripts/export-operations-contracts.ts",
+    "../scripts/export-assistant-contracts.ts"
   ]
 }

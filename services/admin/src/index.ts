@@ -13,6 +13,6 @@ await startService('admin', (app, ctx) => {
   installFinance(app, ctx);
   installDeliveryOperations(app, ctx);
   installSupport(app, ctx);
-  installAssistantAdmin(app,ctx);
+  installAssistantAdmin(app, ctx);
   installAdminOperations(app, ctx);
 });

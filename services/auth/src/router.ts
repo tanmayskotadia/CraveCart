@@ -96,7 +96,8 @@ interface Limit {
 const ACCESS_MS = 15 * 60_000,
   FAMILY_MS = 30 * 24 * 60 * 60_000;
 export const adminPermissions = [
-  'assistant:read','assistant:write',
+  'assistant:read',
+  'assistant:write',
   'support:read',
   'support:write',
   'reports:read',
@@ -1014,6 +1015,7 @@ export function installAuth(app: Express, ctx: DomainContext) {
       .object({
         actorSessionId: z.string().uuid(),
         status: z.enum(['ACTIVE', 'SUSPENDED']).optional(),
+        userId: z.string().uuid().optional(),
       })
       .strict()
       .parse(req.body);
@@ -1029,7 +1031,10 @@ export function installAuth(app: Express, ctx: DomainContext) {
       res,
       (
         await users
-          .find(body.status ? { status: body.status } : {})
+          .find({
+            ...(body.status ? { status: body.status } : {}),
+            ...(body.userId ? { _id: body.userId } : {}),
+          })
           .sort({ createdAt: -1 })
           .limit(100)
           .toArray()

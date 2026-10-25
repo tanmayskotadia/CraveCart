@@ -1,90 +1,851 @@
-import {useEffect,useRef,useState,type FormEvent} from 'react';
-import {Link,useSearchParams} from 'react-router-dom';
-import {useQuery} from '@tanstack/react-query';
-import {type AssistantConversation,type AssistantAction,type AssistantReply,type AssistantContent,assistantTopicSchema} from '@cravecart/contracts';
-import {api,assistantStream} from '../api';
-import {WorkspaceShell,ErrorNotice} from '../components/WorkspaceShell';
-import {useSession} from '../components/SessionProvider';
-import {useCity} from '../components/CityProvider';
-import {Modal} from '../components/Modal';
-type Capabilities={enabled:boolean;provider:string;writesEnabled:boolean;dailyMessages:number;promptVersion:string};
-type Summary=Pick<AssistantConversation,'id'|'version'|'title'|'createdAt'|'updatedAt'>;
-function useCommand(){
- const [pending,setPending]=useState(false),[error,setError]=useState<unknown>(),keys=useRef(new Map<string,string>());
- async function run<T>(path:string,body:unknown,done:(value:T)=>void,method='POST'){
-  const signature=JSON.stringify([path,body]),key=keys.current.get(signature)??crypto.randomUUID();keys.current.set(signature,key);setPending(true);setError(undefined);
-  try{const value=await api<T>(path,{method,body,headers:{'Idempotency-Key':key}});keys.current.delete(signature);done(value);}catch(e){setError(e);}finally{setPending(false);}
- }
- return {pending,error,run};
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import {
+  type AssistantConversation,
+  type AssistantAction,
+  type AssistantReply,
+  type AssistantContent,
+  assistantTopicSchema,
+} from '@cravecart/contracts';
+import { api, assistantStream } from '../api';
+import { WorkspaceShell, ErrorNotice } from '../components/WorkspaceShell';
+import { useSession } from '../components/SessionProvider';
+import { useCity } from '../components/CityProvider';
+import { Modal } from '../components/Modal';
+type Capabilities = {
+  enabled: boolean;
+  provider: string;
+  writesEnabled: boolean;
+  dailyMessages: number;
+  promptVersion: string;
+};
+type Summary = Pick<AssistantConversation, 'id' | 'version' | 'title' | 'createdAt' | 'updatedAt'>;
+function useCommand() {
+  const [pending, setPending] = useState(false),
+    [error, setError] = useState<unknown>(),
+    keys = useRef(new Map<string, string>());
+  async function run<T>(path: string, body: unknown, done: (value: T) => void, method = 'POST') {
+    const signature = JSON.stringify([path, body]),
+      key = keys.current.get(signature) ?? crypto.randomUUID();
+    keys.current.set(signature, key);
+    setPending(true);
+    setError(undefined);
+    try {
+      const value = await api<T>(path, { method, body, headers: { 'Idempotency-Key': key } });
+      keys.current.delete(signature);
+      done(value);
+    } catch (e) {
+      setError(e);
+    } finally {
+      setPending(false);
+    }
+  }
+  return { pending, error, run };
 }
-function Answer({reply,onPropose,writes}:{reply:AssistantReply;onPropose:(item:{restaurantId:string;itemId:string;quantity:number})=>void;writes:boolean}){
- return <><p className="assistant-text">{reply.text}</p>
- {!!reply.cards.length&&<div className="assistant-dishes">{reply.cards.map(c=><article key={c.itemId}><h3>{c.name}</h3><p>{c.restaurantName}</p><strong>₹{(c.priceMinor/100).toFixed(2)} base price</strong><div className="button-row"><Link to={c.href}>{c.customizationRequired?'Choose dish options':'Open menu'}</Link>{writes&&!c.customizationRequired&&<button className="text-link" onClick={()=>onPropose({restaurantId:c.restaurantId,itemId:c.itemId,quantity:1})}>Review cart addition</button>}</div></article>)}</div>}
- <div className="assistant-links">{reply.links.map(l=><Link key={l.href} to={l.href}>{l.label} <span aria-hidden="true">↗</span></Link>)}</div>
- {!!reply.sources.length&&<details className="assistant-sources"><summary>Sources checked for this answer</summary>{reply.sources.map((s,i)=><p key={s.href+i}><Link to={s.href}>{s.title}</Link>{s.version!==null&&<> · version {s.version}</>} · {new Date(s.checkedAt).toLocaleString('en-IN')}</p>)}</details>}
- {reply.provider==='fallback'&&<small>General-question interpretation is unavailable. Verified help and normal account tools remain available.</small>}</>;
+function Answer({
+  reply,
+  onPropose,
+  writes,
+}: {
+  reply: AssistantReply;
+  onPropose: (item: { restaurantId: string; itemId: string; quantity: number }) => void;
+  writes: boolean;
+}) {
+  return (
+    <>
+      <p className="assistant-text">{reply.text}</p>
+      {!!reply.cards.length && (
+        <div className="assistant-dishes">
+          {reply.cards.map((c) => (
+            <article key={c.itemId}>
+              <h3>{c.name}</h3>
+              <p>{c.restaurantName}</p>
+              <strong>₹{(c.priceMinor / 100).toFixed(2)} base price</strong>
+              <div className="button-row">
+                <Link to={c.href}>
+                  {c.customizationRequired ? 'Choose dish options' : 'Open menu'}
+                </Link>
+                {writes && !c.customizationRequired && (
+                  <button
+                    className="text-link"
+                    onClick={() =>
+                      onPropose({ restaurantId: c.restaurantId, itemId: c.itemId, quantity: 1 })
+                    }
+                  >
+                    Review cart addition
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+      <div className="assistant-links">
+        {reply.links.map((l) => (
+          <Link key={l.href} to={l.href}>
+            {l.label} <span aria-hidden="true">↗</span>
+          </Link>
+        ))}
+      </div>
+      {!!reply.sources.length && (
+        <details className="assistant-sources">
+          <summary>Sources checked for this answer</summary>
+          {reply.sources.map((s, i) => (
+            <p key={s.href + i}>
+              <Link to={s.href}>{s.title}</Link>
+              {s.version !== null && <> · version {s.version}</>} ·{' '}
+              {new Date(s.checkedAt).toLocaleString('en-IN')}
+            </p>
+          ))}
+        </details>
+      )}
+      {reply.provider === 'fallback' && (
+        <small>
+          General-question interpretation is unavailable. Verified help and normal account tools
+          remain available.
+        </small>
+      )}
+    </>
+  );
 }
-function Proposal({action,enabled,onChanged}:{action:AssistantAction;enabled:boolean;onChanged:()=>void}){
- const command=useCommand(),expired=Date.parse(action.expiresAt)<Date.now(),applied=action.state==='APPLIED';
- return <article className="assistant-proposal"><span className="eyebrow">{applied?'Action confirmed':'Review before confirming'}</span><p className="assistant-text">{action.summary}</p><p className="small-help">{action.state==='EXECUTING'?'Confirmation is uncertain. Retry this same proposal to recover its original result.':action.state==='REJECTED'?'This proposal was rejected. Review a new proposal before acting.':!applied?'Expires '+new Date(action.expiresAt).toLocaleTimeString('en-IN'):''}</p>
- <ErrorNotice error={command.error}/>{applied&&action.resultHref?<Link className="red-button" to={action.resultHref}>{action.kind==='cart'?'Open updated cart':'Open support ticket'}</Link>:<button className="red-button" disabled={!enabled||command.pending||action.state==='REJECTED'||(expired&&action.state!=='EXECUTING')} onClick={()=>void command.run('/assistant/actions/'+action.id+'/confirm',{confirmationToken:action.confirmationToken},onChanged)}>{command.pending?'Confirming…':action.state==='EXECUTING'?'Retry original confirmation':action.kind==='cart'?'Confirm cart change':'Confirm support ticket'}</button>}
- {!applied&&<p className="small-help">No change is made until you confirm. Payments and order states cannot be changed here.</p>}</article>;
+function Proposal({
+  action,
+  enabled,
+  onChanged,
+}: {
+  action: AssistantAction;
+  enabled: boolean;
+  onChanged: () => void;
+}) {
+  const command = useCommand(),
+    [now, setNow] = useState(() => Date.now()),
+    expired = Date.parse(action.expiresAt) < now,
+    applied = action.state === 'APPLIED';
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <article className="assistant-proposal">
+      <span className="eyebrow">{applied ? 'Action confirmed' : 'Review before confirming'}</span>
+      <p className="assistant-text">{action.summary}</p>
+      <p className="small-help">
+        {action.state === 'EXECUTING'
+          ? 'Confirmation is uncertain. Retry this same proposal to recover its original result.'
+          : action.state === 'REJECTED'
+            ? 'This proposal was rejected. Review a new proposal before acting.'
+            : !applied
+              ? 'Expires ' + new Date(action.expiresAt).toLocaleTimeString('en-IN')
+              : ''}
+      </p>
+      <ErrorNotice error={command.error} />
+      {applied && action.resultHref ? (
+        <Link className="red-button" to={action.resultHref}>
+          {action.kind === 'cart' ? 'Open updated cart' : 'Open support ticket'}
+        </Link>
+      ) : (
+        <button
+          className="red-button"
+          disabled={
+            !enabled ||
+            command.pending ||
+            action.state === 'REJECTED' ||
+            (expired && action.state !== 'EXECUTING')
+          }
+          onClick={() =>
+            void command.run(
+              '/assistant/actions/' + action.id + '/confirm',
+              { confirmationToken: action.confirmationToken },
+              onChanged,
+            )
+          }
+        >
+          {command.pending
+            ? 'Confirming…'
+            : action.state === 'EXECUTING'
+              ? 'Retry original confirmation'
+              : action.kind === 'cart'
+                ? 'Confirm cart change'
+                : 'Confirm support ticket'}
+        </button>
+      )}
+      {!applied && (
+        <p className="small-help">
+          No change is made until you confirm. Payments and order states cannot be changed here.
+        </p>
+      )}
+    </article>
+  );
 }
-export function AssistantPage(){
- const {session}=useSession(),{city,openCities}=useCity(),[params,setParams]=useSearchParams(),id=params.get('conversation')??'',orderId=params.get('orderId')??'';
- const userId=session?.principal.userId,[text,setText]=useState(''),[progress,setProgress]=useState(''),[sending,setSending]=useState(false),[error,setError]=useState<unknown>(),[handoff,setHandoff]=useState(false),[deleting,setDeleting]=useState(false);
- const controller=useRef<AbortController|null>(null),sendKeys=useRef(new Map<string,string>()),command=useCommand();
- const cap=useQuery({queryKey:['assistant-cap',userId],queryFn:()=>api<Capabilities>('/assistant/capabilities')});
- const list=useQuery({queryKey:['assistant-conversations',userId],queryFn:()=>api<Summary[]>('/assistant/conversations'),staleTime:0});
- const detail=useQuery({queryKey:['assistant-conversation',userId,id],queryFn:()=>api<AssistantConversation>('/assistant/conversations/'+id),enabled:!!id,staleTime:0,refetchInterval:q=>q.state.data?.actions.some(a=>a.state==='EXECUTING')?5000:false});
- const orders=useQuery({queryKey:['assistant-orders',userId],queryFn:()=>api<Array<{id:string;number:string;status:string}>>('/assistant/context/orders')});
- useEffect(()=>()=>controller.current?.abort(),[]);
- const select=(conversation:string)=>{controller.current?.abort();const next=new URLSearchParams(params);if(conversation)next.set('conversation',conversation);else next.delete('conversation');setParams(next);setError(undefined);};
- async function send(e:FormEvent){
-  e.preventDefault();if(!text.trim()||sending)return;setSending(true);setError(undefined);setProgress('Checking current information…');controller.current=new AbortController();
-  const question=text;
-  try{
-   let conversation=detail.data;
-   if(!id){conversation=await api<AssistantConversation>('/assistant/conversations',{method:'POST',body:{},headers:{'Idempotency-Key':crypto.randomUUID()}});const next=new URLSearchParams(params);next.set('conversation',conversation.id);setParams(next);await list.refetch();}
-   if(!conversation)throw new Error('Reload the conversation before sending');
-   const body={text:question,expectedVersion:conversation.version,context:{...(city?{city:city.slug}:{}),...(orderId?{orderId}:{})}},signature=JSON.stringify([conversation.id,body]),key=sendKeys.current.get(signature)??crypto.randomUUID();sendKeys.current.set(signature,key);
-   await assistantStream('/assistant/conversations/'+conversation.id+'/messages',body,controller.current.signal,setProgress,key);sendKeys.current.delete(signature);setText('');await detail.refetch();await list.refetch();
-  }catch(e){if(controller.current?.signal.aborted)setError(new Error('Response stopped. Reload the conversation to recover any saved answer.'));else setError(e);await detail.refetch();}
-  finally{setSending(false);setProgress('');}
- }
- return <WorkspaceShell title="Your CraveCart assistant" description="Find your next meal, understand your order, or get help from our team.">
- <div className="assistant-toolbar"><button className="outline-button" disabled={sending} onClick={()=>select('')}>New conversation</button><label>Conversation<select className="form-input" aria-label="Conversation" value={id} disabled={sending} onChange={e=>select(e.target.value)}><option value="">Start a conversation</option>{list.data?.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}</select></label><button className="text-link" disabled={!id||sending} onClick={()=>setDeleting(true)}>Delete conversation</button></div>
- <div className="assistant-context"><button className="outline-button" onClick={()=>openCities()}>{city?'Food in '+city.name:'Choose a city'}</button><label>Order to discuss<select className="form-input" value={orderId} onChange={e=>{const next=new URLSearchParams(params);if(e.target.value)next.set('orderId',e.target.value);else next.delete('orderId');setParams(next);}}><option value="">No order selected</option>{orders.data?.map(o=><option key={o.id} value={o.id}>{o.number} · {o.status.replaceAll('_',' ')}</option>)}</select></label></div>
- <p className="assistant-privacy">Keep passwords, payment details, addresses and verification codes out of chat. Answers cite approved help or current CraveCart records.{cap.data?.provider==='openai'&&' General questions may be interpreted by an external model after basic redaction; private account facts are not sent to it.'}</p>
- <ErrorNotice error={error??command.error??detail.error??cap.error??list.error}/>
- {!id&&!sending&&<div className="assistant-welcome"><span className="assistant-mark" aria-hidden="true">C</span><h2>What are you craving?</h2><p>A little help, grounded in what’s actually available.</p><div className="assistant-prompts">{['Find biryani','Where is my order?','How do payments work?','Can I cancel my order?'].map(q=><button className="outline-button" key={q} onClick={()=>setText(q)}>{q}</button>)}</div></div>}
- <div className="assistant-transcript" aria-label="Assistant conversation">{id&&detail.isPending&&<p role="status">Loading your conversation…</p>}{detail.data?.turns.map(turn=><div className="assistant-turn" key={turn.id}><div className="assistant-question"><span>You</span><p>{turn.question}</p></div><article className="assistant-answer"><span className="eyebrow">CraveCart assistant</span><Answer reply={turn.reply} writes={cap.data?.writesEnabled??false} onPropose={item=>void command.run('/assistant/conversations/'+id+'/proposals',item,()=>void detail.refetch())}/></article></div>)}{sending&&<p role="status" className="assistant-progress">{progress||'Checking current information…'}</p>}</div>
- {detail.data?.actions.map(a=><Proposal key={a.id} action={a} enabled={cap.data?.writesEnabled??false} onChanged={()=>void detail.refetch()}/>)}
- <form className="assistant-compose" onSubmit={e=>void send(e)}><label htmlFor="assistant-question">Your message</label><textarea id="assistant-question" className="form-input" value={text} onChange={e=>setText(e.target.value)} required maxLength={1500} rows={3} disabled={sending} placeholder="Find a dish, or ask about your own order…"/><div className="button-row"><button className="red-button" disabled={sending||!text.trim()||!!id&&(!detail.data||detail.isPending)}>{sending?'Checking…':'Send message'}</button>{sending&&<button type="button" className="outline-button" onClick={()=>controller.current?.abort()}>Stop response</button>}<button type="button" className="text-link" disabled={sending} onClick={()=>void detail.refetch()}>Reload conversation</button></div><small>Up to {cap.data?.dailyMessages??60} messages per day. The assistant cannot process payments or promise delivery/refund times.</small></form>
- <div className="assistant-handoff"><h2>Prefer a person?</h2><p>You choose what is shared with support.</p>{cap.data?.writesEnabled&&id?<button className="outline-button" onClick={()=>setHandoff(true)}>Prepare support handoff</button>:<Link className="outline-button" to={'/support'+(orderId?'?orderId='+orderId:'')}>Contact support</Link>}{!cap.data?.writesEnabled&&<small>Assistant cart and ticket actions are awaiting review. Normal cart and support tools remain available.</small>}</div>
- {handoff&&<Handoff conversationId={id} orderId={orderId||null} initial={detail.data?.turns.at(-1)?.question??''} onClose={()=>setHandoff(false)} onDone={()=>{setHandoff(false);void detail.refetch();}}/>}
- {deleting&&<Modal title="Delete this conversation?" onClose={()=>setDeleting(false)}><p>This removes the assistant conversation and its saved proposals. It does not delete support tickets or undo confirmed cart changes.</p><ErrorNotice error={command.error}/><button className="red-button" disabled={command.pending} onClick={()=>void command.run('/assistant/conversations/'+id,undefined,()=>{setDeleting(false);select('');void list.refetch();},'DELETE')}>Delete conversation permanently</button></Modal>}
- </WorkspaceShell>;
+export function AssistantPage() {
+  const { session } = useSession(),
+    { city, openCities } = useCity(),
+    [params, setParams] = useSearchParams(),
+    id = params.get('conversation') ?? '',
+    orderId = params.get('orderId') ?? '';
+  const userId = session?.principal.userId,
+    [text, setText] = useState(''),
+    [progress, setProgress] = useState(''),
+    [sending, setSending] = useState(false),
+    [error, setError] = useState<unknown>(),
+    [handoff, setHandoff] = useState(false),
+    [deleting, setDeleting] = useState(false);
+  const controller = useRef<AbortController | null>(null),
+    sendKeys = useRef(new Map<string, string>()),
+    command = useCommand();
+  const cap = useQuery({
+    queryKey: ['assistant-cap', userId],
+    queryFn: () => api<Capabilities>('/assistant/capabilities'),
+  });
+  const list = useQuery({
+    queryKey: ['assistant-conversations', userId],
+    queryFn: () => api<Summary[]>('/assistant/conversations'),
+    staleTime: 0,
+  });
+  const detail = useQuery({
+    queryKey: ['assistant-conversation', userId, id],
+    queryFn: () => api<AssistantConversation>('/assistant/conversations/' + id),
+    enabled: !!id,
+    staleTime: 0,
+    refetchInterval: (q) =>
+      q.state.data?.actions.some((a) => a.state === 'EXECUTING') ? 5000 : false,
+  });
+  const orders = useQuery({
+    queryKey: ['assistant-orders', userId],
+    queryFn: () =>
+      api<Array<{ id: string; number: string; status: string }>>('/assistant/context/orders'),
+  });
+  useEffect(() => () => controller.current?.abort(), []);
+  const select = (conversation: string) => {
+    controller.current?.abort();
+    const next = new URLSearchParams(params);
+    if (conversation) next.set('conversation', conversation);
+    else next.delete('conversation');
+    setParams(next);
+    setError(undefined);
+  };
+  async function send(e: FormEvent) {
+    e.preventDefault();
+    if (!text.trim() || sending) return;
+    setSending(true);
+    setError(undefined);
+    setProgress('Checking current information…');
+    controller.current = new AbortController();
+    const question = text;
+    try {
+      let conversation = detail.data;
+      if (!id) {
+        conversation = await api<AssistantConversation>('/assistant/conversations', {
+          method: 'POST',
+          body: {},
+          headers: { 'Idempotency-Key': crypto.randomUUID() },
+        });
+        const next = new URLSearchParams(params);
+        next.set('conversation', conversation.id);
+        setParams(next);
+        await list.refetch();
+      }
+      if (!conversation) throw new Error('Reload the conversation before sending');
+      const body = {
+          text: question,
+          expectedVersion: conversation.version,
+          context: { ...(city ? { city: city.slug } : {}), ...(orderId ? { orderId } : {}) },
+        },
+        signature = JSON.stringify([conversation.id, body]),
+        key = sendKeys.current.get(signature) ?? crypto.randomUUID();
+      sendKeys.current.set(signature, key);
+      await assistantStream(
+        '/assistant/conversations/' + conversation.id + '/messages',
+        body,
+        controller.current.signal,
+        setProgress,
+        key,
+      );
+      sendKeys.current.delete(signature);
+      setText('');
+      await detail.refetch();
+      await list.refetch();
+    } catch (e) {
+      if (controller.current?.signal.aborted)
+        setError(
+          new Error('Response stopped. Reload the conversation to recover any saved answer.'),
+        );
+      else setError(e);
+      await detail.refetch();
+    } finally {
+      setSending(false);
+      setProgress('');
+    }
+  }
+  return (
+    <WorkspaceShell
+      title="Your CraveCart assistant"
+      description="Find your next meal, understand your order, or get help from our team."
+    >
+      <div className="assistant-toolbar">
+        <button className="outline-button" disabled={sending} onClick={() => select('')}>
+          New conversation
+        </button>
+        <label>
+          Conversation
+          <select
+            className="form-input"
+            aria-label="Conversation"
+            value={id}
+            disabled={sending}
+            onChange={(e) => select(e.target.value)}
+          >
+            <option value="">Start a conversation</option>
+            {list.data?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button className="text-link" disabled={!id || sending} onClick={() => setDeleting(true)}>
+          Delete conversation
+        </button>
+      </div>
+      <div className="assistant-context">
+        <button className="outline-button" onClick={() => openCities()}>
+          {city ? 'Food in ' + city.name : 'Choose a city'}
+        </button>
+        <label>
+          Order to discuss
+          <select
+            className="form-input"
+            value={orderId}
+            onChange={(e) => {
+              const next = new URLSearchParams(params);
+              if (e.target.value) next.set('orderId', e.target.value);
+              else next.delete('orderId');
+              setParams(next);
+            }}
+          >
+            <option value="">No order selected</option>
+            {orders.data?.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.number} · {o.status.replaceAll('_', ' ')}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <p className="assistant-privacy">
+        Keep passwords, payment details, addresses and verification codes out of chat. Answers cite
+        approved help or current CraveCart records.
+        {cap.data?.provider === 'openai' &&
+          ' General questions may be interpreted by an external model after basic redaction; private account facts are not sent to it.'}
+      </p>
+      <ErrorNotice error={error ?? command.error ?? detail.error ?? cap.error ?? list.error} />
+      {!id && !sending && (
+        <div className="assistant-welcome">
+          <span className="assistant-mark" aria-hidden="true">
+            C
+          </span>
+          <h2>What are you craving?</h2>
+          <p>A little help, grounded in what’s actually available.</p>
+          <div className="assistant-prompts">
+            {[
+              'Find biryani',
+              'Where is my order?',
+              'How do payments work?',
+              'Can I cancel my order?',
+            ].map((q) => (
+              <button className="outline-button" key={q} onClick={() => setText(q)}>
+                {q}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="assistant-transcript" aria-label="Assistant conversation">
+        {id && detail.isPending && <p role="status">Loading your conversation…</p>}
+        {detail.data?.turns.map((turn) => (
+          <div className="assistant-turn" key={turn.id}>
+            <div className="assistant-question">
+              <span>You</span>
+              <p>{turn.question}</p>
+            </div>
+            <article className="assistant-answer">
+              <span className="eyebrow">CraveCart assistant</span>
+              <Answer
+                reply={turn.reply}
+                writes={cap.data?.writesEnabled ?? false}
+                onPropose={(item) =>
+                  void command.run(
+                    '/assistant/conversations/' + id + '/proposals',
+                    item,
+                    () => void detail.refetch(),
+                  )
+                }
+              />
+            </article>
+          </div>
+        ))}
+        {sending && (
+          <p role="status" className="assistant-progress">
+            {progress || 'Checking current information…'}
+          </p>
+        )}
+      </div>
+      {detail.data?.actions.map((a) => (
+        <Proposal
+          key={a.id}
+          action={a}
+          enabled={cap.data?.writesEnabled ?? false}
+          onChanged={() => void detail.refetch()}
+        />
+      ))}
+      <form className="assistant-compose" onSubmit={(e) => void send(e)}>
+        <label htmlFor="assistant-question">Your message</label>
+        <textarea
+          id="assistant-question"
+          className="form-input"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          required
+          maxLength={1500}
+          rows={3}
+          disabled={sending}
+          placeholder="Find a dish, or ask about your own order…"
+        />
+        <div className="button-row">
+          <button
+            className="red-button"
+            disabled={sending || !text.trim() || (!!id && (!detail.data || detail.isPending))}
+          >
+            {sending ? 'Checking…' : 'Send message'}
+          </button>
+          {sending && (
+            <button
+              type="button"
+              className="outline-button"
+              onClick={() => controller.current?.abort()}
+            >
+              Stop response
+            </button>
+          )}
+          <button
+            type="button"
+            className="text-link"
+            disabled={sending}
+            onClick={() => void detail.refetch()}
+          >
+            Reload conversation
+          </button>
+        </div>
+        <small>
+          Up to {cap.data?.dailyMessages ?? 60} messages per day. The assistant cannot process
+          payments or promise delivery/refund times.
+        </small>
+      </form>
+      <div className="assistant-handoff">
+        <h2>Prefer a person?</h2>
+        <p>You choose what is shared with support.</p>
+        {cap.data?.writesEnabled && id ? (
+          <button className="outline-button" onClick={() => setHandoff(true)}>
+            Prepare support handoff
+          </button>
+        ) : (
+          <Link className="outline-button" to={'/support' + (orderId ? '?orderId=' + orderId : '')}>
+            Contact support
+          </Link>
+        )}
+        {!cap.data?.writesEnabled && (
+          <small>
+            Assistant cart and ticket actions are awaiting review. Normal cart and support tools
+            remain available.
+          </small>
+        )}
+      </div>
+      {handoff && (
+        <Handoff
+          conversationId={id}
+          orderId={orderId || null}
+          initial={detail.data?.turns.at(-1)?.question ?? ''}
+          onClose={() => setHandoff(false)}
+          onDone={() => {
+            setHandoff(false);
+            void detail.refetch();
+          }}
+        />
+      )}
+      {deleting && (
+        <Modal title="Delete this conversation?" onClose={() => setDeleting(false)}>
+          <p>
+            This removes the assistant conversation and its saved proposals. It does not delete
+            support tickets or undo confirmed cart changes.
+          </p>
+          <ErrorNotice error={command.error} />
+          <button
+            className="red-button"
+            disabled={command.pending}
+            onClick={() =>
+              void command.run(
+                '/assistant/conversations/' + id,
+                undefined,
+                () => {
+                  setDeleting(false);
+                  select('');
+                  void list.refetch();
+                },
+                'DELETE',
+              )
+            }
+          >
+            Delete conversation permanently
+          </button>
+        </Modal>
+      )}
+    </WorkspaceShell>
+  );
 }
-function Handoff({conversationId,orderId,initial,onClose,onDone}:{conversationId:string;orderId:string|null;initial:string;onClose:()=>void;onDone:()=>void}){
- const [subject,setSubject]=useState('Help from my CraveCart assistant conversation'),[text,setText]=useState(initial||'Please help with my CraveCart question.'),[consent,setConsent]=useState(false),[category,setCategory]=useState('order'),command=useCommand();
- return <Modal title="Review your support summary" onClose={onClose}><p>Only the text below and the selected order link are shared. Your full conversation is not attached.</p><form className="operations-form" onSubmit={e=>{e.preventDefault();void command.run('/assistant/conversations/'+conversationId+'/handoff',{subject,category,text,orderId,consent},onDone);}}><label>Support subject<input className="form-input" value={subject} onChange={e=>setSubject(e.target.value)} required minLength={5} maxLength={120}/></label><label>Support category<select className="form-input" value={category} onChange={e=>setCategory(e.target.value)}>{['order','payment','account','restaurant','delivery','other'].map(c=><option key={c}>{c}</option>)}</select></label><label>Summary to share<textarea className="form-input" value={text} onChange={e=>setText(e.target.value)} required minLength={5} maxLength={2000}/></label><p>Linked order: {orderId??'None'}</p><label className="operations-check"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} required/> I agree to share this summary with support.</label><ErrorNotice error={command.error}/><button className="red-button" disabled={!consent||command.pending}>Review ticket proposal</button></form></Modal>;
+function Handoff({
+  conversationId,
+  orderId,
+  initial,
+  onClose,
+  onDone,
+}: {
+  conversationId: string;
+  orderId: string | null;
+  initial: string;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [subject, setSubject] = useState('Help from my CraveCart assistant conversation'),
+    [text, setText] = useState(initial || 'Please help with my CraveCart question.'),
+    [consent, setConsent] = useState(false),
+    [category, setCategory] = useState('order'),
+    command = useCommand();
+  return (
+    <Modal title="Review your support summary" onClose={onClose}>
+      <p>
+        Only the text below and the selected order link are shared. Your full conversation is not
+        attached.
+      </p>
+      <form
+        className="operations-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void command.run(
+            '/assistant/conversations/' + conversationId + '/handoff',
+            { subject, category, text, orderId, consent },
+            onDone,
+          );
+        }}
+      >
+        <label>
+          Support subject
+          <input
+            className="form-input"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            required
+            minLength={5}
+            maxLength={120}
+          />
+        </label>
+        <label>
+          Support category
+          <select
+            className="form-input"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            {['order', 'payment', 'account', 'restaurant', 'delivery', 'other'].map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Summary to share
+          <textarea
+            aria-label="Summary to share"
+            className="form-input"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            required
+            minLength={5}
+            maxLength={2000}
+          />
+        </label>
+        <p>Linked order: {orderId ?? 'None'}</p>
+        <label className="operations-check">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            required
+          />{' '}
+          I agree to share this summary with support.
+        </label>
+        <ErrorNotice error={command.error} />
+        <button className="red-button" disabled={!consent || command.pending}>
+          Review ticket proposal
+        </button>
+      </form>
+    </Modal>
+  );
 }
-type Evaluation={id:string;at:string;passed:number;total:number;accuracy:number;scope:string;cases:Array<{name:string;expected:string;actual:string;passed:boolean}>};
-export function AssistantAdminPage(){
- const content=useQuery({queryKey:['assistant-admin-content'],queryFn:()=>api<AssistantContent[]>('/admin/assistant/content')}),evaluations=useQuery({queryKey:['assistant-evaluations'],queryFn:()=>api<{runs:Evaluation[];promptVersion:string;provider:string;writesEnabled:boolean}>('/admin/assistant/evaluations')});
- const [selected,setSelected]=useState<AssistantContent|null>(null),[question,setQuestion]=useState(''),[answer,setAnswer]=useState(''),[topic,setTopic]=useState('payments'),[audience,setAudience]=useState('all'),[href,setHref]=useState('/orders'),[status,setStatus]=useState('DRAFT'),[expires,setExpires]=useState(new Date(Date.now()+30*86400000).toISOString().slice(0,16)),[reason,setReason]=useState(''),command=useCommand();
- const edit=(c:AssistantContent|null)=>{setSelected(c);setQuestion(c?.question??'');setAnswer(c?.answer??'');setTopic(c?.topic??'payments');setAudience(c?.audience??'all');setHref(c?.href??'/orders');setStatus(c?.status??'DRAFT');setExpires(new Date(c?.expiresAt??Date.now()+30*86400000).toISOString().slice(0,16));};
- return <WorkspaceShell role="admin" title="Assistant knowledge & quality" description="Approve help content with a source, audience and expiry. Account facts always come from authorized tools."><ErrorNotice error={content.error??evaluations.error??command.error}/>
- <div className="operations-toolbar"><span>Provider: {evaluations.data?.provider??'Checking'}</span><span>Actions: {evaluations.data?.writesEnabled?'Reviewed and enabled':'Disabled pending review'}</span><span>Prompt: {evaluations.data?.promptVersion}</span></div>
- <button className="outline-button" onClick={()=>edit(null)}>New help entry</button>
- <div className="assistant-admin-list">{content.data?.map(c=><article key={c.id} className="workspace-panel"><span className="status-badge">{c.status}</span><h2>{c.question}</h2><p>{c.topic} · version {c.version} · {c.audience} audience</p><p>Expires {new Date(c.expiresAt).toLocaleString('en-IN')}</p><button className="text-link" onClick={()=>edit(c)}>Edit help entry</button></article>)}</div>
- <form className="operations-form" onSubmit={e=>{e.preventDefault();void command.run('/admin/assistant/content'+(selected?'/'+selected.id:''),{expectedVersion:selected?.version??0,status,reason,content:{question,answer,topic,audience,href,expiresAt:new Date(expires).toISOString()}},()=>{edit(null);void content.refetch();},selected?'PATCH':'POST');}}>
- <h2>{selected?'Edit approved help':'New help entry'}</h2><label>Help question<input className="form-input" value={question} onChange={e=>setQuestion(e.target.value)} required minLength={5} maxLength={160}/></label><label>Approved answer<textarea className="form-input" value={answer} onChange={e=>setAnswer(e.target.value)} required minLength={15} maxLength={1800}/></label><label>Help topic<select className="form-input" value={topic} onChange={e=>setTopic(e.target.value)}>{assistantTopicSchema.options.map(t=><option key={t}>{t}</option>)}</select></label>
- <label>Help audience<select className="form-input" value={audience} onChange={e=>setAudience(e.target.value)}>{['all','customer','seller','rider'].map(a=><option key={a}>{a}</option>)}</select></label><label>Source page<select className="form-input" value={href} onChange={e=>setHref(e.target.value)}>{['/help','/orders','/addresses','/settings','/settings/sessions','/support','/seller/onboarding','/seller/restaurants','/rider/onboarding','/rider/dashboard','/rider/offers','/rider/history','/rider/earnings'].map(p=><option key={p}>{p}</option>)}</select></label>
- <label>Publication status<select className="form-input" value={status} onChange={e=>setStatus(e.target.value)}>{['DRAFT','PUBLISHED','ARCHIVED'].map(s=><option key={s}>{s}</option>)}</select></label><label>Help expiry<input className="form-input" type="datetime-local" value={expires} onChange={e=>setExpires(e.target.value)} required/></label><label>Approval reason<input className="form-input" value={reason} onChange={e=>setReason(e.target.value)} required minLength={5} maxLength={500}/></label><button className="red-button" disabled={command.pending}>Save help content</button>
- </form>
- <section className="workspace-panel"><h2>Routing evaluations</h2><p>Run the fixed synthetic intent and refusal cases. These checks do not qualify live model answers, account ownership or payment flows.</p><label>Evaluation reason<input className="form-input" value={reason} onChange={e=>setReason(e.target.value)} minLength={5} maxLength={500}/></label><button className="outline-button" disabled={command.pending||reason.trim().length<5} onClick={()=>void command.run('/admin/assistant/evaluations',{reason},()=>void evaluations.refetch())}>Run routing evaluation</button>{evaluations.data?.runs.map(r=><article key={r.id}><h3>{r.passed} / {r.total} routing cases passed</h3><p>{r.scope}</p><time>{new Date(r.at).toLocaleString('en-IN')}</time><details><summary>Case results</summary>{r.cases.map(c=><p key={c.name}>{c.passed?'Pass':'Fail'} · {c.name} · expected {c.expected}, received {c.actual}</p>)}</details></article>)}{evaluations.data?.runs.length===0&&<p>No evaluation run has been recorded yet.</p>}</section>
- </WorkspaceShell>;
+type Evaluation = {
+  id: string;
+  at: string;
+  passed: number;
+  total: number;
+  accuracy: number;
+  scope: string;
+  cases: Array<{ name: string; expected: string; actual: string; passed: boolean }>;
+};
+function localExpiry(value: string | number) {
+  const date = new Date(value);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
-
+export function AssistantAdminPage() {
+  const content = useQuery({
+      queryKey: ['assistant-admin-content'],
+      queryFn: () => api<AssistantContent[]>('/admin/assistant/content'),
+    }),
+    evaluations = useQuery({
+      queryKey: ['assistant-evaluations'],
+      queryFn: () =>
+        api<{
+          runs: Evaluation[];
+          promptVersion: string;
+          provider: string;
+          writesEnabled: boolean;
+        }>('/admin/assistant/evaluations'),
+    });
+  const [selected, setSelected] = useState<AssistantContent | null>(null),
+    [question, setQuestion] = useState(''),
+    [answer, setAnswer] = useState(''),
+    [topic, setTopic] = useState('payments'),
+    [audience, setAudience] = useState('all'),
+    [href, setHref] = useState('/orders'),
+    [status, setStatus] = useState('DRAFT'),
+    [expires, setExpires] = useState(() => localExpiry(Date.now() + 30 * 86400000)),
+    [reason, setReason] = useState(''),
+    command = useCommand();
+  const edit = (c: AssistantContent | null) => {
+    setSelected(c);
+    setQuestion(c?.question ?? '');
+    setAnswer(c?.answer ?? '');
+    setTopic(c?.topic ?? 'payments');
+    setAudience(c?.audience ?? 'all');
+    setHref(c?.href ?? '/orders');
+    setStatus(c?.status ?? 'DRAFT');
+    setExpires(localExpiry(c?.expiresAt ?? Date.now() + 30 * 86400000));
+  };
+  return (
+    <WorkspaceShell
+      role="admin"
+      title="Assistant knowledge & quality"
+      description="Approve help content with a source, audience and expiry. Account facts always come from authorized tools."
+    >
+      <ErrorNotice error={content.error ?? evaluations.error ?? command.error} />
+      <div className="operations-toolbar">
+        <span>Provider: {evaluations.data?.provider ?? 'Checking'}</span>
+        <span>
+          Actions:{' '}
+          {evaluations.data?.writesEnabled ? 'Reviewed and enabled' : 'Disabled pending review'}
+        </span>
+        <span>Prompt: {evaluations.data?.promptVersion}</span>
+      </div>
+      <button className="outline-button" onClick={() => edit(null)}>
+        New help entry
+      </button>
+      <div className="assistant-admin-list">
+        {content.data?.map((c) => (
+          <article key={c.id} className="workspace-panel">
+            <span className="status-badge">{c.status}</span>
+            <h2>{c.question}</h2>
+            <p>
+              {c.topic} · version {c.version} · {c.audience} audience
+            </p>
+            <p>Expires {new Date(c.expiresAt).toLocaleString('en-IN')}</p>
+            <button className="text-link" onClick={() => edit(c)}>
+              Edit help entry
+            </button>
+          </article>
+        ))}
+      </div>
+      <form
+        className="operations-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void command.run(
+            '/admin/assistant/content' + (selected ? '/' + selected.id : ''),
+            {
+              expectedVersion: selected?.version ?? 0,
+              status,
+              reason,
+              content: {
+                question,
+                answer,
+                topic,
+                audience,
+                href,
+                expiresAt: new Date(expires).toISOString(),
+              },
+            },
+            () => {
+              edit(null);
+              void content.refetch();
+            },
+            selected ? 'PATCH' : 'POST',
+          );
+        }}
+      >
+        <h2>{selected ? 'Edit approved help' : 'New help entry'}</h2>
+        <label>
+          Help question
+          <input
+            className="form-input"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            required
+            minLength={5}
+            maxLength={160}
+          />
+        </label>
+        <label>
+          Approved answer
+          <textarea
+            className="form-input"
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            required
+            minLength={15}
+            maxLength={1800}
+          />
+        </label>
+        <label>
+          Help topic
+          <select className="form-input" value={topic} onChange={(e) => setTopic(e.target.value)}>
+            {assistantTopicSchema.options.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Help audience
+          <select
+            className="form-input"
+            value={audience}
+            onChange={(e) => setAudience(e.target.value)}
+          >
+            {['all', 'customer', 'seller', 'rider'].map((a) => (
+              <option key={a}>{a}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Source page
+          <select className="form-input" value={href} onChange={(e) => setHref(e.target.value)}>
+            {[
+              '/help',
+              '/orders',
+              '/addresses',
+              '/settings',
+              '/settings/sessions',
+              '/support',
+              '/seller/onboarding',
+              '/seller/restaurants',
+              '/rider/onboarding',
+              '/rider/dashboard',
+              '/rider/offers',
+              '/rider/history',
+              '/rider/earnings',
+            ].map((p) => (
+              <option key={p}>{p}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Publication status
+          <select className="form-input" value={status} onChange={(e) => setStatus(e.target.value)}>
+            {['DRAFT', 'PUBLISHED', 'ARCHIVED'].map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Help expiry
+          <input
+            className="form-input"
+            type="datetime-local"
+            value={expires}
+            onChange={(e) => setExpires(e.target.value)}
+            required
+          />
+        </label>
+        <label>
+          Approval reason
+          <input
+            className="form-input"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            required
+            minLength={5}
+            maxLength={500}
+          />
+        </label>
+        <button className="red-button" disabled={command.pending}>
+          Save help content
+        </button>
+      </form>
+      <section className="workspace-panel">
+        <h2>Routing evaluations</h2>
+        <p>
+          Run the fixed synthetic intent and refusal cases. These checks do not qualify live model
+          answers, account ownership or payment flows.
+        </p>
+        <label>
+          Evaluation reason
+          <input
+            className="form-input"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            minLength={5}
+            maxLength={500}
+          />
+        </label>
+        <button
+          className="outline-button"
+          disabled={command.pending || reason.trim().length < 5}
+          onClick={() =>
+            void command.run(
+              '/admin/assistant/evaluations',
+              { reason },
+              () => void evaluations.refetch(),
+            )
+          }
+        >
+          Run routing evaluation
+        </button>
+        {evaluations.data?.runs.map((r) => (
+          <article key={r.id}>
+            <h3>
+              {r.passed} / {r.total} routing cases passed
+            </h3>
+            <p>{r.scope}</p>
+            <time>{new Date(r.at).toLocaleString('en-IN')}</time>
+            <details>
+              <summary>Case results</summary>
+              {r.cases.map((c) => (
+                <p key={c.name}>
+                  {c.passed ? 'Pass' : 'Fail'} · {c.name} · expected {c.expected}, received{' '}
+                  {c.actual}
+                </p>
+              ))}
+            </details>
+          </article>
+        ))}
+        {evaluations.data?.runs.length === 0 && <p>No evaluation run has been recorded yet.</p>}
+      </section>
+    </WorkspaceShell>
+  );
+}

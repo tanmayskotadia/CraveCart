@@ -799,15 +799,21 @@ export function installCatalog(app: Express, ctx: DomainContext) {
       version: value.version,
     });
   });
-  async function saveCart(input:z.infer<typeof cartInputSchema>,userId:string,session?:ClientSession,expectedSubtotalMinor?:number) {
+  async function saveCart(
+    input: z.infer<typeof cartInputSchema>,
+    userId: string,
+    session?: ClientSession,
+    expectedSubtotalMinor?: number,
+  ) {
     const { record, priced, subtotalMinor, minimumIssue } = await validateCart(
-        input.restaurantId,
-        input.addressId,
-        userId,
-        input.lines,
-      );
-    if(expectedSubtotalMinor!==undefined&&subtotalMinor!==expectedSubtotalMinor)throw new HttpError(409,'PRICE_CHANGED','The cart price changed; review a new proposal');
-    const old = await carts.findOne({ _id: userId },{session});
+      input.restaurantId,
+      input.addressId,
+      userId,
+      input.lines,
+    );
+    if (expectedSubtotalMinor !== undefined && subtotalMinor !== expectedSubtotalMinor)
+      throw new HttpError(409, 'PRICE_CHANGED', 'The cart price changed; review a new proposal');
+    const old = await carts.findOne({ _id: userId }, { session });
     if ((old?.version ?? 0) !== input.expectedVersion)
       throw new HttpError(
         409,
@@ -840,7 +846,7 @@ export function installCatalog(app: Express, ctx: DomainContext) {
         throw new HttpError(409, 'VERSION_CONFLICT', 'Your cart changed. Reload it before saving');
     } else
       try {
-        await carts.insertOne({ _id: userId, ...value },{session});
+        await carts.insertOne({ _id: userId, ...value }, { session });
       } catch (error) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 11000)
           throw new HttpError(
@@ -857,7 +863,7 @@ export function installCatalog(app: Express, ctx: DomainContext) {
     };
   }
   app.put('/api/v1/cart', remoteSession(ctx, { mutation: true }), async (req, res) => {
-    json(res,await saveCart(cartInputSchema.parse(req.body),currentPrincipal(res).userId));
+    json(res, await saveCart(cartInputSchema.parse(req.body), currentPrincipal(res).userId));
   });
   app.delete('/api/v1/cart', remoteSession(ctx, { mutation: true }), async (req, res) => {
     const { expectedVersion } = z
@@ -878,5 +884,5 @@ export function installCatalog(app: Express, ctx: DomainContext) {
       throw new HttpError(409, 'VERSION_CONFLICT', 'Cart changed. Reload before clearing it');
     json(res, { cleared: true, version: expectedVersion + 1 });
   });
-  return {saveCart,validateCart};
+  return { saveCart, validateCart };
 }

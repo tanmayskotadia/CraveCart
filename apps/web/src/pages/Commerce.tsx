@@ -402,6 +402,7 @@ export function OrdersPage({ admin = false }: { admin?: boolean }) {
           {!admin && (
             <div className="button-row">
               <Link to={`/support?orderId=${order.id}`}>Contact support</Link>
+              <Link to={`/assistant?orderId=${order.id}`}>Ask about this order</Link>
               <Link to={`/orders/${order.id}/messages`}>Delivery conversation</Link>
               {order.status === 'DELIVERED' && (
                 <Link to={`/orders/${order.id}/review`}>Review your meal</Link>

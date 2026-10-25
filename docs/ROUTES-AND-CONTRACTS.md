@@ -1,5 +1,11 @@
 # CraveCart routes and contracts
 
+Launch preparation adds `GET /api/v1/admin/commerce/merchants` (paged, optional exact `restaurantId`), `PUT /api/v1/admin/commerce/merchants/:restaurantId` (versioned explicit live-order approval/revocation), and an authoritative `GET /api/v1/admin/users/:userId`. Finance read/write or user-read permissions are enforced again by the owning service; mutations require fresh MFA, CSRF and a review reason. The exported commerce/identity schemas describe the exact request/response shapes.
+
+Operational build checks are outside the `/api/v1` business API: `GET /health/release` on backends returns a no-store deployment fingerprint; the gateway additionally verifies matching identities on all six owners and returns 503 for missing/mixed releases. Frontend `/release.json` contains the matching generated identity. Neither endpoint exposes secrets, runtime configuration or customer data.
+
+`/admin/restaurants` and its detail route show real merchant launch controls, `/admin/riders` opens the filtered verification queue and its detail alias opens the canonical application, `/admin/users/:userId` loads that account, and `/settings/privacy` submits a private account support case. Verification/password-recovery aliases redirect to passwordless login. Privacy requests are tracked intake, not an assertion that records have already been exported or erased.
+
 This is the implementation inventory, not a claim that routes already exist. Discovery now provides a checked [machine-readable baseline](../contracts/README.md), including OpenAPI, a page/action manifest and event schemas. Inventory-only HTTP operations must be refined before implementation or client generation.
 
 ## 1. Routing conventions
@@ -292,11 +298,12 @@ Each path below is relative to `/api/v1`; when a row lists multiple methods, eac
 | GET, POST | `/support/tickets` | Own tickets/create with order ownership |
 | GET | `/support/tickets/:ticketId` | Owner or assigned support grant |
 | POST | `/support/tickets/:ticketId/messages` | Authorized participant; optional scanned attachments |
-| POST | `/assistant/conversations` | Guest FAQ or authenticated scoped context |
-| GET | `/assistant/conversations/:conversationId` | Owner or guest session token |
+| POST | `/assistant/conversations` | Authenticated own conversation; guest chat remains planned |
+| GET | `/assistant/conversations/:conversationId` | Authenticated owner; encrypted history and own proposals |
 | POST | `/assistant/conversations/:conversationId/messages` | Rate-limited; SSE response stream supported |
 | POST | `/assistant/actions/:actionId/confirm` | Bound single-use confirmation token |
-| POST | `/assistant/conversations/:conversationId/handoff` | Authenticated, consented ticket creation |
+| POST | `/assistant/conversations/:conversationId/handoff` | Consented support proposal; no ticket until explicit confirmation |
+| POST | `/assistant/conversations/:conversationId/proposals` | Server-priced cart proposal; account-bound confirmation required |
 
 ### Realtime Service
 

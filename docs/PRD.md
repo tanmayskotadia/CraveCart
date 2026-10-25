@@ -39,7 +39,7 @@ Acceptance: a real customer can find a seller-created dish, check out with verif
 - Financial records distinguish captured/refunded values and recorded delivered-order tips from commission, net payable and completed bank settlement. Until compensation agreements and provider reconciliation are configured, commission/payable remain null and settlement status remains UNRECONCILED. Rider records exclude customer capture/refund details. CSV downloads identify their page scope.
 - Promotion oversight operates on real merchant-funded offers with version, reason and fresh MFA. Operating-zone and versioned pricing-policy controls continue through the existing domain endpoints. Broader platform-funded campaigns, custom compensation contracts and automated bank payouts need separate implementation/qualification.
 
-Implementation and acceptance evidence: [role operations](engineering/ROLE-OPERATIONS.md). Cross-service retention/deletion, real support staffing and hosted qualification remain launch requirements. The assistant follows this milestone.
+Implementation and acceptance evidence: [role operations](engineering/ROLE-OPERATIONS.md). Cross-service retention/deletion, real support staffing and hosted qualification remain launch requirements. The implemented assistant scope is documented in [assistant runtime](engineering/ASSISTANT.md).
 
 **P0:** Required for a safe end-to-end pilot. **P1:** Required for the complete requested release, after P0 stabilizes. **P2:** Explicit future expansion.
 
@@ -166,6 +166,10 @@ Browser/PWA tracking is explicitly foreground best-effort. Mobile browsers can s
 
 ## 8. Chatbot requirements
 
+Implemented runtime: `/assistant` provides authenticated conversation history, approved-source answers, bounded menu discovery, own-order/refund facts, allergy safety boundaries and grounded navigation. `/admin/assistant` manages source versions/audiences/expiry and records executed synthetic routing evaluations. Optional model interpretation receives no account records and cannot generate executable tools or financial facts.
+
+Cart additions and consented support summaries become expiring account-bound proposals. Confirmation rechecks the standard owner command; repeats recover the original result, including uncertain network responses. Action execution defaults off until the human review below is recorded. Guest chat, unrestricted generated answers, voice/images, vector retrieval and real-provider semantic qualification remain outside the current implementation. See [assistant implementation and evidence](engineering/ASSISTANT.md).
+
 ### Supported tasks
 
 1. Public FAQ: service zones, payment methods, cancellation policies, account help.
@@ -253,5 +257,11 @@ Payment state is separate: `CREATED → PENDING → CAPTURED | FAILED | EXPIRED`
 Business dashboard: search-to-menu, menu-to-cart, checkout-to-paid, payment success by gateway, acceptance rate, delivered rate, cancellation/refund rate, median/p95 fulfillment time, support rate per 100 orders, repeat purchase, and chatbot resolved-without-recontact rate. Instrument consent-aware events without sensitive payloads. Establish conversion baselines during pilot rather than inventing launch percentages.
 
 ## 12. Definition of complete
+
+Launch preparation now includes an MFA-protected, versioned and audited merchant live-order approval/revocation workflow in `/admin/finance`; filtered restaurant records and real account-detail reads; rider-management links to verification records; and `/settings/privacy` requests that create private tracked support cases for export/deletion review. Privacy-case submission does not perform cross-service erasure or claim legal retention approval.
+
+Root builds stamp matching frontend/backend deployment identities. Hosted preflight checks exact mode, selected gateways, all-owner build consistency, headers, deep links and anonymous denial. The launch handoff, training drills, scoped rollout plan and stage observation gate are documented in [launch preparation](release/LAUNCH-HANDBOOK.md). Checkout-pause acceptance requires new quotes/orders to stop while valid existing payment attempts, fulfillment/refunds and reconciliation continue. The application owner handles hosting and secret values; no hosting accounts are provisioned by this work.
+
+Hardening now includes an executable repository verification report, automated accessibility checks in public and persisted four-role journeys, bounded transport probes, six-owner restored-data/index comparison, incident/recovery runbooks and an unsigned pilot gate record. These tools do not replace real hosted load, backup/object/key restore, provider execution, physical-device checks or accountable operator review. See [hardening](engineering/HARDENING.md) and [pilot readiness](release/PILOT-READINESS.md).
 
 Every P0/P1 requirement has a working route/command, server authorization, persistent data, observability, failure behavior and acceptance evidence. Live provider configuration, operational verification, tested backups, approved policies, staffed support and an on-call process are release dependencies. No document alone establishes production readiness.

@@ -15,6 +15,57 @@ const resources: Resources = {
 afterEach(() => vi.unstubAllEnvs());
 describe('service HTTP contract', () => {
   const app = createApp({ name: 'admin', config, resources });
+  it('exposes only a valid noncached build identity and fails unbuilt/mixed releases', async () => {
+    const fingerprint = 'a'.repeat(64);
+    const owner = createApp({ name: 'auth', config, resources, buildIdentity: fingerprint });
+    const response = await request(owner).get('/health/release');
+    expect(response.status).toBe(200);
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.body).toEqual({
+      service: 'auth',
+      algorithm: 'cravecart-deployment-v1',
+      buildSha256: fingerprint,
+      owners: {},
+    });
+    expect(
+      (
+        await request(createApp({ name: 'auth', config, resources, buildIdentity: null })).get(
+          '/health/release',
+        )
+      ).status,
+    ).toBe(503);
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async (input) => {
+      const host = new URL(String(input)).port;
+      const service = (
+        {
+          '4001': 'auth',
+          '4002': 'restaurant',
+          '4003': 'rider',
+          '4004': 'admin',
+          '4005': 'realtime',
+          '4006': 'utils',
+        } as Record<string, string>
+      )[host];
+      return new Response(
+        JSON.stringify({
+          service,
+          algorithm: 'cravecart-deployment-v1',
+          buildSha256: service === 'rider' ? 'b'.repeat(64) : fingerprint,
+        }),
+      );
+    });
+    const gateway = createApp({
+      name: 'gateway',
+      config,
+      resources,
+      fetcher,
+      buildIdentity: fingerprint,
+    });
+    const mixed = await request(gateway).get('/health/release');
+    expect(mixed.status).toBe(503);
+    expect(mixed.body.owners.rider).toBe(false);
+    expect(mixed.body.owners.auth).toBe(true);
+  });
   it('is live while dependencies are down, but never claims readiness', async () => {
     expect((await request(app).get('/health/live')).status).toBe(200);
     const ready = await request(app).get('/health/ready');
@@ -48,6 +99,73 @@ describe('service HTTP contract', () => {
     expect(response.status).toBe(404);
     expect(response.body.error).not.toHaveProperty('stack');
   });
+  it('never caches private successes, unknown routes or parser failures', async () => {
+    for (const response of [
+      await request(app).get('/api/v1/platform'),
+      await request(app).get('/api/v1/missing'),
+      await request(app).post('/api/v1/auth/login').type('json').send('{"secret":"unfinished'),
+      await request(app)
+        .post('/api/v1/auth/login')
+        .type('json')
+        .send({ value: 'x'.repeat(33_000) }),
+    ]) {
+      expect(response.headers['cache-control']).toContain('no-store');
+      expect(response.headers['x-content-type-options']).toBe('nosniff');
+      expect(response.headers).not.toHaveProperty('x-powered-by');
+      expect(JSON.stringify(response.body)).not.toContain('unfinished');
+    }
+  });
+  it('rejects unsupported encodings as client errors without leaking parser details', async () => {
+    const response = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Content-Type', 'application/json; charset=unsupported')
+      .send('{}');
+    expect(response.status).toBe(415);
+    expect(response.body.error.code).toBe('UNSUPPORTED_MEDIA_TYPE');
+    expect(response.body.error.retryable).toBe(false);
+  });
+  it('fails readiness and rejects new API work while draining but remains live', async () => {
+    const check = vi.fn(async () => ({ mongo: true }));
+    const draining = createApp({
+      name: 'admin',
+      config,
+      resources: { ...resources, check },
+      isDraining: () => true,
+    });
+    expect((await request(draining).get('/health/live')).status).toBe(200);
+    expect((await request(draining).get('/health/ready')).status).toBe(503);
+    const response = await request(draining).get('/api/v1/platform');
+    expect(response.status).toBe(503);
+    expect(response.body.error.code).toBe('SERVICE_DRAINING');
+    expect(response.headers['retry-after']).toBe('5');
+    expect(check).not.toHaveBeenCalled();
+  });
+  it('bounds readiness when a dependency check hangs', async () => {
+    const hung = createApp({
+      name: 'admin',
+      config,
+      resources: { ...resources, check: () => new Promise(() => {}) },
+    });
+    const start = performance.now();
+    const response = await request(hung).get('/health/ready');
+    expect(response.status).toBe(503);
+    expect(performance.now() - start).toBeLessThan(4000);
+  });
+  it('does not allow an upstream to make authenticated responses publicly cacheable', async () => {
+    const gateway = createApp({
+      name: 'gateway',
+      config,
+      resources,
+      fetcher: vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(
+          new Response('{}', { headers: { 'cache-control': 'public, max-age=3600' } }),
+        ),
+    });
+    const response = await request(gateway).get('/api/v1/auth/me');
+    expect(response.status).toBe(200);
+    expect(response.headers['cache-control']).toBe('private, no-store');
+  });
   it('forwards correlation and returns a structured dependency outage at the gateway', async () => {
     vi.stubEnv('ADMIN_URL', '');
     vi.stubEnv('ADMIN_HOSTPORT', 'cravecart-admin-private:10000');
@@ -77,6 +195,23 @@ describe('service HTTP contract', () => {
   });
 });
 describe('safety and ownership', () => {
+  it('trusts forwarded client IPs only across explicitly configured proxy networks', async () => {
+    const check = async (trusted: string, forwarded: string) => {
+      const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response('{}'));
+      const gateway = createApp({
+        name: 'gateway',
+        config: loadConfig({ NODE_ENV: 'test', TRUSTED_PROXY_CIDRS: trusted }),
+        resources,
+        fetcher,
+      });
+      await request(gateway).get('/api/v1/auth/me').set('X-Forwarded-For', forwarded);
+      return (fetcher.mock.calls[0]![1]!.headers as Record<string, string>)['x-cc-client-ip'];
+    };
+    expect(await check('192.0.2.0/24', '198.51.100.66')).not.toBe('198.51.100.66');
+    expect(await check('127.0.0.1/32', '198.51.100.66, 203.0.113.7')).toBe('203.0.113.7');
+    for (const value of ['true', '0.0.0.0/0', '::/0', 'not-a-proxy', '127.0.0.1,'])
+      expect(() => loadConfig({ NODE_ENV: 'test', TRUSTED_PROXY_CIDRS: value })).toThrow();
+  });
   it('denies a fabricated workspace without matching grants', () => {
     expect(canEnter(null, ['admin'])).toBe(false);
     expect(canEnter({ workspace: 'admin', grants: ['customer'] }, ['admin'])).toBe(false);

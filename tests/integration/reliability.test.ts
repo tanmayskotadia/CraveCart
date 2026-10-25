@@ -117,3 +117,61 @@ it('commits atomically and survives uncertain publish plus consumer commit-befor
   await recovered.deleteQueue(queue);
   await recovered.close();
 });
+
+it('drains a real consumer before closing and isolates unsupported event versions in the dead queue', async () => {
+  const owner = `drain_${randomUUID().replaceAll('-', '')}`;
+  const consumer = new RabbitBroker(rabbitUrl!, owner);
+  let release!: () => void;
+  const applied = vi.fn(
+    () =>
+      new Promise<void>((done) => {
+        release = done;
+      }),
+  );
+  consumer.subscribe(['notification.created.v1'], applied);
+  const channel = await connection.createConfirmChannel();
+  try {
+    await consumer.ready();
+    const event: DomainEvent = {
+      eventId: randomUUID(),
+      eventType: 'notification.created.v1',
+      schemaVersion: 1,
+      occurredAt: new Date().toISOString(),
+      producer: 'utils',
+      aggregate: { type: 'notification', id: 'notice_001', version: 1 },
+      correlationId: randomUUID(),
+      causationId: randomUUID(),
+      data: { notificationId: 'notice_001', userId: 'user_001', category: 'test' },
+    };
+    // Bypass typed publisher deliberately: test the actual consumer boundary against poison input.
+    channel.publish(
+      'cravecart.domain.v1',
+      event.eventType,
+      Buffer.from(JSON.stringify({ ...event, schemaVersion: 999 })),
+      { persistent: true },
+    );
+    await channel.waitForConfirms();
+    await vi.waitFor(async () => {
+      const poison = await channel.get(`${owner}.dead.v1`, { noAck: true });
+      expect(poison).not.toBe(false);
+    });
+    expect(applied).not.toHaveBeenCalled();
+    await broker.publish(event);
+    await vi.waitFor(() => expect(applied).toHaveBeenCalledOnce());
+    let closed = false;
+    const closing = consumer.close().then(() => {
+      closed = true;
+    });
+    await new Promise((done) => setTimeout(done, 50));
+    expect(closed).toBe(false);
+    release();
+    await closing;
+    expect((await channel.checkQueue(`${owner}.domain.v1`)).messageCount).toBe(0);
+  } finally {
+    release?.();
+    await consumer.close();
+    for (const queue of [`${owner}.domain.v1`, `${owner}.dead.v1`])
+      await channel.deleteQueue(queue);
+    await channel.close();
+  }
+});

@@ -259,8 +259,9 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally",
+      "implementationScope": "Redirects to implemented passwordless contact verification; password login/reset tokens are not offered."
     },
     {
       "id": "page_forgot_password",
@@ -280,8 +281,9 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally",
+      "implementationScope": "Redirects to implemented passwordless contact verification; password login/reset tokens are not offered."
     },
     {
       "id": "page_reset_password",
@@ -301,8 +303,9 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally",
+      "implementationScope": "Redirects to implemented passwordless contact verification; password login/reset tokens are not offered."
     },
     {
       "id": "page_workspaces",
@@ -1464,8 +1467,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_restaurants",
@@ -1487,8 +1490,9 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally",
+      "implementationScope": "Paginated real merchant launch records and versioned live-order approval/revocation; verification and incidents use their canonical workspaces."
     },
     {
       "id": "page_admin_restaurants_restaurantId",
@@ -1510,8 +1514,9 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally",
+      "implementationScope": "Paginated real merchant launch records and versioned live-order approval/revocation; verification and incidents use their canonical workspaces."
     },
     {
       "id": "page_admin_riders",
@@ -1533,8 +1538,9 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally",
+      "implementationScope": "Rider-filtered verification queue and canonical application details; dispatch incidents remain in delivery operations."
     },
     {
       "id": "page_admin_riders_riderId",
@@ -1556,8 +1562,9 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally",
+      "implementationScope": "Rider-filtered verification queue and canonical application details; dispatch incidents remain in delivery operations."
     },
     {
       "id": "page_admin_orders",
@@ -1947,8 +1954,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_notifications",
@@ -2044,7 +2051,8 @@
         "error"
       ],
       "implemented": false,
-      "runtimeStatus": "planned"
+      "runtimeStatus": "partial",
+      "implementationScope": "Private export/deletion review requests through tracked support; cross-service fulfillment and retention approval remain operational gates."
     },
     {
       "id": "page_support",
@@ -2115,8 +2123,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_seller",

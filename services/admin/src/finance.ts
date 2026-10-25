@@ -1,6 +1,10 @@
 import express, { type Express } from 'express';
 import { z } from 'zod';
-import { pricingPolicyInputSchema } from '@cravecart/contracts';
+import {
+  pricingPolicyInputSchema,
+  merchantLaunchInputSchema,
+  merchantLaunchQuerySchema,
+} from '@cravecart/contracts';
 import {
   remoteSession,
   currentPrincipal,
@@ -12,6 +16,35 @@ import {
 } from '@cravecart/platform';
 export function installFinance(app: Express, ctx: DomainContext) {
   const router = express.Router();
+  router.get(
+    '/commerce/merchants',
+    remoteSession(ctx, { permission: 'finance:read' }),
+    async (req, res) => {
+      const input = merchantLaunchQuerySchema.parse(req.query);
+      json(
+        res,
+        await internalCall(ctx, 'restaurant', '/internal/v1/commerce/merchants', {
+          ...input,
+          actorSessionId: currentPrincipal(res).sessionId,
+        }),
+      );
+    },
+  );
+  router.put(
+    '/commerce/merchants/:restaurantId',
+    remoteSession(ctx, { permission: 'finance:write', stepUp: true, mutation: true }),
+    async (req, res) => {
+      const input = merchantLaunchInputSchema.parse(req.body);
+      json(
+        res,
+        await internalCall(ctx, 'restaurant', '/internal/v1/commerce/merchant-approval', {
+          ...input,
+          restaurantId: checkedId(req.params.restaurantId),
+          actorSessionId: currentPrincipal(res).sessionId,
+        }),
+      );
+    },
+  );
   router.get('/finance', remoteSession(ctx, { permission: 'finance:read' }), async (_req, res) =>
     json(
       res,

@@ -1,6 +1,6 @@
 # CraveCart quality and launch checklist
 
-No boxes are pre-checked: this repository currently contains planning documents only. During implementation, attach build/commit, environment, test case, evidence link, owner and date to each release gate.
+The application and automated delivery journeys are implemented. Checkboxes below describe full-release acceptance, not a claim that all environments have passed. See [executed verification](engineering/VERIFICATION.md), [hardening](engineering/HARDENING.md), [incident runbooks](engineering/INCIDENT-RUNBOOKS.md) and [the pilot decision register](release/PILOT-READINESS.md). Attach build/source fingerprint, environment, test case, evidence link, owner and date to every release gate. Unexecuted hosted checks remain pending.
 
 ## 1. Traceability and navigation audit
 

@@ -1051,7 +1051,7 @@ export function installPayments(
     return principal;
   }
   const internal = express.Router();
-  internal.use(internalOnly(ctx, ['restaurant', 'admin']));
+  internal.use(['/payments', '/refunds', '/finance'], internalOnly(ctx, ['restaurant', 'admin']));
   internal.use(async (_req, _res, next) => {
     try {
       await ready();

@@ -1073,6 +1073,137 @@ describe('transactional checkout, payments and refunds', () => {
       totals.subtotalMinor + totals.taxMinor + totals.deliveryFeeMinor + 2200,
     );
   });
+  it('launch approval requires finance authority, a current restaurant revision and a real verified seller', async () => {
+    const listing = await call('admin', 'get', '/api/v1/admin/commerce/merchants?page=1', admin);
+    expect(listing.status, JSON.stringify(listing.body)).toBe(200);
+    const restaurant = listing.body.data.merchants.find(
+      (value: { id: string }) => value.id === restaurantId,
+    );
+    expect(restaurant.liveOrderingApproved).toBe(false);
+    const detail = await call(
+      'admin',
+      'get',
+      '/api/v1/admin/commerce/merchants?restaurantId=' + restaurantId,
+      admin,
+    );
+    expect(detail.body.data.merchants.map((record: { id: string }) => record.id)).toEqual([
+      restaurantId,
+    ]);
+    const account = await call(
+      'admin',
+      'get',
+      '/api/v1/admin/users/' + seller.data.principal.userId,
+      admin,
+    );
+    expect(account.status).toBe(200);
+    expect(account.body.data.id).toBe(seller.data.principal.userId);
+    expect(
+      (await call('admin', 'get', '/api/v1/admin/users/' + seller.data.principal.userId, customer))
+        .status,
+    ).toBe(403);
+    const path = `/api/v1/admin/commerce/merchants/${restaurantId}`;
+    const body = {
+      expectedVersion: restaurant.version,
+      approved: true,
+      reason: 'Merchant contract and operational readiness reviewed',
+    };
+    expect((await call('admin', 'put', path, seller, body)).status).toBe(403);
+    expect((await call('admin', 'put', path, customer, body)).status).toBe(403);
+    const approved = await call('admin', 'put', path, admin, body);
+    expect(approved.status, JSON.stringify(approved.body)).toBe(200);
+    expect(approved.body.data.liveOrderingApproved).toBe(true);
+    expect((await call('admin', 'put', path, admin, body)).status).toBe(409);
+    const revoked = await call('admin', 'put', path, admin, {
+      ...body,
+      expectedVersion: approved.body.data.version,
+      approved: false,
+      reason: 'Pause this merchant launch cohort for review',
+    });
+    expect(revoked.status).toBe(200);
+    expect(revoked.body.data.liveOrderingApproved).toBe(false);
+    const savedCart = await call('restaurant', 'put', '/api/v1/cart', customer, await cartInput());
+    const sellerRecord = await databases
+      .auth!.collection('users')
+      .findOne({ _id: seller.data.principal.userId as never });
+    await databases
+      .auth!.collection('users')
+      .updateOne({ _id: seller.data.principal.userId as never }, { $set: { roles: ['customer'] } });
+    try {
+      const unavailable = await call('restaurant', 'post', '/api/v1/quotes', customer, {
+        cartVersion: savedCart.body.data.version,
+      });
+      expect(unavailable.status).toBe(409);
+      expect(unavailable.body.error.code).toBe('RESTAURANT_UNAVAILABLE');
+      expect(
+        (
+          await call('admin', 'put', path, admin, {
+            ...body,
+            expectedVersion: revoked.body.data.version,
+          })
+        ).status,
+      ).toBe(422);
+    } finally {
+      await databases
+        .auth!.collection('users')
+        .updateOne(
+          { _id: seller.data.principal.userId as never },
+          { $set: { roles: sellerRecord!.roles } },
+        );
+    }
+    await databases
+      .restaurant!.collection('restaurants')
+      .updateOne({ _id: restaurantId as never }, { $set: { sample: true } });
+    try {
+      expect(
+        (
+          await call('admin', 'put', path, admin, {
+            ...body,
+            expectedVersion: revoked.body.data.version,
+          })
+        ).status,
+      ).toBe(422);
+    } finally {
+      await databases
+        .restaurant!.collection('restaurants')
+        .updateOne({ _id: restaurantId as never }, { $set: { sample: false } });
+    }
+    expect(
+      await databases
+        .restaurant!.collection('commerce_audit')
+        .countDocuments({ action: 'merchant.live-approval', restaurantId }),
+    ).toBe(2);
+  });
+  it('pauses new checkout while a pre-existing payment can still capture and fulfill', async () => {
+    const { order, attempt } = await pending();
+    const policy = (await call('admin', 'get', '/api/v1/admin/commerce/policy', admin)).body.data;
+    const { version, development: _development, ...fields } = policy;
+    const paused = await call('admin', 'put', '/api/v1/admin/commerce/policy', admin, {
+      expectedVersion: version,
+      policy: { ...fields, enabled: false },
+      reason: 'Rehearse launch pause with pending payment in progress',
+    });
+    expect(paused.status, JSON.stringify(paused.body)).toBe(200);
+    try {
+      const cart = await call('restaurant', 'put', '/api/v1/cart', customer, await cartInput());
+      const blocked = await call('restaurant', 'post', '/api/v1/quotes', customer, {
+        cartVersion: cart.body.data.version,
+      });
+      expect(blocked.status).toBe(503);
+      expect(blocked.body.error.code).toBe('POLICY_NOT_APPROVED');
+      await outcome(attempt.id, 'captured');
+      await flush();
+      const current = await call('restaurant', 'get', `/api/v1/orders/${order.id}`, customer);
+      expect(current.body.data.paymentState).toBe('CAPTURED');
+      expect(current.body.data.status).toBe('PLACED');
+    } finally {
+      const resumed = await call('admin', 'put', '/api/v1/admin/commerce/policy', admin, {
+        expectedVersion: paused.body.data.version,
+        policy: fields,
+        reason: 'Resume reviewed checkout after launch pause rehearsal',
+      });
+      expect(resumed.status).toBe(200);
+    }
+  });
   it('cancels an already fully refunded order without requesting a zero-value refund', async () => {
     const { order, attempt } = await pending();
     await outcome(attempt.id, 'captured');

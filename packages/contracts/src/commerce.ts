@@ -22,6 +22,41 @@ export const pricingPolicySchema = pricingPolicyInputSchema
   .extend({ version: z.number().int().positive(), development: z.boolean() })
   .strict();
 export type PricingPolicy = z.infer<typeof pricingPolicySchema>;
+export const merchantLaunchQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).max(10000).default(1),
+    restaurantId: z.string().uuid().optional(),
+  })
+  .strict();
+export const merchantLaunchInputSchema = z
+  .object({
+    expectedVersion: z.number().int().positive(),
+    approved: z.boolean(),
+    reason: z.string().trim().min(5).max(500),
+  })
+  .strict();
+export const merchantLaunchRecordSchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string(),
+    city: z.string(),
+    version: z.number().int().positive(),
+    published: z.boolean(),
+    paused: z.boolean(),
+    sample: z.boolean(),
+    liveOrderingApproved: z.boolean(),
+  })
+  .strict();
+export const merchantLaunchListSchema = z
+  .object({
+    merchants: z.array(merchantLaunchRecordSchema),
+    page: z.number().int(),
+    pageSize: z.literal(20),
+    total: z.number().int(),
+  })
+  .strict();
+export type MerchantLaunchRecord = z.infer<typeof merchantLaunchRecordSchema>;
+export type MerchantLaunchList = z.infer<typeof merchantLaunchListSchema>;
 export const totalsSchema = z
   .object({
     currency: z.literal('INR'),

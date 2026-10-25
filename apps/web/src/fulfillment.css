@@ -86,7 +86,7 @@
   color: #555;
 }
 .delivery-tabs .active {
-  color: #ef4f5f;
+  color: #c52a43;
   border-bottom: 2px solid #ef4f5f;
 }
 .discovery-intro {
@@ -95,12 +95,16 @@
   justify-content: space-between;
   gap: 30px;
 }
+.discovery-intro .eyebrow,
+.discovery-intro p {
+  color: #706a74;
+}
 .discovery-intro h1 {
   font-size: 2rem;
   letter-spacing: -0.04em;
 }
 .discovery-intro p {
-  color: #777;
+  color: #706a74;
 }
 .service-notice {
   margin-top: 30px;

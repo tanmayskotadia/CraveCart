@@ -7,6 +7,9 @@ import {
   createOrderSchema,
   cancelOrderSchema,
   pricingPolicyInputSchema,
+  merchantLaunchInputSchema,
+  merchantLaunchRecordSchema,
+  merchantLaunchQuerySchema,
   calculateTotals,
   isOpen,
   type PricingPolicy,
@@ -238,7 +241,7 @@ export function installOrders(app: Express, ctx: DomainContext) {
       ctx,
       'auth',
       '/internal/v1/memberships/check',
-      { userIds: [restaurant.userId] },
+      { userIds: [restaurant.userId], role: 'seller' },
     );
     if (!membership.activeUserIds.includes(restaurant.userId))
       throw new HttpError(409, 'RESTAURANT_UNAVAILABLE', 'Restaurant is unavailable');
@@ -529,7 +532,7 @@ export function installOrders(app: Express, ctx: DomainContext) {
           ctx,
           'auth',
           '/internal/v1/memberships/check',
-          { userIds: [restaurant.userId] },
+          { userIds: [restaurant.userId], role: 'seller' },
         );
         if (!seller.activeUserIds.includes(restaurant.userId)) canFulfill = false;
       }
@@ -1027,6 +1030,97 @@ export function installOrders(app: Express, ctx: DomainContext) {
       await session.endSession();
     }
     json(res, { applied: true });
+  });
+  const launchRecord = (record: RestaurantRecord) =>
+    merchantLaunchRecordSchema.parse({
+      id: record._id,
+      name: record.name,
+      city: record.city,
+      version: record.version,
+      published: record.published,
+      paused: record.paused,
+      sample: Boolean(record.sample),
+      liveOrderingApproved: record.liveOrderingApproved === true,
+    });
+  internal.post('/commerce/merchants', async (req, res) => {
+    if (res.locals.caller !== 'admin') throw new HttpError(403, 'SERVICE_DENIED', 'Service denied');
+    const input = merchantLaunchQuerySchema
+      .extend({ actorSessionId: z.string().uuid() })
+      .parse(req.body);
+    await verifyAdmin(input.actorSessionId, false);
+    const filter = input.restaurantId ? { _id: input.restaurantId } : {};
+    const [records, total] = await Promise.all([
+      restaurants
+        .find(filter)
+        .sort({ _id: 1 })
+        .skip((input.page - 1) * 20)
+        .limit(20)
+        .toArray(),
+      restaurants.countDocuments(filter),
+    ]);
+    json(res, { merchants: records.map(launchRecord), total, page: input.page, pageSize: 20 });
+  });
+  internal.post('/commerce/merchant-approval', async (req, res) => {
+    if (res.locals.caller !== 'admin') throw new HttpError(403, 'SERVICE_DENIED', 'Service denied');
+    const input = merchantLaunchInputSchema
+      .extend({ restaurantId: z.string().uuid(), actorSessionId: z.string().uuid() })
+      .parse(req.body);
+    await verifyAdmin(input.actorSessionId);
+    const original = await restaurants.findOne({ _id: input.restaurantId });
+    if (!original) throw new HttpError(404, 'NOT_FOUND', 'Restaurant not found');
+    if (input.approved) {
+      if (original.sample || !original.published || original.paused)
+        throw new HttpError(
+          422,
+          'MERCHANT_NOT_READY',
+          'Review a published, available restaurant with real merchant details',
+        );
+      const members = await internalCall<{ activeUserIds: string[] }>(
+        ctx,
+        'auth',
+        '/internal/v1/memberships/check',
+        { userIds: [original.userId], role: 'seller' },
+      );
+      if (!members.activeUserIds.includes(original.userId))
+        throw new HttpError(
+          422,
+          'MERCHANT_NOT_READY',
+          'The restaurant owner must be an active verified seller',
+        );
+    }
+    const session = client.startSession();
+    try {
+      let result: RestaurantRecord | null = null;
+      await session.withTransaction(async () => {
+        result = await restaurants.findOneAndUpdate(
+          { _id: input.restaurantId, version: input.expectedVersion },
+          { $set: { liveOrderingApproved: input.approved }, $inc: { version: 1 } },
+          { session, returnDocument: 'after' },
+        );
+        if (!result)
+          throw new HttpError(
+            409,
+            'VERSION_CONFLICT',
+            'Restaurant changed. Reload and review again.',
+          );
+        await db.collection('commerce_audit').insertOne(
+          {
+            id: randomUUID(),
+            actorSessionId: input.actorSessionId,
+            action: 'merchant.live-approval',
+            restaurantId: input.restaurantId,
+            approved: input.approved,
+            reason: input.reason,
+            version: result.version,
+            at: new Date(),
+          },
+          { session },
+        );
+      });
+      json(res, launchRecord(result!));
+    } finally {
+      await session.endSession();
+    }
   });
   internal.post('/commerce/policy', async (req, res) => {
     if (res.locals.caller !== 'admin') throw new HttpError(403, 'SERVICE_DENIED', 'Service denied');

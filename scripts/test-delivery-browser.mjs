@@ -2,9 +2,10 @@ import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { resolve, sep } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { mkdir, realpath, rm } from 'node:fs/promises';
+import { mkdir, realpath, rm, writeFile } from 'node:fs/promises';
 import { MongoClient } from 'mongodb';
 import { MongoMemoryReplSet } from 'mongodb-memory-server-core';
+import { runProbe } from './capacity-probe.mjs';
 const prefix = `cc_ui_${randomUUID().replaceAll('-', '')}`,
   root = resolve('.local', prefix),
   children = [];
@@ -53,6 +54,11 @@ try {
     MONGO_DB_PREFIX: prefix,
     DEV_ADAPTERS: 'true',
     COMMERCE_MODE: 'development',
+    ASSISTANT_PROVIDER: 'builtin',
+    OPENAI_API_KEY: '',
+    ASSISTANT_MODEL: '',
+    ASSISTANT_WRITES_ENABLED: 'true',
+    ASSISTANT_WRITES_REVIEWED: 'true',
     RABBITMQ_URL: 'amqp://127.0.0.1:1',
     REDIS_URL: 'redis://127.0.0.1:1',
     UPLOAD_DIRECTORY: resolve(root, 'uploads'),
@@ -127,6 +133,18 @@ try {
     }
     if (!up) throw new Error('Test server did not start');
   }
+  const probe = await runProbe({
+    url: `http://127.0.0.1:${ports[0]}/api/v1/platform`,
+    count: 100,
+    concurrency: 4,
+    p95BudgetMs: 1000,
+  });
+  await mkdir('.local/probes', { recursive: true });
+  await writeFile(`.local/probes/${prefix}.json`, JSON.stringify(probe, null, 2) + '\n');
+  console.log(
+    `Read-only gateway probe: ${probe.completed} requests, ${probe.failed} failures, p95 ${probe.p95Ms?.toFixed(1)}ms (not production capacity qualification)`,
+  );
+  if (!probe.passed) throw new Error('Bounded gateway probe failed');
   const test = launch(
     [
       resolve('node_modules/@playwright/test/cli.js'),

@@ -7,8 +7,8 @@ import { installOrders } from './orders.js';
 import { installRestaurantOperations } from './operations.js';
 
 await startService('restaurant', (app, ctx) => {
-  const catalog=installCatalog(app, ctx);
-  installAssistantTools(app,ctx,catalog);
+  const catalog = installCatalog(app, ctx);
+  installAssistantTools(app, ctx, catalog);
   installApplications(app, ctx);
   const orders = installOrders(app, ctx);
   installFulfillment(app, ctx, orders);

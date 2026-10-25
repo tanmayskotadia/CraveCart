@@ -1,0 +1,27 @@
+{
+  "kind": "cravecart-rollout-v1",
+  "buildSha256": "",
+  "stage": "internal-sandbox",
+  "mode": "test",
+  "origins": { "app": "", "api": "", "realtime": "" },
+  "requiredGateways": ["razorpay"],
+  "cohort": {
+    "cities": [],
+    "zoneIds": [],
+    "restaurantIds": [],
+    "riderIds": [],
+    "maxActiveOrders": 0
+  },
+  "review": { "owner": "", "reviewedAt": "", "evidence": "" },
+  "coverage": {
+    "startsAt": "",
+    "endsAt": "",
+    "primary": "",
+    "backup": "",
+    "support": "",
+    "finance": "",
+    "security": ""
+  },
+  "training": { "seller": "", "rider": "", "support": "", "admin": "", "alertDrill": "" },
+  "previousStageEvidence": ""
+}

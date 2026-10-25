@@ -27,8 +27,8 @@ export const platformSchema = z
           .object({
             ordering: z.boolean(),
             authentication: z.boolean(),
-            liveTracking: z.literal(false),
-            assistant: z.literal(false),
+            liveTracking: z.boolean(),
+            assistant: z.boolean(),
           })
           .strict(),
         serviceability: z.enum(['not-configured', 'coordinate-check-required']),

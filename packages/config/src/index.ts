@@ -1,9 +1,31 @@
 import { z } from 'zod';
+import { isIP } from 'node:net';
 
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(4001),
   HOST: z.string().default('127.0.0.1'),
+  TRUSTED_PROXY_CIDRS: z
+    .string()
+    .max(2048)
+    .default('')
+    .refine(
+      (value) =>
+        !value ||
+        (value.split(',').length <= 32 &&
+          value.split(',').every((entry) => {
+            const [ip, prefix, extra] = entry.trim().split('/'),
+              version = isIP(ip ?? '');
+            const max = version === 4 ? 32 : 128;
+            return (
+              !extra &&
+              version > 0 &&
+              !ip!.includes('%') &&
+              (prefix === undefined || (/^[1-9][0-9]*$/.test(prefix) && Number(prefix) <= max))
+            );
+          })),
+      'Use explicit trusted proxy IPs/CIDRs; unrestricted networks are forbidden',
+    ),
   MONGO_DB_PREFIX: z
     .string()
     .regex(/^[a-zA-Z][a-zA-Z0-9_]{2,45}$/)
@@ -40,11 +62,11 @@ const schema = z.object({
   WEB_PUSH_PUBLIC_KEY: z.string().optional(),
   WEB_PUSH_PRIVATE_KEY: z.string().optional(),
   WEB_PUSH_SUBJECT: z.string().optional(),
-  ASSISTANT_PROVIDER: z.enum(['builtin','openai']).default('builtin'),
+  ASSISTANT_PROVIDER: z.enum(['builtin', 'openai']).default('builtin'),
   OPENAI_API_KEY: z.string().optional(),
   ASSISTANT_MODEL: z.string().max(120).optional(),
-  ASSISTANT_WRITES_ENABLED: z.enum(['true','false']).default('false'),
-  ASSISTANT_WRITES_REVIEWED: z.enum(['true','false']).default('false'),
+  ASSISTANT_WRITES_ENABLED: z.enum(['true', 'false']).default('false'),
+  ASSISTANT_WRITES_REVIEWED: z.enum(['true', 'false']).default('false'),
   ASSISTANT_DAILY_MESSAGES: z.coerce.number().int().min(1).max(500).default(60),
   ASSISTANT_DAILY_PROVIDER_CALLS: z.coerce.number().int().min(1).max(10000).default(100),
 });
@@ -52,8 +74,10 @@ export type Config = z.infer<typeof schema>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const config = schema.parse(env);
-  if(config.ASSISTANT_PROVIDER==='openai'&&(!config.OPENAI_API_KEY||!config.ASSISTANT_MODEL))throw new Error('OpenAI assistant requires a server API key and explicit model');
-  if(config.ASSISTANT_WRITES_ENABLED==='true'&&config.ASSISTANT_WRITES_REVIEWED!=='true')throw new Error('Assistant action enablement requires recorded human review');
+  if (config.ASSISTANT_PROVIDER === 'openai' && (!config.OPENAI_API_KEY || !config.ASSISTANT_MODEL))
+    throw new Error('OpenAI assistant requires a server API key and explicit model');
+  if (config.ASSISTANT_WRITES_ENABLED === 'true' && config.ASSISTANT_WRITES_REVIEWED !== 'true')
+    throw new Error('Assistant action enablement requires recorded human review');
   if (
     config.COMMERCE_MODE === 'development' &&
     (config.NODE_ENV === 'production' || config.DEV_ADAPTERS !== 'true')

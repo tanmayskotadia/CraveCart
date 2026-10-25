@@ -71,7 +71,7 @@
   margin: 8px 0;
 }
 .commerce-timeline time {
-  color: #777;
+  color: #706a74;
   font-size: 0.8rem;
 }
 .commerce-status {
@@ -83,7 +83,7 @@
 }
 .cart-line small {
   display: block;
-  color: #777;
+  color: #706a74;
   padding-top: 5px;
 }
 @media print {

@@ -2,13 +2,13 @@
 
 Food discovery and delivery for India, built with MongoDB, Express, React and Node.js using TypeScript. The repository contains a React application, six independently runnable backend services, an API gateway, shared contracts, local infrastructure and automated checks.
 
-The application includes India-wide discovery, real OTP accounts and sessions, authenticator MFA, account security, seller/rider onboarding, private document uploads and admin verification. Restaurant and rider access opens only after approval. Discovery now includes restaurant and dish search, menus and add-ons, addresses and exact zone checks, favorites, offers, seller catalog management and server-priced carts. Checkout now includes expiring quotes, stock and offer reservations, orders, Razorpay/Stripe adapters, verified webhooks, cancellation, refunds and a balanced financial ledger. Fulfillment now includes the seller kitchen board, exclusive rider assignment, pickup and delivery codes, customer tracking, notifications and operator incident recovery. The assistant remains upcoming work. Live provider and deployment qualification remain required before launch.
+The application includes India-wide discovery, real OTP accounts and sessions, authenticator MFA, account security, seller/rider onboarding, private document uploads and admin verification. Restaurant and rider access opens only after approval. Discovery now includes restaurant and dish search, menus and add-ons, addresses and exact zone checks, favorites, offers, seller catalog management and server-priced carts. Checkout now includes expiring quotes, stock and offer reservations, orders, Razorpay/Stripe adapters, verified webhooks, cancellation, refunds and a balanced financial ledger. Fulfillment now includes the seller kitchen board, exclusive rider assignment, pickup and delivery codes, customer tracking, notifications and operator incident recovery. The grounded assistant includes approved help, menu discovery, own-order/refund facts, reviewed cart/support proposals and optional server-side model interpretation. Live provider and deployment qualification remain required before launch.
 
 ## Host on Vercel and Render
 
 Follow the [hosted deployment and API-key guide](docs/engineering/HOSTING.md). The repository includes a Render Blueprint, private persistent upload storage, managed-service configuration, Vercel API-proxy setup and a hosted readiness check. Deployment requires provider account access and credentials; this repository does not imply a live production deployment.
 
-Read the [complete delivery journey](docs/engineering/FULFILLMENT-AND-TRACKING.md), [role operations](docs/engineering/ROLE-OPERATIONS.md) and [PRD](docs/PRD.md). Support conversations, delivery messages, verified reviews, restaurant teams, limited administrative grants, reports and accounting records are implemented. Bank payouts and contractual compensation remain subject to policy and provider configuration. Use `.env.hosted.example` for backend settings. Production rejects development codes, synthetic payments and developer upload storage.
+Read the [complete delivery journey](docs/engineering/FULFILLMENT-AND-TRACKING.md), [role operations](docs/engineering/ROLE-OPERATIONS.md), [assistant setup](docs/engineering/ASSISTANT.md) and [PRD](docs/PRD.md). Support conversations, delivery messages, verified reviews, restaurant teams, limited administrative grants, reports and accounting records are implemented. Bank payouts and contractual compensation remain subject to policy and provider configuration. Use `.env.hosted.example` for backend settings. Production rejects development codes, synthetic payments and developer upload storage.
 
 ## Development and isolated verification
 
@@ -29,6 +29,10 @@ Local OTPs are displayed explicitly as development codes; no SMS/email is sent. 
 Run `npm run seed:catalog` to add clearly labelled fictional restaurants in six cities for local discovery and cart testing. This creates no orders or live merchant affiliations.
 
 ## Validate
+
+For the hosting handoff, start with [launch preparation](docs/release/LAUNCH-HANDBOOK.md) and [partner training](docs/release/PARTNER-TRAINING.md). `npm run launch:prepare` creates an operating packet with the current build identity and configuration names. `npm run launch:gate` checks the actual reviewed release, hosted evidence, staffing and rollout scope; it performs no deployment.
+
+Run `npm run verify:release` for a reproducible repository report and per-check logs. See [hardening checks](docs/engineering/HARDENING.md), [recovery runbooks](docs/engineering/INCIDENT-RUNBOOKS.md) and [pilot readiness](docs/release/PILOT-READINESS.md). Hosted/provider/recovery qualification remains pending; `npm run release:gate` fails until the release evidence and reviewed sign-off are complete.
 
 ```powershell
 python -m pip install -r scripts/requirements-contracts.txt

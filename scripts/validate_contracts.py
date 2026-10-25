@@ -85,7 +85,7 @@ def main():
             check("default" in operation["responses"] and "security" in operation, f"Errors and security declared: {oid}")
             check(operation["x-owner"] in builder.SERVICES.values(), f"Known owner: {oid}")
             check(all(name in api["components"]["securitySchemes"] for requirement in operation["security"] for name in requirement), f"Declared security schemes: {oid}")
-            check(operation["x-client-generation-ready"] == (path == "/platform" or method in read("identity.openapi.json").get(path, {}) or method in read("catalog.openapi.json").get(path, {}) or method in read("commerce.openapi.json").get(path, {}) or method in read("fulfillment.openapi.json").get(path, {}) or method in read("operations.openapi.json").get(path, {})) and (not operation["x-client-generation-ready"] or operation["x-contract-status"] == "implementation-ready"), f"Client generation limited to implemented slice: {oid}")
+            check(operation["x-client-generation-ready"] == (path == "/platform" or method in read("identity.openapi.json").get(path, {}) or method in read("catalog.openapi.json").get(path, {}) or method in read("commerce.openapi.json").get(path, {}) or method in read("fulfillment.openapi.json").get(path, {}) or method in read("operations.openapi.json").get(path, {}) or method in read("assistant.openapi.json").get(path, {})) and (not operation["x-client-generation-ready"] or operation["x-contract-status"] == "implementation-ready"), f"Client generation limited to implemented slice: {oid}")
     local_refs(api)
     for action in actions["actions"]:
         check(bool(action["success"] and action["recovery"]), f"CTA success/recovery: {action['label']}")

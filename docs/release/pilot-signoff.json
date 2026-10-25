@@ -1,0 +1,19 @@
+{
+  "sourceSha256": "",
+  "releaseOwner": "",
+  "reviewedAt": "",
+  "gates": {
+    "scope": { "status": "pending", "owner": "", "evidence": "" },
+    "security": { "status": "pending", "owner": "", "evidence": "" },
+    "providers": { "status": "pending", "owner": "", "evidence": "" },
+    "capacity": { "status": "pending", "owner": "", "evidence": "" },
+    "resilience": { "status": "pending", "owner": "", "evidence": "" },
+    "recovery": { "status": "pending", "owner": "", "evidence": "" },
+    "finance": { "status": "pending", "owner": "", "evidence": "" },
+    "privacy": { "status": "pending", "owner": "", "evidence": "" },
+    "accessibility": { "status": "pending", "owner": "", "evidence": "" },
+    "tracking": { "status": "pending", "owner": "", "evidence": "" },
+    "operations": { "status": "pending", "owner": "", "evidence": "" },
+    "deployment": { "status": "pending", "owner": "", "evidence": "" }
+  }
+}

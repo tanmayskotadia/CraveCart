@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+import { writeFile } from 'node:fs/promises';
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/v1/restaurants?*', (route) =>
@@ -122,6 +124,13 @@ test('signup and modal deep-link refresh work', async ({ page }) => {
   await page.getByRole('button', { name: 'Close dialog' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Every craving.');
 });
+test('verification and recovery links use the implemented passwordless login', async ({ page }) => {
+  for (const path of ['/verify', '/forgot-password', '/reset-password']) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole('dialog', { name: 'Log in', exact: true })).toBeVisible();
+  }
+});
 test('city expansion, empty search and phone preview work', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.city-card')).toHaveCount(9);
@@ -172,4 +181,41 @@ test('reduced motion disables decorative animations', async ({ page }) => {
       .evaluate((node) => getComputedStyle(node).animationName),
   ).toBe('none');
   await expect(page.locator('.story-copy h2')).toBeVisible();
+});
+
+test('public discovery and authentication have no WCAG A/AA automated violations', async ({
+  page,
+}, testInfo) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const path of [
+    '/',
+    '/search?city=chennai',
+    '/login',
+    '/signup',
+    '/seller/login',
+    '/rider/login',
+    '/admin/login',
+  ]) {
+    await page.goto(path);
+    await expect(page.locator('main')).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    const name = `accessibility-${path.replaceAll(/[^a-z0-9]/gi, '_')}`;
+    const evidencePath = testInfo.outputPath(`${name}.json`);
+    await writeFile(evidencePath, JSON.stringify(results, null, 2));
+    await testInfo.attach(name, {
+      path: evidencePath,
+      contentType: 'application/json',
+    });
+    expect
+      .soft(
+        results.violations.map(({ id, nodes }) => ({
+          id,
+          nodes: nodes.map(({ target, failureSummary }) => ({ target, failureSummary })),
+        })),
+      )
+      .toEqual([]);
+  }
 });

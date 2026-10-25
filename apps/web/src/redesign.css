@@ -673,7 +673,7 @@ main:focus {
   display: block;
 }
 .city-card small {
-  color: #868089;
+  color: #706a74;
   font-size: 11px;
   display: block;
   margin-top: 3px;
@@ -1041,7 +1041,7 @@ main:focus {
 }
 .auth-policy {
   font-size: 9px;
-  color: #8a828e;
+  color: #706a74;
   margin-top: 22px;
   line-height: 1.8;
 }
@@ -1056,6 +1056,7 @@ main:focus {
 }
 .auth-switch a {
   color: var(--cc-primary);
+  text-decoration: underline;
   margin-left: 3px;
 }
 .form-feedback {
@@ -1186,7 +1187,7 @@ main:focus {
   display: flex;
   gap: 12px;
   font-size: 10px;
-  color: #827a87;
+  color: #706a74;
 }
 .breadcrumbs a {
   text-decoration: underline;
@@ -1236,7 +1237,7 @@ main:focus {
 }
 .service-notice p {
   font-size: 12px;
-  color: #817381;
+  color: #6c606c;
   max-width: 760px;
   line-height: 1.9;
 }
@@ -1251,7 +1252,7 @@ main:focus {
 .explore-flavours > p {
   margin-top: 8px;
   font-size: 12px;
-  color: #817885;
+  color: #706a74;
 }
 .flavour-grid {
   display: grid;
@@ -1280,7 +1281,7 @@ main:focus {
 }
 .flavour-card p {
   margin-top: 7px;
-  color: #827887;
+  color: #706a74;
   font-size: 11px;
 }
 .flavour-card > svg {

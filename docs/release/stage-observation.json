@@ -1,0 +1,19 @@
+{
+  "kind": "cravecart-stage-observation-v1",
+  "buildSha256": "",
+  "stage": "internal-sandbox",
+  "startedAt": "",
+  "finishedAt": "",
+  "reviewer": "",
+  "evidence": "",
+  "requestCount": null,
+  "api5xxCount": null,
+  "capturedOrders": null,
+  "deliveredOrders": null,
+  "criticalIncidents": null,
+  "ledgerImbalances": null,
+  "unmatchedCaptures": null,
+  "duplicateAssignments": null,
+  "noRiderOrders": null,
+  "oldestOutboxSeconds": null
+}

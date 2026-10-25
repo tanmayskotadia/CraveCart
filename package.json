@@ -18,7 +18,7 @@
     "dev:database": "node scripts/dev-database.mjs",
     "admin:bootstrap": "node scripts/bootstrap-admin.mjs",
     "seed:catalog": "node scripts/seed-catalog.mjs",
-    "build": "tsc -b tsconfig.build.json && npm run build --workspace @cravecart/web",
+    "build": "tsc -b tsconfig.build.json && npm run build --workspace @cravecart/web && node scripts/write-build-identity.mjs",
     "typecheck": "tsc -b tsconfig.build.json && tsc -p apps/web/tsconfig.json --noEmit && tsc -p tests/tsconfig.json --noEmit",
     "lint": "eslint . && node scripts/check-boundaries.mjs",
     "format": "prettier --write apps packages services tests infra .github *.json *.mjs scripts/*.mjs",
@@ -28,7 +28,7 @@
     "test:identity": "vitest run --config vitest.identity.config.ts",
     "test:e2e": "playwright test",
     "test:identity:browser": "playwright test --config playwright.identity.config.ts",
-    "contracts:export": "tsx scripts/export-contracts.ts && tsx scripts/export-identity-contracts.ts && tsx scripts/export-catalog-contracts.ts && tsx scripts/export-commerce-contracts.ts && tsx scripts/export-fulfillment-contracts.ts && tsx scripts/export-operations-contracts.ts",
+    "contracts:export": "tsx scripts/export-contracts.ts && tsx scripts/export-identity-contracts.ts && tsx scripts/export-catalog-contracts.ts && tsx scripts/export-commerce-contracts.ts && tsx scripts/export-fulfillment-contracts.ts && tsx scripts/export-operations-contracts.ts && tsx scripts/export-assistant-contracts.ts",
     "contracts:build": "npm run contracts:export && python scripts/build_contracts.py",
     "contracts:check": "python scripts/validate_contracts.py",
     "check": "npm run typecheck && npm run lint && npm test && npm run contracts:check",
@@ -38,9 +38,17 @@
     "test:money": "vitest run --config vitest.money.config.ts",
     "test:money:providers": "vitest run --config vitest.providers.config.ts",
     "test:fulfillment": "vitest run --config vitest.fulfillment.config.ts",
+    "test:assistant": "vitest run --config vitest.fulfillment.config.ts",
     "hosting:configure": "node scripts/configure-hosting.mjs",
     "hosting:check": "node scripts/check-hosting.mjs",
-    "test:delivery:browser": "npm run build && node scripts/test-delivery-browser.mjs"
+    "test:delivery:browser": "npm run build && node scripts/test-delivery-browser.mjs",
+    "test:tooling": "node --test tests/tooling/*.test.mjs",
+    "verify:release": "node scripts/verify-release.mjs",
+    "capacity:probe": "node scripts/capacity-probe.mjs",
+    "recovery:check": "node scripts/check-recovery.mjs",
+    "release:gate": "node scripts/check-pilot-gates.mjs",
+    "launch:prepare": "node scripts/prepare-launch.mjs",
+    "launch:gate": "node scripts/check-launch.mjs"
   },
   "dependencies": {
     "@fontsource/plus-jakarta-sans": "5.3.0",
@@ -72,6 +80,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.1",
     "@types/amqplib": "0.10.8",

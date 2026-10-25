@@ -1,7 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 import { MongoClient } from 'mongodb';
 import { randomUUID } from 'node:crypto';
-import { unlink, mkdir } from 'node:fs/promises';
+import { unlink, mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import sharp from 'sharp';
 import { adminPermissions } from '../../services/auth/src/router.js';
@@ -41,6 +42,25 @@ test('customer, restaurant and rider complete a verified delivery', async ({
     createdAt: new Date(),
   });
   const contexts = [];
+  async function audit(target: Page, name: string) {
+    const results = await new AxeBuilder({ page: target })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    const evidencePath = testInfo.outputPath(`accessibility-${name}.json`);
+    await writeFile(evidencePath, JSON.stringify(results, null, 2));
+    await testInfo.attach(`accessibility-${name}`, {
+      path: evidencePath,
+      contentType: 'application/json',
+    });
+    expect
+      .soft(
+        results.violations.map(({ id, nodes }) => ({
+          id,
+          targets: nodes.map(({ target, failureSummary }) => ({ target, failureSummary })),
+        })),
+      )
+      .toEqual([]);
+  }
   async function signIn(target: Page, path: string, email: string, signup = false) {
     await target.goto(path);
     const dialog = target.getByRole('dialog');
@@ -309,6 +329,9 @@ test('customer, restaurant and rider complete a verified delivery', async ({
     await expect(driver.locator('.commerce-status')).toContainText('READY FOR PICKUP');
     await page.goto(`/orders/${paidOrderId}/track`);
     await expect(page.locator('.commerce-status')).toContainText('READY FOR PICKUP');
+    await audit(kitchen, 'seller-kitchen');
+    await audit(driver, 'rider-task');
+    await audit(page, 'customer-tracking');
     const customerMessages = await page.context().newPage(),
       riderMessages = await driver.context().newPage();
     await customerMessages.goto(`/orders/${paidOrderId}/messages`);
@@ -461,6 +484,56 @@ test('customer, restaurant and rider complete a verified delivery', async ({
       admin.getByRole('heading', { name: 'Marketplace reports', exact: true }),
     ).toBeVisible();
     await expect(admin.locator('.operations-metrics')).toContainText('DELIVERED');
+    await audit(admin, 'admin-reports');
+    const customerAccount = await auth
+      .collection('users')
+      .findOne({ contact: `${prefix}-customer@example.test` });
+    await admin.goto('/admin/users/' + customerAccount!._id);
+    await expect(
+      admin.getByRole('heading', { name: 'Account details', exact: true }),
+    ).toBeVisible();
+    await expect(admin.getByText(`${prefix}-customer@example.test`, { exact: true })).toBeVisible();
+    await admin.goto('/admin/riders');
+    await expect(admin.getByRole('combobox', { name: 'Partner type', exact: true })).toHaveValue(
+      'rider',
+    );
+    await admin.goto(`/admin/restaurants/${merchantId}`);
+    await expect(
+      admin.getByRole('heading', { name: 'Restaurant launch approval', exact: true }),
+    ).toBeVisible();
+    await admin.getByRole('button', { name: `Review ${prefix} Kitchen`, exact: true }).click();
+    await admin
+      .getByLabel('Launch review reason', { exact: true })
+      .fill('Hosted-ready browser fixture merchant review');
+    await admin
+      .getByRole('checkbox', {
+        name: 'I reviewed the restaurant and approve this change.',
+        exact: true,
+      })
+      .check();
+    await admin.getByRole('button', { name: 'Confirm launch approval', exact: true }).click();
+    const merchantReview = admin
+      .locator('article')
+      .filter({ has: admin.getByRole('heading', { name: `${prefix} Kitchen`, exact: true }) });
+    await expect(merchantReview).toContainText('Approved for live ordering');
+    await audit(admin, 'admin-merchant-launch');
+    await admin.screenshot({
+      path: `.local/qa/merchant-launch-${testInfo.project.name}.png`,
+      fullPage: true,
+      animations: 'disabled',
+    });
+    await admin.getByRole('button', { name: `Review ${prefix} Kitchen`, exact: true }).click();
+    await admin
+      .getByLabel('Launch review reason', { exact: true })
+      .fill('Revoke fixture launch after verified approval rehearsal');
+    await admin
+      .getByRole('checkbox', {
+        name: 'I reviewed the restaurant and approve this change.',
+        exact: true,
+      })
+      .check();
+    await admin.getByRole('button', { name: 'Confirm launch revocation', exact: true }).click();
+    await expect(merchantReview).toContainText('Awaiting launch review');
     await admin.goto('/admin/audit');
     await expect(admin.getByText('support.state', { exact: true }).first()).toBeVisible();
     for (const actor of [page, kitchen, admin])
@@ -477,6 +550,108 @@ test('customer, restaurant and rider complete a verified delivery', async ({
       fullPage: true,
       animations: 'disabled',
     });
+    await kitchen.goto(`/seller/restaurants/${merchantId}/menu/new`);
+    await kitchen.getByLabel('Dish name', { exact: true }).fill('Assistant Plain Rice');
+    await kitchen.getByLabel('Base price (₹)', { exact: true }).fill('80');
+    await kitchen.getByRole('button', { name: 'Save dish', exact: true }).click();
+    await expect(kitchen.getByRole('table')).toContainText('Assistant Plain Rice');
+    await page.goto(`/assistant?orderId=${paidOrderId}`);
+    const assistantMessage = page.getByLabel('Your message', { exact: true });
+    await assistantMessage.fill('Where is my order?');
+    await page.getByRole('button', { name: 'Send message', exact: true }).click();
+    await expect(page.locator('.assistant-answer').last()).toContainText('DELIVERED', {
+      timeout: 20000,
+    });
+    await expect(page).toHaveURL(/conversation=/);
+    await page.reload();
+    await expect(page.locator('.assistant-answer').last()).toContainText('DELIVERED');
+    await assistantMessage.fill('Is this safe for my peanut allergy?');
+    await page.getByRole('button', { name: 'Send message', exact: true }).click();
+    await expect(page.locator('.assistant-answer').last()).toContainText('cannot verify');
+    await assistantMessage.fill('Find rice');
+    await page.getByRole('button', { name: 'Send message', exact: true }).click();
+    await expect(page.locator('.assistant-dishes')).toContainText('Assistant Plain Rice');
+    await page.getByRole('button', { name: 'Review cart addition', exact: true }).click();
+    await expect(page.locator('.assistant-proposal')).toContainText('Assistant Plain Rice');
+    await page.getByRole('button', { name: 'Confirm cart change', exact: true }).click();
+    await expect(page.getByRole('link', { name: 'Open updated cart', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Prepare support handoff', exact: true }).click();
+    const summary = page.getByRole('dialog', { name: 'Review your support summary', exact: true });
+    await summary
+      .getByLabel('Support subject', { exact: true })
+      .fill('Assistant handoff ' + testInfo.project.name + ' ' + prefix);
+    await summary
+      .getByLabel('Summary to share', { exact: true })
+      .fill('Please help me review my delivered order receipt.');
+    await summary.getByRole('checkbox').check();
+    await summary.getByRole('button', { name: 'Review ticket proposal', exact: true }).click();
+    await expect(summary).not.toBeVisible();
+    await page.getByRole('button', { name: 'Confirm support ticket', exact: true }).click();
+    await expect(
+      page.getByRole('link', { name: 'Open support ticket', exact: true }),
+    ).toBeVisible();
+    await audit(page, 'customer-assistant');
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    await page.screenshot({
+      path: `.local/qa/assistant-${testInfo.project.name}.png`,
+      fullPage: true,
+      animations: 'disabled',
+    });
+    await page.getByRole('link', { name: 'Open updated cart', exact: true }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Assistant Plain Rice', exact: true }),
+    ).toBeVisible();
+    await admin.goto('/admin/assistant');
+    await admin
+      .getByLabel('Evaluation reason', { exact: true })
+      .fill('Verify deployed synthetic assistant routing in browser fixture');
+    await admin.getByRole('button', { name: 'Run routing evaluation', exact: true }).click();
+    await expect(
+      admin.getByRole('heading', { name: /routing cases passed/ }).first(),
+    ).toBeVisible();
+    await admin.screenshot({
+      path: `.local/qa/assistant-admin-${testInfo.project.name}.png`,
+      fullPage: true,
+      animations: 'disabled',
+    });
+    await page.goto('/settings/privacy');
+    await expect(
+      page.getByRole('heading', { name: 'Privacy requests', exact: true }),
+    ).toBeVisible();
+    await audit(page, 'customer-privacy');
+    await page.screenshot({
+      path: `.local/qa/privacy-${testInfo.project.name}.png`,
+      fullPage: true,
+      animations: 'disabled',
+    });
+    await page
+      .getByRole('checkbox', {
+        name: 'I confirm this request concerns my own account.',
+        exact: true,
+      })
+      .check();
+    await page.getByRole('button', { name: 'Submit privacy request', exact: true }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Personal data export request', exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(
+      page.getByRole('heading', { name: 'Personal data export request', exact: true }),
+    ).toBeVisible();
+    await page.goto('/settings/privacy');
+    await page.getByLabel('Request type', { exact: true }).selectOption('delete');
+    await page
+      .getByRole('checkbox', {
+        name: 'I confirm this request concerns my own account.',
+        exact: true,
+      })
+      .check();
+    await page.getByRole('button', { name: 'Submit privacy request', exact: true }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Account deletion request', exact: true }),
+    ).toBeVisible();
     await page.goto('/profile');
     await page.getByRole('button', { name: 'Sign out', exact: true }).click();
     await page.goto('/profile');

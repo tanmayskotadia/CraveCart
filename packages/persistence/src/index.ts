@@ -199,6 +199,9 @@ export class RabbitBroker implements Publisher {
   private connection?: ChannelModel;
   private channel?: ConfirmChannel;
   private connecting?: Promise<void>;
+  private closing = false;
+  private consumerTag?: string;
+  private inFlight = new Set<Promise<void>>();
   private subscriptions: Array<{
     events: string[];
     handler: (event: DomainEvent) => Promise<void>;
@@ -212,6 +215,7 @@ export class RabbitBroker implements Publisher {
     private readonly owner: string,
   ) {}
   async ready() {
+    if (this.closing) throw new Error('Broker is draining');
     if (this.channel) return;
     if (this.connecting) return this.connecting;
     this.connecting = this.open().finally(() => {
@@ -225,15 +229,20 @@ export class RabbitBroker implements Publisher {
       /* Report through readiness; never log the credential URL. */
     });
     connection.on('close', () => {
-      this.channel = undefined;
-      this.connection = undefined;
+      // A late close from an old connection must not invalidate a newly reconnected channel.
+      if (this.connection === connection) {
+        this.channel = undefined;
+        this.connection = undefined;
+        this.consumerTag = undefined;
+      }
     });
     this.connection = connection;
     try {
       const channel = await connection.createConfirmChannel();
       channel.on('error', () => {});
       channel.on('close', () => {
-        this.channel = undefined;
+        if (this.channel === channel) this.channel = undefined;
+        void connection.close().catch(() => {});
       });
       await channel.assertExchange('cravecart.domain.v1', 'topic', { durable: true });
       await channel.assertExchange('cravecart.dead.v1', 'topic', { durable: true });
@@ -250,12 +259,12 @@ export class RabbitBroker implements Publisher {
       await channel.prefetch(10);
       for (const eventType of new Set(this.subscriptions.flatMap((value) => value.events)))
         await channel.bindQueue(`${this.owner}.domain.v1`, 'cravecart.domain.v1', eventType);
-      if (this.subscriptions.length)
-        await channel.consume(
+      if (this.subscriptions.length) {
+        const consumer = await channel.consume(
           `${this.owner}.domain.v1`,
           (message) => {
             if (!message) return;
-            void (async () => {
+            const work = (async () => {
               try {
                 const event = validateEvent(JSON.parse(message.content.toString('utf8')));
                 const handlers = this.subscriptions.filter((value) =>
@@ -272,9 +281,13 @@ export class RabbitBroker implements Publisher {
                 }
               }
             })();
+            this.inFlight.add(work);
+            void work.finally(() => this.inFlight.delete(work));
           },
           { noAck: false },
         );
+        this.consumerTag = consumer.consumerTag;
+      }
       this.channel = channel;
     } catch (error) {
       await connection.close().catch(() => {});
@@ -316,6 +329,12 @@ export class RabbitBroker implements Publisher {
     });
   }
   async close() {
+    this.closing = true;
+    await this.connecting?.catch(() => {});
+    if (this.channel && this.consumerTag)
+      await this.channel.cancel(this.consumerTag).catch(() => {});
+    // Keep MongoDB available until active consumer transactions and acknowledgements finish.
+    await Promise.allSettled([...this.inFlight]);
     await this.connection?.close().catch(() => {});
     this.channel = undefined;
   }

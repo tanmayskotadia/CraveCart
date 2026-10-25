@@ -5,7 +5,84 @@ import { api, setCsrf } from '../api';
 import { useSession } from '../components/SessionProvider';
 import { WorkspaceShell, ErrorNotice } from '../components/WorkspaceShell';
 import { MfaDialog } from '../components/Authenticator';
-import type { Principal } from '@cravecart/contracts';
+import type { Principal, SupportTicket } from '@cravecart/contracts';
+
+export function PrivacyPage() {
+  const navigate = useNavigate();
+  const [kind, setKind] = useState('export'),
+    [confirmed, setConfirmed] = useState(false),
+    [key, setKey] = useState(() => crypto.randomUUID()),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState<unknown>();
+  return (
+    <WorkspaceShell
+      title="Privacy requests"
+      description="Request a copy of your information or a review of account deletion."
+    >
+      <form
+        className="workspace-panel catalog-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!confirmed || busy) return;
+          setBusy(true);
+          setError(undefined);
+          const subject =
+            kind === 'export' ? 'Personal data export request' : 'Account deletion request';
+          void api<SupportTicket>('/support/tickets', {
+            method: 'POST',
+            headers: { 'Idempotency-Key': key },
+            body: {
+              subject,
+              category: 'account',
+              orderId: null,
+              text: `${subject}. Please verify my request and explain the scope, identity checks and any records retained under the applicable policy.`,
+            },
+          })
+            .then((ticket) => navigate(`/support/tickets/${ticket.id}`))
+            .catch(setError)
+            .finally(() => setBusy(false));
+        }}
+      >
+        <ErrorNotice error={error} />
+        <label htmlFor="privacy-kind">Request type</label>
+        <select
+          id="privacy-kind"
+          className="form-input"
+          value={kind}
+          disabled={busy}
+          onChange={(event) => {
+            setKind(event.target.value);
+            setKey(crypto.randomUUID());
+            setConfirmed(false);
+          }}
+        >
+          <option value="export">Copy of my personal data</option>
+          <option value="delete">Account deletion review</option>
+        </select>
+        <p>
+          Your request opens a private case with our team. Follow its progress and reply through
+          support. Your account remains active while the request is reviewed; required retained
+          records and identity checks will be explained in the case.
+        </p>
+        <label>
+          <input
+            type="checkbox"
+            checked={confirmed}
+            disabled={busy}
+            onChange={(event) => setConfirmed(event.target.checked)}
+          />{' '}
+          I confirm this request concerns my own account.
+        </label>
+        <button className="red-button" disabled={busy || !confirmed}>
+          {busy ? 'Submitting request…' : 'Submit privacy request'}
+        </button>
+        <Link className="text-link" to="/support">
+          View my support cases
+        </Link>
+      </form>
+    </WorkspaceShell>
+  );
+}
 
 export function AccountPage() {
   const { session, reload } = useSession();

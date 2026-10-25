@@ -237,7 +237,7 @@ Razorpay and Stripe have different verification and idempotency protocols; imple
 
 ## 11. Delivery roadmap
 
-Local delivery now includes identity/onboarding and discovery/catalog: addresses, exact-zone checks, seller menus, favorites, offers and saved carts. See [executed verification](engineering/VERIFICATION.md) and [catalog setup](engineering/CATALOG-AND-CART.md). Order/quote/payment and hosted qualification gates remain open; local availability does not mark the full product launched.
+The runtime now covers identity/onboarding, national discovery, verified seller catalogs, server-priced checkout, signed payment/refund workflows, exclusive dispatch, foreground tracking, four-role operations and the grounded assistant. Hardening adds security/drain fixes, automated accessibility, release evidence, transport and restore verification tools, and incident runbooks. See [executed verification](engineering/VERIFICATION.md) and [pilot readiness](release/PILOT-READINESS.md). Hosted qualification remains open; automated implementation evidence does not mark the full product launched.
 
 Estimate: **18–24 weeks** for the baseline team described in the planning index, with some tracks overlapping. A solo build should be re-estimated by capacity rather than assuming the same date. Provider verification, native tracking, security remediation and operational setup can extend the schedule.
 
@@ -262,13 +262,15 @@ Hosted fulfillment implementation now connects merchant order actions, bounded r
 
 ### Dependency order
 
-Role operations now include support conversations, active-delivery messages and moderation, verified reviews with derived ratings, scoped restaurant teams, limited administrative permission bundles, paginated history, India-period reports, audited aggregate exports and explicit accounting-record views. See [runtime scope and limits](engineering/ROLE-OPERATIONS.md). Settlement/compensation contracts and provider reconciliation remain open gates; recorded customer charges are not inferred to be partner earnings. The assistant is the next implementation milestone.
+Role operations now include support conversations, active-delivery messages and moderation, verified reviews with derived ratings, scoped restaurant teams, limited administrative permission bundles, paginated history, India-period reports, audited aggregate exports and explicit accounting-record views. See [runtime scope and limits](engineering/ROLE-OPERATIONS.md). Settlement/compensation contracts and provider reconciliation remain open gates; recorded customer charges are not inferred to be partner earnings. The grounded assistant and repository hardening are implemented; see [assistant scope](engineering/ASSISTANT.md), [hardening](engineering/HARDENING.md) and [incident runbooks](engineering/INCIDENT-RUNBOOKS.md). The hardening exit gate remains pending actual hosted recovery/capacity/provider/device evidence and accountable pilot sign-off. Launch preparation must respect those gates.
 
 `Contracts → identity/ownership → catalog/serviceability → authoritative quote → payment/order saga → seller fulfillment → exclusive dispatch → verified delivery → statements/reconciliation`.
 
 Realtime depends on durable state and authorization. The assistant depends on trustworthy domain tools. Admin reporting depends on validated event projections and metric definitions. A broker/database/network failure drill depends on working observability first.
 
 ## 12. Engineering decisions and risk register
+
+Launch preparation is now implemented in the repository: real merchant launch approvals/revocation, account and partner management routes, privacy-request intake, consistent deployment fingerprints, strict read-only hosted preflight, scoped rollout/observation gates, partner training and an operating handoff packet. See [launch handbook](release/LAUNCH-HANDBOOK.md). The owner will provision hosting. Actual hosted provider/device/load/recovery acceptance, reviewed policies, staffed coverage and live pilot operation remain external exit gates; they are not replaced with fixture results.
 
 Record ADRs for service ownership, six-service constraint, session/cookie topology, outbox/inbox, pricing snapshots, payment saga, exclusive dispatch, socket adapter, location privacy, maps selection, AI tooling and HA networking.
 

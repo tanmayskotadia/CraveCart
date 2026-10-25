@@ -1,5 +1,6 @@
 import './fulfillment.css';
 import './operations.css';
+import './assistant.css';
 import './commerce.css';
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { Link, Navigate, Route, Routes, matchPath, useLocation } from 'react-router-dom';
@@ -11,15 +12,41 @@ import { Landing } from './pages/Landing';
 import { Explore } from './pages/Explore';
 import { useSession } from './components/SessionProvider';
 import { RequireSession } from './components/WorkspaceShell';
-import { AccountPage, SecurityPage, SessionsPage, WorkspacesPage } from './pages/Account';
-import { OnboardingPage, SellerWorkspace, RiderWorkspace } from './pages/Onboarding';
-import {
-  AdminOverview,
-  VerificationQueue,
-  VerificationDetail,
-  AdminUsers,
-  AdminAudit,
-} from './pages/Verification';
+const AccountPage = lazy(() => import('./pages/Account').then((m) => ({ default: m.AccountPage })));
+const PrivacyPage = lazy(() => import('./pages/Account').then((m) => ({ default: m.PrivacyPage })));
+const SecurityPage = lazy(() =>
+  import('./pages/Account').then((m) => ({ default: m.SecurityPage })),
+);
+const SessionsPage = lazy(() =>
+  import('./pages/Account').then((m) => ({ default: m.SessionsPage })),
+);
+const WorkspacesPage = lazy(() =>
+  import('./pages/Account').then((m) => ({ default: m.WorkspacesPage })),
+);
+const OnboardingPage = lazy(() =>
+  import('./pages/Onboarding').then((m) => ({ default: m.OnboardingPage })),
+);
+const SellerWorkspace = lazy(() =>
+  import('./pages/Onboarding').then((m) => ({ default: m.SellerWorkspace })),
+);
+const RiderWorkspace = lazy(() =>
+  import('./pages/Onboarding').then((m) => ({ default: m.RiderWorkspace })),
+);
+const AdminOverview = lazy(() =>
+  import('./pages/Verification').then((m) => ({ default: m.AdminOverview })),
+);
+const VerificationQueue = lazy(() =>
+  import('./pages/Verification').then((m) => ({ default: m.VerificationQueue })),
+);
+const VerificationDetail = lazy(() =>
+  import('./pages/Verification').then((m) => ({ default: m.VerificationDetail })),
+);
+const AdminUsers = lazy(() =>
+  import('./pages/Verification').then((m) => ({ default: m.AdminUsers })),
+);
+const AdminAudit = lazy(() =>
+  import('./pages/Verification').then((m) => ({ default: m.AdminAudit })),
+);
 
 const RestaurantPage = lazy(() =>
   import('./pages/Catalog').then((module) => ({ default: module.RestaurantPage })),
@@ -103,6 +130,12 @@ const PromotionsPage = lazy(() =>
 const OperationsAuditPage = lazy(() =>
   import('./pages/Operations').then((m) => ({ default: m.OperationsAuditPage })),
 );
+const AssistantPage = lazy(() =>
+  import('./pages/Assistant').then((m) => ({ default: m.AssistantPage })),
+);
+const AssistantAdminPage = lazy(() =>
+  import('./pages/Assistant').then((m) => ({ default: m.AssistantAdminPage })),
+);
 const authPaths = [
   '/login',
   '/signup',
@@ -146,6 +179,9 @@ function Header() {
               </Link>
               <Link className="desktop-nav" to="/notifications">
                 Notifications
+              </Link>
+              <Link className="desktop-nav" to="/assistant">
+                Ask CraveCart
               </Link>
               <Link className="desktop-nav" to="/workspaces">
                 Workspaces
@@ -280,8 +316,19 @@ function RoutePage({
 }: {
   route: { path: string; sessionRequired: boolean; roles: string[] };
 }) {
+  const location = useLocation();
   const path = route.path;
   const catalogPages: Record<string, React.ReactNode> = {
+    '/assistant': (
+      <RequireSession>
+        <AssistantPage />
+      </RequireSession>
+    ),
+    '/admin/assistant': (
+      <RequireSession roles={['admin']}>
+        <AssistantAdminPage />
+      </RequireSession>
+    ),
     '/support': (
       <RequireSession>
         <SupportPage />
@@ -558,6 +605,12 @@ function RoutePage({
         <AccountPage />
       </RequireSession>
     );
+  if (path === '/settings/privacy')
+    return (
+      <RequireSession>
+        <PrivacyPage />
+      </RequireSession>
+    );
   if (path === '/settings')
     return (
       <RequireSession>
@@ -604,6 +657,16 @@ function RoutePage({
     '/admin/verifications': <VerificationQueue />,
     '/admin/verifications/:applicationId': <VerificationDetail />,
     '/admin/users': <AdminUsers />,
+    '/admin/users/:userId': <AdminUsers />,
+    '/admin/restaurants': <FinancePage />,
+    '/admin/restaurants/:restaurantId': <FinancePage />,
+    '/admin/riders': <VerificationQueue initialKind="rider" />,
+    '/admin/riders/:riderId': (
+      <Navigate
+        to={'/admin/verifications/' + encodeURIComponent(location.pathname.split('/').at(-1) ?? '')}
+        replace
+      />
+    ),
     '/admin/audit': <AdminAudit />,
   };
   if (adminPages[path])
@@ -612,6 +675,8 @@ function RoutePage({
 }
 function PublicPage({ path }: { path: string }) {
   if (path === '/') return <Landing />;
+  if (['/verify', '/forgot-password', '/reset-password'].includes(path))
+    return <Navigate to="/login" replace />;
   if (authPaths.includes(path))
     return (
       <>
@@ -717,12 +782,20 @@ export function App() {
       </a>
       <Header />
       <main id="main" tabIndex={-1}>
-        <Routes>
-          {manifest.routes.map((route) => (
-            <Route key={route.id} path={route.path} element={<RoutePage route={route} />} />
-          ))}
-          <Route path="/driver/*" element={<RiderAlias />} />
-        </Routes>
+        <Suspense
+          fallback={
+            <section className="page-width workspace-wait" role="status">
+              Opening your workspace…
+            </section>
+          }
+        >
+          <Routes>
+            {manifest.routes.map((route) => (
+              <Route key={route.id} path={route.path} element={<RoutePage route={route} />} />
+            ))}
+            <Route path="/driver/*" element={<RiderAlias />} />
+          </Routes>
+        </Suspense>
       </main>
       <Footer />
       <ScrollToSection />

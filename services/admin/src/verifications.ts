@@ -436,6 +436,18 @@ export function installVerifications(app: Express, ctx: DomainContext) {
       }),
     ),
   );
+  router.get(
+    '/users/:userId',
+    remoteSession(ctx, { permission: 'users:read' }),
+    async (req, res) => {
+      const result = await internalCall<unknown[]>(ctx, 'auth', '/internal/v1/users/list', {
+        actorSessionId: currentPrincipal(res).sessionId,
+        userId: checkedId(req.params.userId),
+      });
+      if (!result.length) throw new HttpError(404, 'NOT_FOUND', 'Account not found');
+      json(res, result[0]);
+    },
+  );
   router.post(
     '/users/:userId/status',
     remoteSession(ctx, { permission: 'users:write', stepUp: true, mutation: true }),

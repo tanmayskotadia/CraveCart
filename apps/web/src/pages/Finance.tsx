@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import type { Refund, PricingPolicy } from '@cravecart/contracts';
+import type {
+  Refund,
+  PricingPolicy,
+  MerchantLaunchList,
+  MerchantLaunchRecord,
+} from '@cravecart/contracts';
 import { api } from '../api';
 import { ErrorNotice, WorkspaceShell } from '../components/WorkspaceShell';
 import { Field, money } from '../components/CatalogFields';
@@ -202,7 +207,151 @@ export function FinancePage() {
           saved={() => void policy.refetch()}
         />
       )}
+      <MerchantLaunchPanel />
     </WorkspaceShell>
+  );
+}
+function MerchantLaunchPanel() {
+  const { restaurantId } = useParams();
+  const [page, setPage] = useState(1),
+    [selected, setSelected] = useState<MerchantLaunchRecord>(),
+    [reason, setReason] = useState(''),
+    [confirmed, setConfirmed] = useState(false),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState<unknown>();
+  const query = useQuery({
+    queryKey: ['merchant-launch', page, restaurantId],
+    queryFn: () =>
+      api<MerchantLaunchList>(
+        `/admin/commerce/merchants?page=${page}${restaurantId ? '&restaurantId=' + encodeURIComponent(restaurantId) : ''}`,
+      ),
+  });
+  return (
+    <section className="workspace-panel" aria-labelledby="merchant-launch-title">
+      <h2 id="merchant-launch-title">Restaurant launch approval</h2>
+      <p>
+        Review verified restaurants for live ordering. Payment mode, pricing policy and delivery
+        zones apply at checkout.
+      </p>
+      <ErrorNotice error={query.error ?? error} />
+      {query.isPending && <p role="status">Loading restaurant approvals…</p>}
+      {query.data?.merchants.length === 0 && <p>No restaurants have completed onboarding yet.</p>}
+      {query.data?.merchants.map((merchant) => (
+        <article key={merchant.id} className="cart-line">
+          <div>
+            <h3>{merchant.name}</h3>
+            <p>
+              {merchant.city} · revision {merchant.version} ·{' '}
+              {merchant.liveOrderingApproved
+                ? 'Approved for live ordering'
+                : 'Awaiting launch review'}
+            </p>
+            <p>
+              {merchant.sample ? 'Sample restaurant' : 'Real merchant record'} ·{' '}
+              {merchant.published ? 'Published' : 'Unpublished'} ·{' '}
+              {merchant.paused ? 'Paused' : 'Available'}
+            </p>
+            <button
+              className="outline-button"
+              type="button"
+              onClick={() => {
+                setSelected(merchant);
+                setReason('');
+                setConfirmed(false);
+                setError(undefined);
+              }}
+            >
+              Review {merchant.name}
+            </button>
+          </div>
+        </article>
+      ))}
+      {query.data && query.data.total > query.data.pageSize && (
+        <nav aria-label="Restaurant approval pages">
+          <button type="button" disabled={page === 1} onClick={() => setPage(page - 1)}>
+            Previous restaurants
+          </button>
+          <span> Page {page} </span>
+          <button
+            type="button"
+            disabled={page * query.data.pageSize >= query.data.total}
+            onClick={() => setPage(page + 1)}
+          >
+            Next restaurants
+          </button>
+        </nav>
+      )}
+      {selected && (
+        <form
+          className="catalog-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!confirmed || busy) return;
+            setBusy(true);
+            setError(undefined);
+            void api<MerchantLaunchRecord>(`/admin/commerce/merchants/${selected.id}`, {
+              method: 'PUT',
+              body: {
+                expectedVersion: selected.version,
+                approved: !selected.liveOrderingApproved,
+                reason,
+              },
+            })
+              .then(() => {
+                setSelected(undefined);
+                void query.refetch();
+              })
+              .catch(setError)
+              .finally(() => setBusy(false));
+          }}
+        >
+          <h3>
+            {selected.liveOrderingApproved ? 'Revoke' : 'Approve'} live ordering · {selected.name}
+          </h3>
+          <Field label="Launch review reason">
+            <textarea
+              required
+              minLength={5}
+              maxLength={500}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          </Field>
+          <label>
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(event) => setConfirmed(event.target.checked)}
+            />{' '}
+            I reviewed the restaurant and approve this change.
+          </label>
+          <button
+            className="red-button"
+            disabled={
+              busy ||
+              !confirmed ||
+              reason.trim().length < 5 ||
+              (!selected.liveOrderingApproved &&
+                (selected.sample || !selected.published || selected.paused))
+            }
+          >
+            {busy
+              ? 'Saving launch review…'
+              : selected.liveOrderingApproved
+                ? 'Confirm launch revocation'
+                : 'Confirm launch approval'}
+          </button>
+          <button
+            className="outline-button"
+            type="button"
+            disabled={busy}
+            onClick={() => setSelected(undefined)}
+          >
+            Cancel launch review
+          </button>
+        </form>
+      )}
+    </section>
   );
 }
 function PricingPolicyForm({ policy, saved }: { policy: PricingPolicy; saved: () => void }) {
@@ -235,6 +384,10 @@ function PricingPolicyForm({ policy, saved }: { policy: PricingPolicy; saved: ()
       <p>
         Tax applies to discounted item subtotal. Configure only after finance review; development
         defaults do not establish tax compliance.
+      </p>
+      <p>
+        Disable checkout to pause new quotes and orders while existing payment attempts, deliveries
+        and refunds continue. Re-enabling requires a fresh review of this policy.
       </p>
       <label>
         <input

@@ -1,27 +1,80 @@
 const origin = import.meta.env.VITE_API_ORIGIN ?? '';
-export async function assistantStream<T>(path:string,body:unknown,signal:AbortSignal,onProgress:(message:string)=>void,key:string,refreshed=false):Promise<T>{
- const response=await fetch(origin+'/api/v1'+path,{method:'POST',credentials:'include',cache:'no-store',headers:{'Content-Type':'application/json','Accept':'text/event-stream','X-CSRF-Token':csrf,'Idempotency-Key':key},body:JSON.stringify(body),signal:AbortSignal.any([signal,AbortSignal.timeout(45000)])});
- if(response.status===401&&!refreshed){await refresh();return assistantStream(path,body,signal,onProgress,key,true);}
- if(!response.headers.get('content-type')?.startsWith('text/event-stream')){
-  const value=await response.json() as {data:T;error?:{code:string;message:string}};
-  if(!response.ok)throw new ApiError(response.status,value.error?.code??'ASSISTANT_UNAVAILABLE',value.error?.message??'Assistant unavailable');return value.data;
- }
- if(!response.body)throw new Error('Assistant stream unavailable');
- const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='',received=0;
- try{while(true){
-  const chunk=await reader.read();if(chunk.done)break;received+=chunk.value.byteLength;if(received>256000)throw new Error('Assistant response exceeded its limit');
-  buffer+=decoder.decode(chunk.value,{stream:true});buffer=buffer.replace(/\r\n/g,'\n');
-  let boundary:number;while((boundary=buffer.indexOf('\n\n'))>=0){
-   const event=buffer.slice(0,boundary);buffer=buffer.slice(boundary+2);
-   const name=event.split('\n').find(l=>l.startsWith('event:'))?.slice(6).trim();
-   const data=event.split('\n').filter(l=>l.startsWith('data:')).map(l=>l.slice(5).trimStart()).join('\n');
-   if(!data)continue;const value=JSON.parse(data);
-   if(name==='progress')onProgress(String(value.message??'Checking current information'));
-   if(name==='result')return value as T;
-   if(name==='error')throw new Error(String(value.message??'Reload the conversation to recover'));
+export async function assistantStream<T>(
+  path: string,
+  body: unknown,
+  signal: AbortSignal,
+  onProgress: (message: string) => void,
+  key: string,
+  refreshed = false,
+): Promise<T> {
+  const response = await fetch(origin + '/api/v1' + path, {
+    method: 'POST',
+    credentials: 'include',
+    cache: 'no-store',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+      'X-CSRF-Token': csrf,
+      'Idempotency-Key': key,
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.any([signal, AbortSignal.timeout(45000)]),
+  });
+  if (response.status === 401 && !refreshed) {
+    await refresh();
+    return assistantStream(path, body, signal, onProgress, key, true);
   }
- }}finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
- throw new Error('The response ended before confirmation. Reload the conversation to recover.');
+  if (!response.headers.get('content-type')?.startsWith('text/event-stream')) {
+    const value = (await response.json()) as { data: T; error?: { code: string; message: string } };
+    if (!response.ok)
+      throw new ApiError(
+        response.status,
+        value.error?.code ?? 'ASSISTANT_UNAVAILABLE',
+        value.error?.message ?? 'Assistant unavailable',
+      );
+    return value.data;
+  }
+  if (!response.body) throw new Error('Assistant stream unavailable');
+  const reader = response.body.getReader(),
+    decoder = new TextDecoder();
+  let buffer = '',
+    received = 0;
+  try {
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      received += chunk.value.byteLength;
+      if (received > 256000) throw new Error('Assistant response exceeded its limit');
+      buffer += decoder.decode(chunk.value, { stream: true });
+      buffer = buffer.replace(/\r\n/g, '\n');
+      let boundary: number;
+      while ((boundary = buffer.indexOf('\n\n')) >= 0) {
+        const event = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+        const name = event
+          .split('\n')
+          .find((l) => l.startsWith('event:'))
+          ?.slice(6)
+          .trim();
+        const data = event
+          .split('\n')
+          .filter((l) => l.startsWith('data:'))
+          .map((l) => l.slice(5).trimStart())
+          .join('\n');
+        if (!data) continue;
+        const value = JSON.parse(data);
+        if (name === 'progress')
+          onProgress(String(value.message ?? 'Checking current information'));
+        if (name === 'result') return value as T;
+        if (name === 'error')
+          throw new Error(String(value.message ?? 'Reload the conversation to recover'));
+      }
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+  throw new Error('The response ended before confirmation. Reload the conversation to recover.');
 }
 let csrf = '';
 let refreshing: Promise<void> | undefined;

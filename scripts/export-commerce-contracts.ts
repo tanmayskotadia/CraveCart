@@ -12,6 +12,10 @@ import {
   pricingPolicySchema,
   gatewaySchema,
   errorSchema,
+  merchantLaunchInputSchema,
+  merchantLaunchQuerySchema,
+  merchantLaunchRecordSchema,
+  merchantLaunchListSchema,
 } from '../packages/contracts/src/index.js';
 const paths: Record<string, Record<string, unknown>> = {};
 const schema = (value: z.ZodType) =>
@@ -332,6 +336,21 @@ add(
   {
     policy:
       'finance:read. Current environment balances aggregate all postings; resource lists are bounded to 100.',
+  },
+);
+add('admin', 'get', '/admin/commerce/merchants', merchantLaunchListSchema, undefined, {
+  query: merchantLaunchQuerySchema,
+  policy: 'finance:read; bounded pagination of actual merchant launch records.',
+});
+add(
+  'admin',
+  'put',
+  '/admin/commerce/merchants/{restaurantId}',
+  merchantLaunchRecordSchema,
+  merchantLaunchInputSchema,
+  {
+    policy:
+      'finance:write plus fresh TOTP, CSRF and version/reason; real published available merchant and active verified seller required for approval.',
   },
 );
 writeFileSync('contracts/commerce.openapi.json', JSON.stringify(paths, null, 2) + '\n');

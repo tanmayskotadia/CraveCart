@@ -32,7 +32,8 @@ try {
         name,
         status: 'ACTIVE',
         permissions: [
-          'assistant:read','assistant:write',
+          'assistant:read',
+          'assistant:write',
           'support:read',
           'support:write',
           'reports:read',

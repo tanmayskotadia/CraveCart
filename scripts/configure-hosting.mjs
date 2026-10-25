@@ -28,9 +28,19 @@ const config = {
   outputDirectory: 'dist',
   rewrites: [
     { source: '/api/:path*', destination: `${api}/api/:path*` },
-    { source: '/((?!api/|assets/).*)', destination: '/index.html' },
+    { source: '/((?!api/|assets/|release\\.json$).*)', destination: '/index.html' },
   ],
   headers: [
+    { source: '/release.json', headers: [{ key: 'Cache-Control', value: 'no-store' }] },
+    {
+      source: '/(.*)',
+      headers: [
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        { key: 'Permissions-Policy', value: 'geolocation=(self), camera=(), microphone=()' },
+      ],
+    },
     { source: '/api/:path*', headers: [{ key: 'Cache-Control', value: 'private, no-store' }] },
   ],
 };

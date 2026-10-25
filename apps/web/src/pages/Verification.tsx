@@ -72,9 +72,9 @@ export function AdminOverview() {
     </WorkspaceShell>
   );
 }
-export function VerificationQueue() {
-  const [status, setStatus] = useState('SUBMITTED'),
-    [kind, setKind] = useState('');
+export function VerificationQueue({ initialKind = '' }: { initialKind?: string } = {}) {
+  const [status, setStatus] = useState(initialKind ? '' : 'SUBMITTED'),
+    [kind, setKind] = useState(initialKind);
   const params = new URLSearchParams({ ...(status ? { status } : {}), ...(kind ? { kind } : {}) });
   const query = useQuery({
     queryKey: ['verification-queue', status, kind],
@@ -462,10 +462,14 @@ interface UserRow {
   status: 'ACTIVE' | 'SUSPENDED';
 }
 export function AdminUsers() {
+  const { userId } = useParams();
   const { session } = useSession();
   const query = useQuery({
-    queryKey: ['admin-users'],
-    queryFn: () => api<UserRow[]>('/admin/users'),
+    queryKey: ['admin-users', userId],
+    queryFn: () =>
+      userId
+        ? api<UserRow>('/admin/users/' + encodeURIComponent(userId)).then((user) => [user])
+        : api<UserRow[]>('/admin/users'),
   });
   const [selected, setSelected] = useState<UserRow>(),
     [reason, setReason] = useState(''),
@@ -493,7 +497,7 @@ export function AdminUsers() {
   return (
     <WorkspaceShell
       role="admin"
-      title="Account management"
+      title={userId ? 'Account details' : 'Account management'}
       description="Suspension revokes active sessions immediately."
     >
       <ErrorNotice error={query.error} />
@@ -514,7 +518,9 @@ export function AdminUsers() {
               {query.data?.map((user) => (
                 <tr key={user.id}>
                   <td>
-                    <strong>{user.name}</strong>
+                    <Link to={'/admin/users/' + user.id}>
+                      <strong>{user.name}</strong>
+                    </Link>
                     <small>{user.contact}</small>
                   </td>
                   <td>{user.roles.join(', ')}</td>
