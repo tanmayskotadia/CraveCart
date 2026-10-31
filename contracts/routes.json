@@ -154,8 +154,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_legal_terms",
@@ -175,8 +175,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_legal_privacy",
@@ -196,8 +196,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_legal_cancellations",
@@ -217,8 +217,8 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_login",
@@ -1906,8 +1906,31 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "planned"
+      "implemented": true,
+      "runtimeStatus": "available-locally"
+    },
+    {
+      "id": "page_admin_privacy",
+      "path": "/admin/privacy",
+      "workspace": "admin",
+      "sessionRequired": true,
+      "roles": [
+        "admin"
+      ],
+      "policy": "admin",
+      "purpose": "Verified privacy request review and owner fulfilment; users-read/write",
+      "states": [
+        "loading",
+        "empty",
+        "ready",
+        "validation-error",
+        "forbidden",
+        "not-found",
+        "offline",
+        "error"
+      ],
+      "implemented": true,
+      "runtimeStatus": "available-locally"
     },
     {
       "id": "page_admin_team",
@@ -2071,9 +2094,9 @@
         "offline",
         "error"
       ],
-      "implemented": false,
-      "runtimeStatus": "partial",
-      "implementationScope": "Private export/deletion review requests through tracked support; cross-service fulfillment and retention approval remain operational gates."
+      "implemented": true,
+      "runtimeStatus": "available-locally",
+      "implementationScope": "Verified privacy requests, independent review, owner-scoped encrypted export and retention-aware resumable closure. Legal retention configuration and manual legacy/provider scope review remain operational gates."
     },
     {
       "id": "page_support",

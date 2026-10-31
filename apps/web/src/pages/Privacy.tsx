@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { PrivacyRequest } from '@cravecart/contracts';
-import { api } from '../api';
+import { api, documentBlob } from '../api';
 import { WorkspaceShell, ErrorNotice } from '../components/WorkspaceShell';
 import { Field } from '../components/CatalogFields';
+import { useSession } from '../components/SessionProvider';
 export function PrivacySettingsPage() {
   const query = useQuery({
     queryKey: ['privacy-requests'],
@@ -20,13 +21,8 @@ export function PrivacySettingsPage() {
     setBusy(true);
     setError(undefined);
     try {
-      const response = await fetch(`/api/v1/privacy/requests/${request.id}/download`, {
-        credentials: 'include',
-        cache: 'no-store',
-      });
-      if (!response.ok)
-        throw new Error((await response.json()).error?.message ?? 'Export could not be downloaded');
-      const url = URL.createObjectURL(await response.blob()),
+      const blob = await documentBlob(`/privacy/requests/${request.id}/download`);
+      const url = URL.createObjectURL(blob),
         anchor = document.createElement('a');
       anchor.href = url;
       anchor.download = `CraveCart-data-${request.id}.json`;
@@ -41,7 +37,7 @@ export function PrivacySettingsPage() {
   return (
     <WorkspaceShell
       title="Privacy requests"
-      description="Verified account exports and retention-aware account closure."
+      description="Request a copy of your personal data or close your account."
     >
       <ErrorNotice error={error ?? query.error} />
       <p>
@@ -50,7 +46,7 @@ export function PrivacySettingsPage() {
         </Link>
       </p>
       <form
-        className="workspace-panel"
+        className="workspace-panel privacy-request-form"
         onSubmit={(event) => {
           event.preventDefault();
           if (!confirmed) return;
@@ -85,9 +81,9 @@ export function PrivacySettingsPage() {
           </select>
         </Field>
         <p>
-          A recent verified sign-in is required. An independent reviewer authorizes fulfilment.
-          Exports are private, encrypted while stored and available for seven days. Download an
-          export before requesting closure.
+          A recent verified sign-in is required. Our privacy team reviews your request before
+          processing it. Exports are private, encrypted while stored and available for seven days.
+          Download an export before requesting closure.
         </p>
         <p>
           Approved deletion ends account access after obligation checks. Financial, dispute and
@@ -123,9 +119,7 @@ export function PrivacySettingsPage() {
             {new Date(request.requestedAt).toLocaleString('en-IN')}
           </p>
           <p>{request.message}</p>
-          <p className="small-help">
-            Reference: {request.id} · Completed owner steps: {request.progress}
-          </p>
+          <p className="small-help">Reference: {request.id}</p>
           {request.retained.length > 0 && (
             <ul>
               {request.retained.map((value) => (
@@ -135,12 +129,16 @@ export function PrivacySettingsPage() {
           )}
           {request.status === 'READY' &&
             request.downloadExpiresAt &&
-            Date.parse(request.downloadExpiresAt) > Date.now() && (
+            (new Date(request.downloadExpiresAt).getTime() <= query.dataUpdatedAt ? (
+              <p className="small-help">
+                This download has expired. Submit a new export request for a fresh copy.
+              </p>
+            ) : (
               <button className="red-button" disabled={busy} onClick={() => void download(request)}>
                 Download private export
               </button>
-            )}
-          {['AWAITING_REVIEW', 'PREFLIGHT', 'BLOCKED'].includes(request.status) && (
+            ))}
+          {request.canCancel && (
             <button
               className="outline-button"
               disabled={busy}
@@ -169,6 +167,8 @@ export function PrivacySettingsPage() {
   );
 }
 export function PrivacyAdminPage() {
+  const { session } = useSession();
+  const canReview = session?.principal.permissions.includes('users:write');
   const [page, setPage] = useState(1),
     [selected, setSelected] = useState<PrivacyRequest>(),
     [reason, setReason] = useState(''),
@@ -241,7 +241,7 @@ export function PrivacyAdminPage() {
               ))}
             </ul>
           )}
-          {['AWAITING_REVIEW', 'BLOCKED'].includes(request.status) && (
+          {canReview && ['AWAITING_REVIEW', 'BLOCKED'].includes(request.status) && (
             <button
               className="outline-button"
               disabled={busy}

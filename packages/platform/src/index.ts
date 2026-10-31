@@ -375,6 +375,7 @@ export function createApp({
           ]),
           redirect: 'manual',
         });
+        // The gateway's private no-store policy must never be weakened by an upstream.
         for (const key of ['content-type', 'content-disposition', 'retry-after']) {
           const value = response.headers.get(key);
           if (value) res.setHeader(key, value);
@@ -383,7 +384,8 @@ export function createApp({
         if (setCookies.length) res.setHeader('set-cookie', setCookies);
         res.setHeader('x-content-type-options', 'nosniff');
         if (
-          response.headers.get('content-type')?.startsWith('text/event-stream') &&
+          (response.headers.get('content-type')?.startsWith('text/event-stream') ||
+            response.headers.get('content-disposition')?.startsWith('attachment;')) &&
           response.body
         ) {
           res.status(response.status);

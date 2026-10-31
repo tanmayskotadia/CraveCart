@@ -13,6 +13,25 @@ const resources: Resources = {
   close: async () => {},
 };
 afterEach(() => vi.unstubAllEnvs());
+describe('reviewed privacy configuration', () => {
+  it('permits an empty optional duration but requires an explicit positive duration for reviewed retention', () => {
+    expect(
+      loadConfig({ NODE_ENV: 'test', PRIVACY_FINANCIAL_RETENTION_DAYS: '' })
+        .PRIVACY_FINANCIAL_RETENTION_DAYS,
+    ).toBeUndefined();
+    expect(() => loadConfig({ NODE_ENV: 'test', PRIVACY_RETENTION_REVIEWED: 'true' })).toThrow(
+      'explicit duration',
+    );
+    expect(() => loadConfig({ NODE_ENV: 'test', PRIVACY_FINANCIAL_RETENTION_DAYS: '0' })).toThrow();
+    expect(
+      loadConfig({
+        NODE_ENV: 'test',
+        PRIVACY_RETENTION_REVIEWED: 'true',
+        PRIVACY_FINANCIAL_RETENTION_DAYS: '42',
+      }).PRIVACY_FINANCIAL_RETENTION_DAYS,
+    ).toBe(42);
+  });
+});
 describe('service HTTP contract', () => {
   const app = createApp({ name: 'admin', config, resources });
   it('exposes only a valid noncached build identity and fails unbuilt/mixed releases', async () => {

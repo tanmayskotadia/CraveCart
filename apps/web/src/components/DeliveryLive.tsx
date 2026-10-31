@@ -133,15 +133,30 @@ export function SoundControl({ ids, ready = true }: { ids: string[]; ready?: boo
 }
 export function NotificationInbox() {
   const { session } = useSession();
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>();
   const query = useQuery({
     queryKey: ['delivery-notifications', session?.principal.userId],
     queryFn: () => api<DeliveryNotification[]>('/notifications'),
     enabled: !!session,
     refetchInterval: 10000,
   });
+  async function markRead(id: string) {
+    if (pendingId !== null) return;
+    setPendingId(id);
+    setError(undefined);
+    try {
+      await api('/notifications/read', { method: 'POST', body: { id } });
+      await query.refetch({ throwOnError: true });
+    } catch (cause) {
+      setError(cause);
+    } finally {
+      setPendingId(null);
+    }
+  }
   return (
     <>
-      <ErrorNotice error={query.error} />
+      <ErrorNotice error={error ?? query.error} />
       {query.data?.map((n) => (
         <article className="workspace-panel" key={n.id}>
           <Link to={n.href}>{n.title}</Link>
@@ -149,13 +164,10 @@ export function NotificationInbox() {
           {!n.readAt && (
             <button
               className="text-link"
-              onClick={() =>
-                void api('/notifications/read', { method: 'POST', body: { id: n.id } }).then(() =>
-                  query.refetch(),
-                )
-              }
+              disabled={pendingId !== null}
+              onClick={() => void markRead(n.id)}
             >
-              Mark read
+              {pendingId === n.id ? 'Marking read…' : 'Mark read'}
             </button>
           )}
         </article>

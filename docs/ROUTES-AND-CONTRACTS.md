@@ -8,7 +8,7 @@ Financial approval adds `GET /api/v1/admin/finance/approvals` and idempotent `PO
 
 Operational build checks are outside the `/api/v1` business API: `GET /health/release` on backends returns a no-store deployment fingerprint; the gateway additionally verifies matching identities on all six owners and returns 503 for missing/mixed releases. Frontend `/release.json` contains the matching generated identity. Neither endpoint exposes secrets, runtime configuration or customer data.
 
-`/admin/restaurants` and its detail route show real merchant launch controls, `/admin/riders` opens the filtered verification queue and its detail alias opens the canonical application, `/admin/users/:userId` loads that account, and `/settings/privacy` submits a private account support case. Verification/password-recovery aliases redirect to passwordless login. Privacy requests are tracked intake, not an assertion that records have already been exported or erased.
+`/admin/restaurants` and its detail route show real merchant launch controls, `/admin/riders` opens the filtered verification queue and its detail alias opens the canonical application, `/admin/users/:userId` loads that account, and `/settings/privacy` submits a verified account request for independent review at `/admin/privacy`. Verification/password-recovery aliases redirect to passwordless login. Privacy fulfilment is owner-scoped and resumable, with encrypted expiring downloads and explicit retained-record outcomes; external/legacy copies require reviewed manual scope handling.
 
 This is the implementation inventory, not a claim that routes already exist. Discovery now provides a checked [machine-readable baseline](../contracts/README.md), including OpenAPI, a page/action manifest and event schemas. Inventory-only HTTP operations must be refined before implementation or client generation.
 
@@ -134,6 +134,7 @@ Seller operational pages use `restaurantId` explicitly; `/seller` redirects to o
 | `/admin/zones` | Service polygons and operating settings |
 | `/admin/reports` | Defined metrics and audited exports |
 | `/admin/settings` | Fee/policy/feature configuration; configuration-write |
+| `/admin/privacy` | Verified privacy request review and owner fulfilment; users-read/write |
 | `/admin/team` | Privileged grant administration; super-admin |
 | `/admin/audit` | Immutable administrative history; audit-read |
 | `/admin/assistant` | FAQ versions, evaluation results and tool flags |

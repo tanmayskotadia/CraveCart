@@ -17,6 +17,8 @@ const manifest = {
   deploymentPerformed: false,
   launchApproved: false,
   documents: [
+    'docs/MANUAL-SETUP-AND-LAUNCH.md',
+    'docs/engineering/COMPLETION-AUDIT.md',
     'docs/engineering/HOSTING.md',
     'docs/release/LAUNCH-HANDBOOK.md',
     'docs/release/PARTNER-TRAINING.md',

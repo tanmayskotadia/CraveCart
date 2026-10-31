@@ -86,7 +86,7 @@ function add(
     'x-contract-status': 'implementation-ready',
     'x-client-generation-ready': true,
     'x-authorization': publicRead
-      ? 'Published restaurant and visible verified reviews only.'
+      ? 'Published public resources only; historical policies are immutable published revisions.'
       : 'Fresh authenticated role and resource entitlement; administrative mutations require granted permission and fresh MFA. Version and idempotency guards apply.',
     security: publicRead ? [] : [{ accessSession: [] }],
     parameters,
@@ -99,13 +99,19 @@ function add(
         }
       : {}),
     responses: {
-      [(method === 'post' &&
-        ['/support/tickets', '/orders/{orderId}/reviews', '/orders/{orderId}/messages'].includes(
-          path,
-        )) ||
-      (path.endsWith('/messages') && method === 'post')
-        ? 201
-        : 200]: {
+      [method === 'post' &&
+      (path === '/privacy/requests' ||
+        (path.endsWith('/decision') && path.startsWith('/admin/privacy/')))
+        ? 202
+        : (method === 'post' &&
+              [
+                '/support/tickets',
+                '/orders/{orderId}/reviews',
+                '/orders/{orderId}/messages',
+              ].includes(path)) ||
+            (path.endsWith('/messages') && method === 'post')
+          ? 201
+          : 200]: {
         description: 'Authoritative resource with explicit scope and state.',
         content: {
           'application/json': {
@@ -142,6 +148,33 @@ add(
 );
 add('admin', 'get', '/admin/settings', settingsSchema);
 add('auth', 'get', '/privacy/requests', z.array(privacyRequestSchema));
+add('auth', 'get', '/privacy/requests/{requestId}/download', z.unknown());
+// This endpoint streams a private attachment, not the normal resource envelope.
+const download = paths['/privacy/requests/{requestId}/download']!.get as {
+  responses: Record<string, unknown>;
+};
+download.responses['200'] = {
+  description:
+    'Freshly authenticated account owner only. Encrypted export assembled as a private no-store JSON attachment; expires after seven days.',
+  headers: {
+    'Content-Disposition': { schema: { type: 'string' } },
+    'Cache-Control': { schema: { const: 'private, no-store' } },
+  },
+  content: {
+    'application/json': {
+      schema: {
+        type: 'object',
+        required: ['requestId', 'collectedAt', 'scope', 'parts'],
+        properties: {
+          requestId: { type: 'string', format: 'uuid' },
+          collectedAt: { type: 'string', format: 'date-time' },
+          scope: { type: 'string' },
+          parts: { type: 'array', items: { type: 'object' } },
+        },
+      },
+    },
+  },
+};
 add('auth', 'post', '/privacy/requests', privacyRequestSchema, privacyRequestInputSchema);
 add(
   'auth',

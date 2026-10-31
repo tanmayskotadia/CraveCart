@@ -4,6 +4,19 @@ export function installAuthPrivacyData(app: Express, ctx: DomainContext) {
   installPrivacyOwner(app, ctx, 'auth', {
     datasets: [
       {
+        name: 'sign_in_sessions',
+        collection: 'sessions',
+        subjectField: 'userId',
+        fields: [
+          'workspace',
+          'createdAt',
+          'authenticatedAt',
+          'expiresAt',
+          'revokedAt',
+          'userAgent',
+        ],
+      },
+      {
         name: 'profile',
         collection: 'users',
         subjectField: '_id',
@@ -19,7 +32,9 @@ export function installAuthPrivacyData(app: Express, ctx: DomainContext) {
           'city',
           'pincode',
           'phone',
-          'recipientName',
+          'recipient',
+          'apartment',
+          'landmark',
           'point',
           'instructions',
           'isDefault',

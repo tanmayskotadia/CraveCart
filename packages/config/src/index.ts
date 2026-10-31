@@ -54,7 +54,10 @@ const schema = z.object({
   PAYMENT_LIVE_CONFIRMED: z.enum(['true', 'false']).default('false'),
   FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR: z.coerce.number().int().min(0).max(100_000_000).default(0),
   PRIVACY_RETENTION_REVIEWED: z.enum(['true', 'false']).default('false'),
-  PRIVACY_FINANCIAL_RETENTION_DAYS: z.coerce.number().int().min(1).max(36500).optional(),
+  PRIVACY_FINANCIAL_RETENTION_DAYS: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.coerce.number().int().min(1).max(36500).optional(),
+  ),
   RAZORPAY_KEY_ID: z.string().optional(),
   RAZORPAY_KEY_SECRET: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
@@ -77,6 +80,8 @@ export type Config = z.infer<typeof schema>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const config = schema.parse(env);
+  if (config.PRIVACY_RETENTION_REVIEWED === 'true' && !config.PRIVACY_FINANCIAL_RETENTION_DAYS)
+    throw new Error('Reviewed privacy retention requires an explicit duration in days');
   if (config.ASSISTANT_PROVIDER === 'openai' && (!config.OPENAI_API_KEY || !config.ASSISTANT_MODEL))
     throw new Error('OpenAI assistant requires a server API key and explicit model');
   if (config.ASSISTANT_WRITES_ENABLED === 'true' && config.ASSISTANT_WRITES_REVIEWED !== 'true')

@@ -61,6 +61,80 @@ test('customer, restaurant and rider complete a verified delivery', async ({
     createdAt: new Date(),
   });
   const contexts = [];
+  const browserErrors: string[] = [];
+  async function walkWorkspace(target: Page, name: string) {
+    const serviceFailures: string[] = [];
+    const recordFailure = (response: import('@playwright/test').Response) => {
+      if (response.status() >= 500 && new URL(response.url()).pathname.startsWith('/api/v1/'))
+        serviceFailures.push(`${response.status()} ${new URL(response.url()).pathname}`);
+    };
+    target.on('response', recordFailure);
+    await target.goto('/workspaces');
+    await expect(
+      target.getByRole('heading', { name: 'Your workspaces', exact: true }),
+    ).toBeVisible();
+    const role = name === 'restaurant' ? 'seller' : name;
+    await target.getByRole('button', { name: `Open ${role} workspace`, exact: true }).click();
+    const home =
+      role === 'seller'
+        ? '/seller/restaurants'
+        : role === 'rider'
+          ? '/rider/dashboard'
+          : role === 'admin'
+            ? '/admin/dashboard'
+            : '/profile';
+    await expect.poll(() => new URL(target.url()).pathname).toBe(home);
+    const current = await target.request.get('/api/v1/auth/me');
+    expect((await current.json()).data.principal.workspace).toBe(role);
+    const menu = target.getByRole('button', { name: 'Workspace menu', exact: true });
+    const mobileMenu = (target.viewportSize()?.width ?? 1280) <= 640;
+    if (mobileMenu) {
+      await expect(menu).toBeVisible();
+      await menu.click();
+    }
+    const navigation = target.getByRole('navigation', { name: 'Workspace navigation' });
+    await expect(navigation).toBeVisible();
+    await expect(navigation.getByRole('link', { name: 'Workspaces', exact: true })).toBeVisible();
+    const links = await navigation
+      .locator('a')
+      .evaluateAll((anchors) =>
+        anchors.map((a) => ({ label: a.textContent!, path: a.getAttribute('href')! })),
+      );
+    expect(links.length, `${name} must expose an actual workspace menu`).toBeGreaterThan(5);
+    const visited: string[] = [];
+    target.on('pageerror', (error) => browserErrors.push(`${name}: ${error.message}`));
+    for (const link of links) {
+      if (mobileMenu) {
+        await expect(menu).toBeVisible();
+        if ((await menu.getAttribute('aria-expanded')) === 'false') await menu.click();
+      }
+      await expect(navigation).toBeVisible();
+      await navigation.getByRole('link', { name: link.label, exact: true }).click();
+      await expect.poll(() => new URL(target.url()).pathname).toBe(link.path);
+      await expect(target.locator('main h1').first()).toBeVisible();
+      await expect(target.locator('.workspace-content [role="alert"]')).toHaveCount(0);
+      await expect(target.locator('main')).not.toContainText(
+        'This workspace feature is being prepared',
+      );
+      await expect(
+        target.getByRole('heading', { name: 'Sign in to continue', exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        target.getByRole('heading', { name: 'We couldn’t find that page', exact: true }),
+      ).toHaveCount(0);
+      expect(
+        await target.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+        `${name}: ${link.path}`,
+      ).toBe(true);
+      visited.push(new URL(target.url()).pathname);
+    }
+    target.off('response', recordFailure);
+    expect(serviceFailures, `${name} workspace API failures`).toEqual([]);
+    await writeFile(
+      testInfo.outputPath(`workspace-walk-${name}.json`),
+      JSON.stringify({ name, visited }, null, 2),
+    );
+  }
   async function audit(target: Page, name: string) {
     const results = await new AxeBuilder({ page: target })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -334,8 +408,19 @@ test('customer, restaurant and rider complete a verified delivery', async ({
         await page.getByRole('link', { name: 'Proceed to checkout', exact: true }).click();
         await page.getByRole('button', { name: 'Review final total', exact: true }).click();
         await expect(page.getByText('Development checkout', { exact: false })).toBeVisible();
-        if (testInfo.project.name === 'mobile')
-          await page.getByLabel('Stripe', { exact: true }).check();
+        if (testInfo.project.name === 'mobile') {
+          // Exercise a hosted setup with only Stripe enabled, rather than assuming Razorpay.
+          await page.route('**/api/v1/payments/capabilities', async (route) => {
+            const response = await route.fetch();
+            const body = await response.json();
+            body.data.gateways = ['stripe'];
+            await route.fulfill({ response, json: body });
+          });
+          await page.reload();
+          await page.getByRole('button', { name: 'Review final total', exact: true }).click();
+          await expect(page.getByLabel('Stripe', { exact: true })).toBeChecked();
+          await expect(page.getByLabel('Razorpay', { exact: true })).toHaveCount(0);
+        }
         await page.getByRole('button', { name: /Continue to payment ·/ }).click();
         await expect(page).toHaveURL(/\/orders\/[a-f0-9-]{36}$/);
         paidOrderId = new URL(page.url()).pathname.split('/').at(-1)!;
@@ -345,6 +430,22 @@ test('customer, restaurant and rider complete a verified delivery', async ({
         await page
           .getByRole('button', { name: 'Simulate successful payment', exact: true })
           .click();
+        await expect(page.locator('.commerce-status')).toContainText('PLACED · CAPTURED');
+        const accountMenu = page.getByRole('button', { name: 'Workspace menu', exact: true });
+        if (await accountMenu.isVisible()) await accountMenu.click();
+        await page
+          .getByRole('navigation', { name: 'Workspace navigation' })
+          .getByRole('link', { name: 'My cart', exact: true })
+          .click();
+        await expect(
+          page.getByRole('heading', { name: 'Your cart has room for a craving.', exact: true }),
+        ).toBeVisible();
+        if (await accountMenu.isVisible()) await accountMenu.click();
+        await page
+          .getByRole('navigation', { name: 'Workspace navigation' })
+          .getByRole('link', { name: 'Orders', exact: true })
+          .click();
+        await page.getByRole('link', { name: 'View order', exact: true }).first().click();
         await expect(page.locator('.commerce-status')).toContainText('PLACED · CAPTURED');
         await expect(partner.locator('.kitchen-order .status-badge')).toContainText('PLACED', {
           timeout: 12000,
@@ -703,6 +804,30 @@ test('customer, restaurant and rider complete a verified delivery', async ({
     await expect(
       page.getByRole('heading', { name: 'Privacy requests', exact: true }),
     ).toBeVisible();
+    const workspaceMenu = page.getByRole('button', { name: 'Workspace menu', exact: true });
+    const workspaceNavigation = page.getByRole('navigation', { name: 'Workspace navigation' });
+    if (testInfo.project.name === 'mobile') {
+      await expect(workspaceNavigation).not.toBeVisible();
+      await workspaceMenu.focus();
+      await page.keyboard.press('Enter');
+      await expect(workspaceMenu).toHaveAttribute('aria-expanded', 'true');
+      await expect(
+        workspaceNavigation.getByRole('link', { name: 'Privacy requests', exact: true }),
+      ).toHaveAttribute('aria-current', 'page');
+      await workspaceNavigation
+        .getByRole('link', { name: 'Privacy requests', exact: true })
+        .click();
+      await expect(workspaceMenu).toHaveAttribute('aria-expanded', 'false');
+    } else {
+      await expect(workspaceNavigation).toBeVisible();
+    }
+    const consentBounds = await page.locator('.privacy-request-form .check-label').boundingBox();
+    const submitBounds = await page
+      .getByRole('button', { name: 'Submit privacy request', exact: true })
+      .boundingBox();
+    expect(
+      consentBounds && submitBounds && submitBounds.y >= consentBounds.y + consentBounds.height,
+    ).toBe(true);
     await audit(page, 'customer-privacy');
     await page.screenshot({
       path: `.local/qa/privacy-${testInfo.project.name}.png`,
@@ -735,7 +860,51 @@ test('customer, restaurant and rider complete a verified delivery', async ({
     await expect(
       page.getByRole('heading', { name: 'Account deletion request', exact: true }),
     ).toBeVisible();
+    await walkWorkspace(page, 'customer');
+    await page.goto('/notifications');
+    const unread = page
+      .locator('.workspace-panel')
+      .filter({ has: page.getByRole('button', { name: 'Mark read', exact: true }) })
+      .first();
+    await expect(unread).toBeVisible();
+    const notificationTitle = await unread.getByRole('link').innerText();
+    await page.route('**/api/v1/notifications/read', (route) =>
+      route.fulfill({
+        status: 503,
+        json: {
+          error: {
+            code: 'DEPENDENCY_UNAVAILABLE',
+            message: 'Notification update temporarily unavailable. Please retry.',
+          },
+        },
+      }),
+    );
+    await unread.getByRole('button', { name: 'Mark read', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText(
+      'Notification update temporarily unavailable. Please retry.',
+    );
+    await expect(unread.getByRole('button', { name: 'Mark read', exact: true })).toBeEnabled();
+    await page.unroute('**/api/v1/notifications/read');
+    const notification = page
+      .locator('.workspace-panel')
+      .filter({ has: page.getByRole('link', { name: notificationTitle, exact: true }) });
+    await notification.getByRole('button', { name: 'Mark read', exact: true }).click();
+    await expect(notification.getByRole('button', { name: 'Mark read', exact: true })).toHaveCount(
+      0,
+    );
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await walkWorkspace(kitchen, 'restaurant');
+    await walkWorkspace(driver, 'rider');
     await page.goto('/profile');
+    await page
+      .getByLabel('New email or Indian mobile number', { exact: true })
+      .fill(`${prefix}-correctable@example.test`);
+    await page.getByRole('button', { name: 'Request verification code', exact: true }).click();
+    await expect(page.getByLabel('Verification code', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Use a different contact', exact: true }).click();
+    await expect(page.getByLabel('New email or Indian mobile number', { exact: true })).toHaveValue(
+      `${prefix}-correctable@example.test`,
+    );
     await page.getByRole('button', { name: 'Sign out', exact: true }).click();
     await page.goto('/profile');
     await expect(page.getByRole('heading', { name: 'Sign in to continue' })).toBeVisible();
@@ -812,6 +981,87 @@ test('customer, restaurant and rider complete a verified delivery', async ({
     await expect(reviewer.locator('.commerce-status')).toContainText('PARTIALLY REFUNDED', {
       timeout: 15000,
     });
+    // Publish fixture text through two real MFA accounts, then read its immutable public version.
+    await admin.goto('/admin/settings');
+    await admin.getByLabel('Policy to manage', { exact: true }).selectOption('privacy');
+    await admin.getByLabel('Policy title', { exact: true }).fill('Browser fixture privacy notice');
+    await admin.getByLabel('Legal business name', { exact: true }).fill('Browser fixture business');
+    await admin
+      .getByLabel('Registered business address', { exact: true })
+      .fill('Fixture registered office, Chennai, India');
+    await admin.getByLabel('Support email', { exact: true }).fill('support@example.test');
+    await admin
+      .getByLabel('Grievance contact', { exact: true })
+      .fill('Fixture officer at support@example.test');
+    await admin
+      .getByLabel('Policy text', { exact: true })
+      .fill(
+        'This labelled browser fixture verifies independently reviewed publication and safe plain text rendering. It is not a production legal policy. <script>window.policyFixture = true</script>',
+      );
+    await admin
+      .getByLabel('Policy change or review reason', { exact: true })
+      .fill('Prepare browser policy fixture for independent review');
+    const [savedPolicy] = await Promise.all([
+      admin.waitForResponse(
+        (response) =>
+          response.url().endsWith('/api/v1/admin/settings/policies/privacy') &&
+          response.request().method() === 'PUT',
+      ),
+      admin.getByRole('button', { name: 'Save policy draft', exact: true }).click(),
+    ]);
+    expect(savedPolicy.status()).toBe(200);
+    await expect(
+      admin.getByRole('button', { name: 'Publish reviewed draft', exact: true }),
+    ).toBeDisabled();
+    await reviewer.goto('/admin/settings');
+    await reviewer.getByLabel('Policy to manage', { exact: true }).selectOption('privacy');
+    await reviewer
+      .getByLabel('Policy change or review reason', { exact: true })
+      .fill('Independent browser fixture policy review');
+    const [publishedPolicy] = await Promise.all([
+      reviewer.waitForResponse(
+        (response) =>
+          response.url().endsWith('/api/v1/admin/settings/policies/privacy/publish') &&
+          response.request().method() === 'POST',
+      ),
+      reviewer.getByRole('button', { name: 'Publish reviewed draft', exact: true }).click(),
+    ]);
+    expect(publishedPolicy.status()).toBe(200);
+    await expect(
+      reviewer.getByRole('link', { name: 'View published policy', exact: true }),
+    ).toBeVisible();
+    await audit(reviewer, 'policy-settings');
+    const revision = await reviewer
+      .getByRole('link', { name: 'View published policy', exact: true })
+      .getAttribute('href');
+    await page.goto(revision!);
+    await expect(
+      page.getByRole('heading', { name: 'Browser fixture privacy notice', exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText('<script>window.policyFixture = true</script>', { exact: false }),
+    ).toBeVisible();
+    expect(await page.evaluate(() => Object.hasOwn(window, 'policyFixture'))).toBe(false);
+    await audit(page, 'published-policy');
+    const account = await auth
+      .collection('users')
+      .findOne({ contact: `${prefix}-customer@example.test` });
+    expect(account).toBeTruthy();
+    const privacyExport = await auth
+      .collection('privacy_requests')
+      .findOne({ userId: String(account!._id), kind: 'export' });
+    expect(privacyExport).toBeTruthy();
+    await reviewer.goto('/admin/privacy');
+    const privacyCard = reviewer.getByTestId('privacy-review-' + String(privacyExport!._id));
+    await privacyCard.getByRole('button', { name: 'Review privacy request', exact: true }).click();
+    await reviewer
+      .getByLabel('Privacy review reason', { exact: true })
+      .fill('Verified browser fixture identity and account data scope');
+    await reviewer.getByRole('button', { name: 'Approve privacy request', exact: true }).click();
+    await expect(privacyCard).toContainText('PROCESSING');
+    await audit(reviewer, 'privacy-admin-review');
+    await walkWorkspace(reviewer, 'admin');
+    expect(browserErrors).toEqual([]);
   } finally {
     for (const context of contexts) await context.close().catch(() => {});
     const users = await auth

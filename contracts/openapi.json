@@ -46210,7 +46210,7 @@
         "x-owner": "admin",
         "x-contract-status": "implementation-ready",
         "x-client-generation-ready": true,
-        "x-authorization": "Published restaurant and visible verified reviews only.",
+        "x-authorization": "Published public resources only; historical policies are immutable published revisions.",
         "security": [],
         "parameters": [
           {
@@ -46501,6 +46501,9 @@
                               }
                             ]
                           },
+                          "canCancel": {
+                            "type": "boolean"
+                          },
                           "progress": {
                             "type": "integer",
                             "minimum": 0,
@@ -46527,6 +46530,7 @@
                           "reviewReason",
                           "completedAt",
                           "downloadExpiresAt",
+                          "canCancel",
                           "progress",
                           "message",
                           "retained"
@@ -46677,7 +46681,7 @@
           }
         },
         "responses": {
-          "200": {
+          "202": {
             "description": "Authoritative resource with explicit scope and state.",
             "content": {
               "application/json": {
@@ -46770,6 +46774,9 @@
                             }
                           ]
                         },
+                        "canCancel": {
+                          "type": "boolean"
+                        },
                         "progress": {
                           "type": "integer",
                           "minimum": 0,
@@ -46796,6 +46803,7 @@
                         "reviewReason",
                         "completedAt",
                         "downloadExpiresAt",
+                        "canCancel",
                         "progress",
                         "message",
                         "retained"
@@ -46822,6 +46830,127 @@
                     "meta"
                   ],
                   "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured safe error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "requestId",
+                        "retryable"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/privacy/requests/{requestId}/download": {
+      "get": {
+        "operationId": "operations_get__privacy_requests__requestId__download",
+        "tags": [
+          "auth"
+        ],
+        "summary": "GET /privacy/requests/{requestId}/download",
+        "x-owner": "auth",
+        "x-contract-status": "implementation-ready",
+        "x-client-generation-ready": true,
+        "x-authorization": "Fresh authenticated role and resource entitlement; administrative mutations require granted permission and fresh MFA. Version and idempotency guards apply.",
+        "security": [
+          {
+            "accessSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Freshly authenticated account owner only. Encrypted export assembled as a private no-store JSON attachment; expires after seven days.",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "private, no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "requestId",
+                    "collectedAt",
+                    "scope",
+                    "parts"
+                  ],
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "collectedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "scope": {
+                      "type": "string"
+                    },
+                    "parts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -47042,6 +47171,9 @@
                             }
                           ]
                         },
+                        "canCancel": {
+                          "type": "boolean"
+                        },
                         "progress": {
                           "type": "integer",
                           "minimum": 0,
@@ -47068,6 +47200,7 @@
                         "reviewReason",
                         "completedAt",
                         "downloadExpiresAt",
+                        "canCancel",
                         "progress",
                         "message",
                         "retained"
@@ -47272,6 +47405,9 @@
                                   }
                                 ]
                               },
+                              "canCancel": {
+                                "type": "boolean"
+                              },
                               "progress": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -47298,6 +47434,7 @@
                               "reviewReason",
                               "completedAt",
                               "downloadExpiresAt",
+                              "canCancel",
                               "progress",
                               "message",
                               "retained"
@@ -47494,7 +47631,7 @@
           }
         },
         "responses": {
-          "200": {
+          "202": {
             "description": "Authoritative resource with explicit scope and state.",
             "content": {
               "application/json": {
@@ -47587,6 +47724,9 @@
                             }
                           ]
                         },
+                        "canCancel": {
+                          "type": "boolean"
+                        },
                         "progress": {
                           "type": "integer",
                           "minimum": 0,
@@ -47613,6 +47753,7 @@
                         "reviewReason",
                         "completedAt",
                         "downloadExpiresAt",
+                        "canCancel",
                         "progress",
                         "message",
                         "retained"
@@ -49519,7 +49660,7 @@
         "x-owner": "restaurant",
         "x-contract-status": "implementation-ready",
         "x-client-generation-ready": true,
-        "x-authorization": "Published restaurant and visible verified reviews only.",
+        "x-authorization": "Published public resources only; historical policies are immutable published revisions.",
         "security": [],
         "parameters": [
           {

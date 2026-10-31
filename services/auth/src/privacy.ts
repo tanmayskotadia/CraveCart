@@ -25,7 +25,7 @@ import {
   type DomainContext,
 } from '@cravecart/platform';
 import { executeOnce } from '@cravecart/persistence';
-interface Job extends Omit<PrivacyRequest, 'id'> {
+interface Job extends Omit<PrivacyRequest, 'id' | 'canCancel'> {
   _id: string;
   leaseUntil: Date;
   nextAt: Date;
@@ -59,7 +59,11 @@ export function installPrivacy(app: Express, ctx: DomainContext) {
       Object.fromEntries(
         Object.keys(privacyRequestSchema.shape).map((key) => [
           key,
-          key === 'id' ? job._id : job[key as keyof Job],
+          key === 'id'
+            ? job._id
+            : key === 'canCancel'
+              ? !job.frozenAt && ['AWAITING_REVIEW', 'PREFLIGHT', 'BLOCKED'].includes(job.status)
+              : job[key as keyof Job],
         ]),
       ),
     );
@@ -99,6 +103,14 @@ export function installPrivacy(app: Express, ctx: DomainContext) {
       requireIdempotency(req),
       input,
       async (session) => {
+        // Serialize requests with different idempotency keys for the same account.
+        await db
+          .collection('privacy_request_guards')
+          .updateOne(
+            { _id: actor.userId as never },
+            { $inc: { epoch: 1 } },
+            { upsert: true, session },
+          );
         const open = await jobs.findOne(
           {
             userId: actor.userId,
@@ -202,15 +214,13 @@ export function installPrivacy(app: Express, ctx: DomainContext) {
         'EXPORT_UNAVAILABLE',
         'This private export is unavailable or expired. Request a fresh export.',
       );
-    await db
-      .collection('privacy_audit')
-      .insertOne({
-        _id: randomUUID() as never,
-        actorId: actor.userId,
-        requestId: job._id,
-        action: 'export.download',
-        at: new Date(),
-      });
+    await db.collection('privacy_audit').insertOne({
+      _id: randomUUID() as never,
+      actorId: actor.userId,
+      requestId: job._id,
+      action: 'export.download',
+      at: new Date(),
+    });
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="CraveCart-data-${job._id}.json"`);
     res.setHeader('Cache-Control', 'private, no-store');
@@ -225,12 +235,21 @@ export function installPrivacy(app: Express, ctx: DomainContext) {
       );
       let comma = false;
       for await (const part of parts.find({ requestId: job._id }).sort({ sequence: 1 })) {
+        if (res.destroyed) break;
         const text = unseal(
           Buffer.from(part.sealed, 'base64'),
           config.AUTH_ENCRYPTION_KEY,
         ).toString();
         if (!res.write((comma ? ',' : '') + text))
-          await new Promise<void>((resolve) => res.once('drain', resolve));
+          await new Promise<void>((resolve) => {
+            const done = () => {
+              res.off('drain', done);
+              res.off('close', done);
+              resolve();
+            };
+            res.once('drain', done);
+            res.once('close', done);
+          });
         comma = true;
       }
       res.end(']}');
@@ -350,23 +369,21 @@ export function installPrivacy(app: Express, ctx: DomainContext) {
               ? 'Request rejected after independent review.'
               : 'Reviewed. Owner-scoped processing is queued.';
           await jobs.replaceOne({ _id: job._id }, job, { session });
-          await db
-            .collection('privacy_audit')
-            .insertOne(
-              {
-                _id: randomUUID() as never,
-                actorId: actor.userId,
-                userId: job.userId,
-                requestId: job._id,
-                action: `request.${input.action}`,
-                reason: input.reason,
-                version: job.version,
-                retentionPolicyId: job.retentionPolicyId,
-                correlationId: res.locals.requestId,
-                at: new Date(),
-              },
-              { session },
-            );
+          await db.collection('privacy_audit').insertOne(
+            {
+              _id: randomUUID() as never,
+              actorId: actor.userId,
+              userId: job.userId,
+              requestId: job._id,
+              action: `request.${input.action}`,
+              reason: input.reason,
+              version: job.version,
+              retentionPolicyId: job.retentionPolicyId,
+              correlationId: res.locals.requestId,
+              at: new Date(),
+            },
+            { session },
+          );
           return present(job);
         },
       );
@@ -554,33 +571,29 @@ export function installPrivacy(app: Express, ctx: DomainContext) {
           job.retained.push(...result.retained);
           job.ownerIndex++;
           if (job.ownerIndex === owners.length) {
-            await db
-              .collection('users')
-              .updateOne(
-                { _id: job.userId as never },
-                {
-                  $set: {
-                    contact: `deleted-${job.userId}@deleted.invalid`,
-                    name: 'Deleted account',
-                    status: 'SUSPENDED',
-                    roles: ['customer'],
-                    permissions: [],
-                  },
-                  $unset: { mfaSecret: '', backupHashes: '', lastTotpCounter: '' },
+            await db.collection('users').updateOne(
+              { _id: job.userId as never },
+              {
+                $set: {
+                  contact: `deleted-${job.userId}@deleted.invalid`,
+                  name: 'Deleted account',
+                  status: 'SUSPENDED',
+                  roles: ['customer'],
+                  permissions: [],
                 },
-              );
+                $unset: { mfaSecret: '', backupHashes: '', lastTotpCounter: '' },
+              },
+            );
             await db.collection('refresh_tokens').deleteMany({ userId: job.userId });
-            await db
-              .collection('privacy_export_parts')
-              .deleteMany({
-                requestId: {
-                  $in: (
-                    await jobs
-                      .find({ userId: job.userId, kind: 'export' }, { projection: { _id: 1 } })
-                      .toArray()
-                  ).map((value) => value._id),
-                },
-              });
+            await db.collection('privacy_export_parts').deleteMany({
+              requestId: {
+                $in: (
+                  await jobs
+                    .find({ userId: job.userId, kind: 'export' }, { projection: { _id: 1 } })
+                    .toArray()
+                ).map((value) => value._id),
+              },
+            });
             job.status = 'COMPLETED_WITH_RETENTION';
             job.completedAt = new Date().toISOString();
             job.message =

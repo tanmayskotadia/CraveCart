@@ -284,3 +284,7 @@ Record ADRs for service ownership, six-service constraint, session/cookie topolo
 | AI fabricates or leaks context | Scoped tools, retrieval, confirmation and attack evaluations | Disable tool flag/provider and keep FAQ/support usable |
 | Seller/rider payouts unavailable | Early merchant/payout onboarding and ledger separation | Do not display paid status or enable unsupported market |
 | Scope/timeline pressure | P0/P1 gates and demonstrable vertical slices | Re-estimate scope/date explicitly; never relabel a demo as production |
+
+## Reviewed policy and privacy implementation
+
+Admin settings now supports versioned business-policy drafts and publication by a different authorized MFA reviewer. Public current/historic revisions are rendered as plain text. Live checkout requires published terms, privacy and cancellation policies, revalidates their versions, and records explicit acceptance with the order. Account privacy requests use verified intake, independent review, owner-scoped encrypted expiring exports and resumable retention-aware closure. Open obligations block closure, account sessions end before erasure and retained categories remain explicit. The workflow is not universal removal from legacy command caches, backups, logs or external providers; file binaries require private fulfilment. Actual legal content/retention and Route compensation/settlement implementation remain gates. See [manual setup and launch](MANUAL-SETUP-AND-LAUNCH.md) for exact settings and acceptance tasks.

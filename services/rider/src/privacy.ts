@@ -33,23 +33,31 @@ export function installRiderPrivacy(app: Express, ctx: DomainContext) {
       for (const collection of ['location_history', 'task_locations', 'offers'])
         await ctx.db.collection(collection).deleteMany({ riderId: userId }, { session });
       await ctx.db.collection('delivery_notifications').deleteMany({ userId }, { session });
+      await ctx.db
+        .collection('applications')
+        .updateMany(
+          { userId, status: { $ne: 'APPROVED' } },
+          { $set: { status: 'REJECTED', reason: 'Account closure' }, $inc: { version: 1 } },
+          { session },
+        );
       return ['Completed delivery financial/proof audit and rider verification evidence'];
     },
     minimizeRetained: async (userId, session) => {
       await ctx.db
-        .collection('applications')
-        .updateMany(
-          { userId },
-          {
-            $set: {
-              'profile.fullName': 'Deleted account',
-              'profile.address': 'Removed after retention',
-              documentIds: [],
-            },
-            $unset: { 'profile.vehicleRegistration': '' },
+        .collection('delivery_operations')
+        .deleteMany({ riderId: userId, state: { $in: ['APPLIED', 'REJECTED'] } }, { session });
+      await ctx.db.collection('applications').updateMany(
+        { userId },
+        {
+          $set: {
+            'profile.fullName': 'Deleted account',
+            'profile.address': 'Removed after retention',
+            documentIds: [],
           },
-          { session },
-        );
+          $unset: { 'profile.vehicleRegistration': '' },
+        },
+        { session },
+      );
       await ctx.db
         .collection('deliveries')
         .updateMany(

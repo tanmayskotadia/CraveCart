@@ -21,7 +21,7 @@ import type {
   CartLineInput,
 } from '@cravecart/contracts';
 import { loadConfig } from '@cravecart/config';
-import { createApp, type DomainContext } from '@cravecart/platform';
+import { createApp, internalCall, type DomainContext } from '@cravecart/platform';
 import { ensurePersistence } from '@cravecart/persistence';
 import { installAuth, adminPermissions } from '../../services/auth/src/router.js';
 import { totp } from '../../services/auth/src/totp.js';
@@ -104,6 +104,8 @@ let assistantReadEntered: (() => void) | undefined;
 const vapid = webpush.generateVAPIDKeys();
 const pushMessages: string[] = [];
 let pushWorker: ReturnType<typeof installPush>;
+let privacyWorker: ReturnType<typeof installAuth>['privacy'];
+let privacyContext: DomainContext;
 interface Actor {
   cookies: Map<string, string>;
   csrf: string;
@@ -394,7 +396,10 @@ beforeAll(async () => {
           const catalog = installCatalog(app, ctx);
           installAssistantTools(app, ctx, catalog);
         }
-        install(app, ctx);
+        if (name === 'auth') {
+          privacyWorker = installAuth(app, ctx).privacy;
+          privacyContext = ctx;
+        } else install(app, ctx);
         if (name === 'auth') installGovernance(app, ctx);
         if (name === 'auth') installAssistantIdentity(app, ctx);
         if (name === 'utils') {
@@ -2410,5 +2415,304 @@ describe('transactional checkout, payments and refunds', () => {
     expect(next.status).toBe('SUBMITTED');
     const restaurants = await call('restaurant', 'get', '/api/v1/seller/restaurants', seller);
     expect(restaurants.body.data).toHaveLength(1);
+  });
+});
+
+describe('reviewed publishing and privacy fulfilment', () => {
+  let writer: Actor, reviewer: Actor;
+  const policyContent = (title: string) => ({
+    title,
+    body: 'Labelled integration fixture policy. This text verifies versioned publishing only and is not approved production legal advice. <script>fixture is plain text</script>',
+    businessName: 'Fixture business',
+    businessAddress: 'Fixture registered office, Chennai, India',
+    supportEmail: 'support@example.test',
+    grievanceContact: 'Fixture grievance officer at support@example.test',
+  });
+  const command = () => ({ 'Idempotency-Key': randomUUID() });
+  const privacyJobs = () => databases.auth!.collection('privacy_requests');
+  async function drive(id: string, status: string) {
+    for (let index = 0; index < 80; index++) {
+      const row = await privacyJobs().findOne({ _id: id as never });
+      if (row?.status === status) return row;
+      if (row?.status === 'BLOCKED' && status !== 'BLOCKED')
+        throw new Error('Privacy job blocked: ' + row.message);
+      await privacyJobs().updateOne(
+        { _id: id as never },
+        { $set: { nextAt: new Date(0), leaseUntil: new Date(0) } },
+      );
+      await privacyWorker.tick();
+    }
+    throw new Error('Privacy workflow did not reach ' + status);
+  }
+  async function requestPrivacy(user: Actor, kind: 'export' | 'delete') {
+    const response = await call(
+      'auth',
+      'post',
+      '/api/v1/privacy/requests',
+      user,
+      { kind, confirmed: true },
+      command(),
+    );
+    expect(response.status, JSON.stringify(response.body)).toBe(202);
+    return response.body.data;
+  }
+  async function decide(id: string, version: number, action = 'approve') {
+    return call(
+      'admin',
+      'post',
+      '/api/v1/admin/privacy/requests/' + id + '/decision',
+      reviewer,
+      { expectedVersion: version, action, reason: 'Verified fixture account and reviewed scope' },
+      command(),
+    );
+  }
+  beforeAll(async () => {
+    writer = (await administrator()).value;
+    reviewer = (await administrator()).value;
+  });
+  it('requires independent MFA publishing, keeps immutable revisions and rejects stale drafts', async () => {
+    expect((await call('admin', 'get', '/api/v1/policies/privacy')).status).toBe(404);
+    const customer = await register();
+    expect((await call('admin', 'get', '/api/v1/admin/settings', customer)).status).toBe(403);
+    for (const kind of ['privacy', 'terms', 'cancellations']) {
+      const draft = await call(
+        'admin',
+        'put',
+        '/api/v1/admin/settings/policies/' + kind,
+        writer,
+        {
+          expectedVersion: 0,
+          content: policyContent('Fixture ' + kind),
+          reason: 'Prepare labelled fixture policy',
+        },
+        command(),
+      );
+      expect(draft.status, JSON.stringify(draft.body)).toBe(200);
+      const body = {
+        expectedVersion: draft.body.data.version,
+        reason: 'Independent fixture review complete',
+      };
+      expect(
+        (
+          await call(
+            'admin',
+            'post',
+            '/api/v1/admin/settings/policies/' + kind + '/publish',
+            writer,
+            body,
+            command(),
+          )
+        ).status,
+      ).toBe(403);
+      const headers = command();
+      const published = await call(
+        'admin',
+        'post',
+        '/api/v1/admin/settings/policies/' + kind + '/publish',
+        reviewer,
+        body,
+        headers,
+      );
+      expect(published.status, JSON.stringify(published.body)).toBe(200);
+      expect(
+        (
+          await call(
+            'admin',
+            'post',
+            '/api/v1/admin/settings/policies/' + kind + '/publish',
+            reviewer,
+            body,
+            headers,
+          )
+        ).body.data,
+      ).toEqual(published.body.data);
+      const first = published.body.data.published;
+      const publicPolicy = await call(
+        'admin',
+        'get',
+        '/api/v1/policies/' + kind + '?revision=' + first.id,
+      );
+      expect(publicPolicy.body.data.body).toContain('<script>');
+      expect(publicPolicy.body.data).not.toHaveProperty('draftedBy');
+      expect(
+        (
+          await call(
+            'admin',
+            'put',
+            '/api/v1/admin/settings/policies/' + kind,
+            writer,
+            {
+              expectedVersion: 0,
+              content: policyContent('Stale edit'),
+              reason: 'Attempt stale fixture edit',
+            },
+            command(),
+          )
+        ).status,
+      ).toBe(409);
+      const second = await call(
+        'admin',
+        'put',
+        '/api/v1/admin/settings/policies/' + kind,
+        writer,
+        {
+          expectedVersion: published.body.data.version,
+          content: policyContent('Updated fixture ' + kind),
+          reason: 'Update fixture policy',
+        },
+        command(),
+      );
+      expect(second.status).toBe(200);
+      expect((await call('admin', 'get', '/api/v1/policies/' + kind)).body.data.id).toBe(first.id);
+      expect(
+        (await call('admin', 'get', '/api/v1/policies/' + kind + '?revision=' + first.id)).body
+          .data,
+      ).toEqual(first);
+    }
+  });
+  it('exports only the verified subject across owners, encrypts parts, restricts downloads and expires them', async () => {
+    const user = await register(),
+      stranger = await register();
+    const id = user.data.principal.userId;
+    await databases
+      .auth!.collection('users')
+      .updateOne({ _id: id as never }, { $set: { mfaSecret: 'NEVER-EXPORT-SECURITY-CANARY' } });
+    await databases.auth!.collection('addresses').insertOne({
+      _id: randomUUID() as never,
+      userId: id,
+      recipient: 'Own export recipient',
+      apartment: 'Own apartment',
+      phone: '9876543210',
+    });
+    await databases.auth!.collection('addresses').insertOne({
+      _id: randomUUID() as never,
+      userId: stranger.data.principal.userId,
+      recipient: 'UNRELATED-CONTACT-CANARY',
+    });
+    const job = await requestPrivacy(user, 'export');
+    expect((await decide(job.id, job.version)).status).toBe(202);
+    await drive(job.id, 'READY');
+    const parts = await databases
+      .auth!.collection('privacy_export_parts')
+      .find({ requestId: job.id })
+      .toArray();
+    expect(parts.length).toBeGreaterThan(5);
+    expect(JSON.stringify(parts)).not.toContain('Own export recipient');
+    expect(
+      (await call('auth', 'get', '/api/v1/privacy/requests/' + job.id + '/download', stranger))
+        .status,
+    ).toBe(410);
+    expect(
+      (await call('auth', 'get', '/api/v1/privacy/requests/' + job.id + '/download', reviewer))
+        .status,
+    ).toBe(410);
+    const download = await call(
+      'auth',
+      'get',
+      '/api/v1/privacy/requests/' + job.id + '/download',
+      user,
+    );
+    expect(download.status, JSON.stringify(download.body)).toBe(200);
+    expect(download.headers['cache-control']).toContain('no-store');
+    expect(download.headers['content-disposition']).toContain('attachment');
+    expect(JSON.stringify(download.body)).toContain('Own export recipient');
+    expect(JSON.stringify(download.body)).toContain('Own apartment');
+    expect(JSON.stringify(download.body)).not.toContain('NEVER-EXPORT-SECURITY-CANARY');
+    expect(JSON.stringify(download.body)).not.toContain('UNRELATED-CONTACT-CANARY');
+    await privacyJobs().updateOne(
+      { _id: job.id },
+      { $set: { downloadExpiresAt: new Date(0).toISOString() } },
+    );
+    expect(
+      (await call('auth', 'get', '/api/v1/privacy/requests/' + job.id + '/download', user)).status,
+    ).toBe(410);
+  });
+  it('serializes concurrent duplicate intake and permits a versioned cancellation before closure', async () => {
+    const user = await register();
+    const requests = await Promise.all(
+      [1, 2].map(() =>
+        call(
+          'auth',
+          'post',
+          '/api/v1/privacy/requests',
+          user,
+          { kind: 'export', confirmed: true },
+          command(),
+        ),
+      ),
+    );
+    expect(requests.map((r) => r.status).sort()).toEqual([202, 409]);
+    const job = requests.find((r) => r.status === 202)!.body.data;
+    expect(job.canCancel).toBe(true);
+    const response = await call(
+      'auth',
+      'post',
+      '/api/v1/privacy/requests/' + job.id + '/cancel',
+      user,
+      { expectedVersion: job.version },
+      command(),
+    );
+    expect(response.body.data.status).toBe('CANCELLED');
+    expect(response.body.data.canCancel).toBe(false);
+    expect((await decide(job.id, job.version)).status).toBe(409);
+  });
+  it('blocks unreviewed retention and unresolved orders without suspending the account', async () => {
+    const user = await register(),
+      job = await requestPrivacy(user, 'delete');
+    expect((await decide(job.id, job.version)).status).toBe(409);
+    privacyContext.config.PRIVACY_RETENTION_REVIEWED = 'true';
+    privacyContext.config.PRIVACY_FINANCIAL_RETENTION_DAYS = 30; // Explicit fixture only; never a production default.
+    const pendingId = randomUUID();
+    await databases.restaurant!.collection('orders').insertOne({
+      _id: pendingId as never,
+      userId: user.data.principal.userId,
+      status: 'PREPARING',
+    });
+    expect((await decide(job.id, job.version)).status).toBe(202);
+    await drive(job.id, 'BLOCKED');
+    expect(
+      (
+        await databases
+          .auth!.collection('users')
+          .findOne({ _id: user.data.principal.userId as never })
+      )?.status,
+    ).toBe('ACTIVE');
+    await databases.restaurant!.collection('orders').deleteOne({ _id: pendingId as never });
+    const current = await privacyJobs().findOne({ _id: job.id });
+    expect((await decide(job.id, current!.version, 'retry')).status).toBe(202);
+    await drive(job.id, 'PROCESSING');
+    expect((await call('auth', 'get', '/api/v1/auth/me', user)).status).toBe(401);
+    // The production worker waits 60 seconds after revocation; advance that fixture clock only.
+    await privacyJobs().updateOne(
+      { _id: job.id },
+      { $set: { frozenAt: new Date(Date.now() - 61000) } },
+    );
+    const closed = await drive(job.id, 'COMPLETED_WITH_RETENTION');
+    expect(closed.retained.length).toBeGreaterThan(5);
+    const profile = await databases
+      .auth!.collection('users')
+      .findOne({ _id: user.data.principal.userId as never });
+    expect(profile?.name).toBe('Deleted account');
+    expect(profile?.contact).toMatch(/^deleted-/);
+    expect(
+      await databases
+        .auth!.collection('addresses')
+        .countDocuments({ userId: user.data.principal.userId }),
+    ).toBe(0);
+    const tombstone = await databases
+      .restaurant!.collection('privacy_subjects')
+      .findOne({ _id: user.data.principal.userId as never });
+    expect(tombstone?.closing).toBe(true);
+    expect(tombstone?.dueAt.getTime()).toBeGreaterThan(Date.now() + 29 * 86400000);
+    privacyContext.config.PRIVACY_RETENTION_REVIEWED = 'false';
+    privacyContext.config.PRIVACY_FINANCIAL_RETENTION_DAYS = undefined;
+  });
+  it('denies forged owner export requests without an approved job', async () => {
+    await expect(
+      internalCall(privacyContext, 'restaurant', '/internal/v1/privacy-owner/export', {
+        requestId: randomUUID(),
+        userId: randomUUID(),
+      }),
+    ).rejects.toMatchObject({ status: 403 });
   });
 });

@@ -159,6 +159,7 @@ function Header() {
   const location = useLocation();
   const { session, logout } = useSession();
   const [logoutError, setLogoutError] = useState('');
+  const [loggingOut, setLoggingOut] = useState(false);
   const overlay = location.pathname === '/' || authPaths.includes(location.pathname);
   const { city, openCities } = useCity();
   const authState = {
@@ -170,7 +171,11 @@ function Header() {
         <Link className="brand" to="/" aria-label="CraveCart home">
           CraveCart
         </Link>
-        <button className="header-city" onClick={() => openCities()}>
+        <button
+          className="header-city"
+          aria-label={`Change browsing city, currently ${city?.name ?? 'India'}`}
+          onClick={() => openCities(new URLSearchParams(location.search).get('q') ?? '')}
+        >
           <Icon name="pin" size={18} />
           <span>{city?.name ?? 'India'}</span>
           <Icon name="down" size={13} />
@@ -201,13 +206,18 @@ function Header() {
               </Link>
               <button
                 className="header-logout"
+                disabled={loggingOut}
                 onClick={() => {
-                  void logout().catch((error) =>
-                    setLogoutError(error instanceof Error ? error.message : 'Could not sign out'),
-                  );
+                  setLoggingOut(true);
+                  setLogoutError('');
+                  void logout()
+                    .catch((error) =>
+                      setLogoutError(error instanceof Error ? error.message : 'Could not sign out'),
+                    )
+                    .finally(() => setLoggingOut(false));
                 }}
               >
-                Sign out
+                {loggingOut ? 'Signing out…' : 'Sign out'}
               </button>
             </>
           ) : (

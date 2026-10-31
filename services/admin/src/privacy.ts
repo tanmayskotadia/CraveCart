@@ -59,34 +59,30 @@ export function installAdminPrivacy(app: Express, ctx: DomainContext) {
           { $set: { subject: 'Closed account support case', resolution: null } },
           { session },
         );
-      await ctx.db
-        .collection('verification_cases')
-        .updateMany(
-          { 'application.userId': userId },
-          {
-            $set: {
-              'application.profile.fullName': 'Deleted account',
-              'application.profile.address': 'Removed after retention',
-              'application.documentIds': [],
-            },
-            $unset: { 'application.profile.vehicleRegistration': '' },
+      await ctx.db.collection('verification_cases').updateMany(
+        { 'application.userId': userId },
+        {
+          $set: {
+            'application.profile.fullName': 'Deleted account',
+            'application.profile.address': 'Removed after retention',
+            'application.documentIds': [],
           },
-          { session },
-        );
-      await ctx.db
-        .collection('verification_operations')
-        .updateMany(
-          { 'result.userId': userId },
-          {
-            $set: {
-              'result.profile.fullName': 'Deleted account',
-              'result.profile.address': 'Removed after retention',
-              'result.documentIds': [],
-            },
-            $unset: { 'result.profile.vehicleRegistration': '' },
+          $unset: { 'application.profile.vehicleRegistration': '' },
+        },
+        { session },
+      );
+      await ctx.db.collection('verification_operations').updateMany(
+        { 'result.userId': userId },
+        {
+          $set: {
+            'result.profile.fullName': 'Deleted account',
+            'result.profile.address': 'Removed after retention',
+            'result.documentIds': [],
           },
-          { session },
-        );
+          $unset: { 'result.profile.vehicleRegistration': '' },
+        },
+        { session },
+      );
     },
   });
   app.get(

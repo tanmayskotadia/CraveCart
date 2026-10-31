@@ -131,6 +131,8 @@ export function AccountPage() {
                 onChange={(e) => setCode(e.target.value)}
                 inputMode="numeric"
                 maxLength={6}
+                pattern="[0-9]{6}"
+                autoComplete="one-time-code"
                 required
               />
               {challenge.developmentCode && (
@@ -144,6 +146,21 @@ export function AccountPage() {
           <button className="red-button" disabled={pending} type="submit">
             {challenge ? 'Confirm new contact' : 'Request verification code'}
           </button>
+          {challenge && (
+            <button
+              className="outline-button"
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                setChallenge(undefined);
+                setCode('');
+                setError(undefined);
+                setNotice('');
+              }}
+            >
+              Use a different contact
+            </button>
+          )}
         </form>
       </div>
       {notice && (

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   Order,
   Quote,
@@ -53,7 +53,12 @@ function Bill({ totals }: { totals: Totals }) {
 }
 export function CheckoutPage() {
   const navigate = useNavigate();
-  const cart = useQuery({ queryKey: ['cart'], queryFn: () => api<CartState>('/cart') });
+  const { session } = useSession();
+  const cart = useQuery({
+    queryKey: ['cart', session?.principal.userId],
+    queryFn: () => api<CartState>('/cart'),
+    refetchOnMount: 'always',
+  });
   const caps = useQuery({
     queryKey: ['payment-capabilities'],
     queryFn: () => api<Capabilities>('/payments/capabilities'),
@@ -62,7 +67,11 @@ export function CheckoutPage() {
   const [policiesAccepted, setPoliciesAccepted] = useState(false);
   const [offerCode, setOffer] = useState('');
   const [tipMinor, setTip] = useState(0);
-  const [gateway, setGateway] = useState<Gateway>('razorpay');
+  const [preferredGateway, setGateway] = useState<Gateway>();
+  const gateway =
+    preferredGateway && caps.data?.gateways.includes(preferredGateway)
+      ? preferredGateway
+      : caps.data?.gateways[0];
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
   const [orderKey, setOrderKey] = useState(key);
@@ -93,7 +102,7 @@ export function CheckoutPage() {
     }
   }
   async function place() {
-    if (!quote) return;
+    if (!quote || !gateway) return;
     if (Date.parse(quote.expiresAt) <= Date.now()) {
       setError(new Error('This quote expired. Review the final total again.'));
       return;
@@ -219,6 +228,7 @@ export function CheckoutPage() {
                   className="red-button"
                   disabled={
                     busy ||
+                    !gateway ||
                     !caps.data?.gateways.includes(gateway) ||
                     Boolean(quote.policies?.length && !policiesAccepted)
                   }
@@ -477,6 +487,7 @@ export function OrdersPage({ admin = false }: { admin?: boolean }) {
 }
 function ReorderPanel({ order }: { order: Order }) {
   const navigate = useNavigate();
+  const client = useQueryClient();
   const addresses = useQuery({
     queryKey: ['addresses'],
     queryFn: () => api<Address[]>('/addresses'),
@@ -517,6 +528,7 @@ function ReorderPanel({ order }: { order: Order }) {
                 headers: command,
                 body: { previewId: preview.id, expectedCartVersion: preview.cartVersion, replace },
               });
+              await client.invalidateQueries({ queryKey: ['cart'] });
               navigate('/cart');
             }
           } catch (cause) {
@@ -622,6 +634,7 @@ function ReorderPanel({ order }: { order: Order }) {
 
 export function OrderPage({ admin = false }: { admin?: boolean }) {
   const { session } = useSession();
+  const client = useQueryClient();
   const { orderId } = useParams();
   const query = useQuery({
     queryKey: ['order', orderId, admin],
@@ -665,6 +678,10 @@ export function OrderPage({ admin = false }: { admin?: boolean }) {
     }
   }
   const order = query.data;
+  useEffect(() => {
+    if (!admin && order?.paymentState === 'CAPTURED')
+      void client.invalidateQueries({ queryKey: ['cart'] });
+  }, [admin, client, order?.paymentState]);
   return (
     <WorkspaceShell
       role={admin ? 'admin' : 'customer'}

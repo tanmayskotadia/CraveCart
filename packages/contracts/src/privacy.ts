@@ -30,6 +30,7 @@ export const privacyRequestSchema = z
     reviewReason: z.string().nullable(),
     completedAt: z.string().datetime().nullable(),
     downloadExpiresAt: z.string().datetime().nullable(),
+    canCancel: z.boolean(),
     progress: z.number().int().nonnegative(),
     message: z.string(),
     retained: z.array(z.string()),

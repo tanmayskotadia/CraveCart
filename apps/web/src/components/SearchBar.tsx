@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useCity } from './CityProvider';
 import { Icon } from './Icon';
 
 export function SearchBar({ initialQuery = '' }: { initialQuery?: string }) {
   const { city, openCities, explore } = useCity();
   const [query, setQuery] = useState(initialQuery);
+  const input = useRef<HTMLInputElement>(null);
   return (
     <form
       className="search-bar"
@@ -28,6 +29,8 @@ export function SearchBar({ initialQuery = '' }: { initialQuery?: string }) {
       <label className="search-input">
         <Icon name="search" size={23} />
         <input
+          ref={input}
+          enterKeyHint="search"
           aria-label="Search for a dish or cuisine"
           placeholder="Search for a dish or cuisine"
           maxLength={100}
@@ -35,6 +38,19 @@ export function SearchBar({ initialQuery = '' }: { initialQuery?: string }) {
           onChange={(e) => setQuery(e.target.value)}
         />
       </label>
+      {query && (
+        <button
+          className="search-clear"
+          type="button"
+          aria-label="Clear search text"
+          onClick={() => {
+            setQuery('');
+            input.current?.focus();
+          }}
+        >
+          <Icon name="close" size={18} />
+        </button>
+      )}
       <button className="search-submit" type="submit" aria-label="Explore food">
         <Icon name="arrow" size={22} />
       </button>

@@ -164,20 +164,27 @@ export async function api<T>(
     throw error;
   }
 }
-export async function documentBlob(path: string) {
+export async function documentBlob(path: string, refreshed = false): Promise<Blob> {
   const response = await fetch(`${origin}/api/v1${path}`, {
     credentials: 'include',
     cache: 'no-store',
     signal: AbortSignal.timeout(20_000),
   });
+  if (response.status === 401 && csrf && !refreshed) {
+    await refresh();
+    return documentBlob(path, true);
+  }
   if (!response.ok) {
     let message = 'Document is unavailable';
+    let code = 'DOCUMENT_UNAVAILABLE';
     try {
-      message = (await response.json()).error.message;
+      const error = (await response.json()).error;
+      if (typeof error?.message === 'string') message = error.message;
+      if (typeof error?.code === 'string') code = error.code;
     } catch {
       /* No private response bodies are surfaced. */
     }
-    throw new ApiError(response.status, 'DOCUMENT_UNAVAILABLE', message);
+    throw new ApiError(response.status, code, message);
   }
   return response.blob();
 }

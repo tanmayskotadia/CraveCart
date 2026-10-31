@@ -6,7 +6,7 @@ The application includes India-wide discovery, real OTP accounts and sessions, a
 
 ## Host on Vercel and Render
 
-Follow the [hosted deployment and API-key guide](docs/engineering/HOSTING.md). The repository includes a Render Blueprint, private persistent upload storage, managed-service configuration, Vercel API-proxy setup and a hosted readiness check. Deployment requires provider account access and credentials; this repository does not imply a live production deployment.
+Start with the [manual setup and launch checklist](docs/MANUAL-SETUP-AND-LAUNCH.md) for every credential, provider account, business setting and acceptance task. The [hosting guide](docs/engineering/HOSTING.md) describes the Vercel/Render topology. Deployment requires your provider accounts and credentials; this repository does not imply a live production deployment.
 
 Read the [complete delivery journey](docs/engineering/FULFILLMENT-AND-TRACKING.md), [role operations](docs/engineering/ROLE-OPERATIONS.md), [assistant setup](docs/engineering/ASSISTANT.md) and [PRD](docs/PRD.md). Support conversations, delivery messages, verified reviews, restaurant teams, limited administrative grants, reports and accounting records are implemented. Bank payouts and contractual compensation remain subject to policy and provider configuration. Use `.env.hosted.example` for backend settings. Production rejects development codes, synthetic payments and developer upload storage.
 

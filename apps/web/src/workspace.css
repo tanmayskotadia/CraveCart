@@ -179,6 +179,12 @@ textarea.form-input {
   align-self: start;
   position: sticky;
   top: 28px;
+  max-height: calc(100svh - 56px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.workspace-menu-toggle {
+  display: none;
 }
 .workspace-sidebar > .eyebrow {
   font-size: 8px;
@@ -203,10 +209,15 @@ textarea.form-input {
 .workspace-sidebar nav a {
   padding: 11px 13px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 13px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  border-left: 3px solid transparent;
   color: #6e6175;
 }
 .workspace-sidebar nav a.active {
+  border-left-color: var(--cc-primary);
   color: #b51e39;
   background: #fff1f4;
   font-weight: 600;
@@ -239,9 +250,38 @@ textarea.form-input {
 .workspace-panel {
   padding: 26px 28px;
   border: 1px solid #eae2e9;
-  border-radius: 10px;
+  border-radius: 14px;
   margin-bottom: 22px;
   background: white;
+  box-shadow: 0 3px 16px #30202c04;
+}
+.check-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.7;
+  cursor: pointer;
+}
+.check-label input {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  accent-color: var(--cc-primary);
+}
+.privacy-request-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 20px;
+}
+.privacy-request-form > p {
+  margin: 0;
+}
+.privacy-request-form .red-button {
+  margin-top: 0;
+  align-self: flex-start;
 }
 .workspace-panel h2 {
   font-size: 18px;
@@ -793,6 +833,8 @@ textarea.form-input {
     border-bottom: 1px solid #ece2ea;
     padding: 0 0 18px;
     margin-bottom: 28px;
+    max-height: none;
+    overflow: visible;
   }
   .workspace-sidebar > .eyebrow {
     display: none;
@@ -803,19 +845,36 @@ textarea.form-input {
   }
   .workspace-person {
     margin: 5px 0 12px;
-    font-size: 10px;
+    font-size: 13px;
+  }
+  .workspace-menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border: 1px solid #e6dfe4;
+    border-radius: 10px;
+    background: #fcfafb;
+    color: #493c48;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
   }
   .workspace-sidebar nav {
-    flex-direction: row;
-    gap: 5px;
-    overflow-x: auto;
-    padding-bottom: 3px;
+    display: none;
+    gap: 4px;
+    padding: 12px 0 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .workspace-sidebar nav.is-expanded {
+    display: grid;
   }
   .workspace-sidebar nav a {
-    white-space: nowrap;
-    font-size: 10px;
-    padding: 9px 11px;
-    flex-shrink: 0;
+    white-space: normal;
+    font-size: 13px;
+    padding: 10px 11px;
   }
   .workspace-sidebar > .text-link {
     margin-top: 8px;
@@ -829,7 +888,7 @@ textarea.form-input {
     letter-spacing: -0.8px;
   }
   .workspace-heading > p {
-    font-size: 12px;
+    font-size: 14px;
   }
   .workspace-panel {
     padding: 22px 19px;
@@ -841,10 +900,10 @@ textarea.form-input {
   }
   .workspace-panel > p,
   .panel-description {
-    font-size: 11px;
+    font-size: 14px;
   }
   .form-input {
-    font-size: 12px;
+    font-size: 16px;
   }
   .form-grid {
     grid-template-columns: 1fr;

@@ -444,6 +444,7 @@ export function installDeliveries(app: Express, ctx: DomainContext) {
           if (sample.sequence % 5 === 0)
             await db.collection('location_history').insertOne({
               ...value,
+              riderId: principal.userId,
               assignmentId: task._id,
               expiresAt: new Date(Date.now() + 7 * 86400000),
             });

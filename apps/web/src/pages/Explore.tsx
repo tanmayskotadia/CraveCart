@@ -80,8 +80,8 @@ export function Explore() {
         <div>
           <h2>Choose a delivery address.</h2>
           <p>
-            Availability depends on your exact address and the restaurant’s delivery area. Checkout
-            clearly identifies sandbox payments before you place an order.
+            Find out which restaurants deliver to your door. Availability depends on your exact
+            address and the restaurant’s delivery area.
           </p>
         </div>
       </div>

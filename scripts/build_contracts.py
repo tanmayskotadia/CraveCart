@@ -49,7 +49,7 @@ def envelope(schema):
 
 
 # Local route coverage is separate from the full proposed product scope and release qualification.
-AVAILABLE_PAGES = {"/access", "/assistant", "/admin/assistant",
+AVAILABLE_PAGES = {"/access", "/assistant", "/admin/assistant", "/admin/settings", "/admin/privacy", "/settings/privacy", "/help", "/legal/terms", "/legal/privacy", "/legal/cancellations",
     "/admin/users/:userId", "/admin/restaurants", "/admin/restaurants/:restaurantId", "/admin/riders", "/admin/riders/:riderId", "/verify", "/forgot-password", "/reset-password",
     "/support", "/support/tickets/:ticketId", "/orders/:orderId/messages", "/orders/:orderId/review",
     "/admin/support", "/admin/support/:ticketId", "/admin/reviews", "/admin/team", "/admin/promotions", "/admin/reports", "/admin/audit",
@@ -64,7 +64,6 @@ AVAILABLE_PAGES = {"/access", "/assistant", "/admin/assistant",
     "/seller/restaurants/:restaurantId/menu/:itemId/edit", "/seller/restaurants/:restaurantId/hours", "/403", "*",
 }
 PARTIAL_PAGES = {
-    "/settings/privacy",
     "/", "/search", "/location", "/restaurants/:slug", "/offers", "/cart", "/profile", "/settings",
     "/seller/restaurants", "/seller/restaurants/:restaurantId/profile", "/seller/restaurants/:restaurantId/dashboard",
     "/rider/dashboard", "/rider/profile", "/admin/dashboard", "/admin/users", "/admin/audit", "/seller", "/rider", "/admin",
@@ -112,7 +111,7 @@ def build_routes():
         route["runtimeStatus"] = "available-locally" if route["path"] in AVAILABLE_PAGES else "partial" if route["path"] in PARTIAL_PAGES else "planned"
         route["implemented"] = route["runtimeStatus"] == "available-locally"
         if route["path"] == "/settings/privacy":
-            route["implementationScope"] = "Private export/deletion review requests through tracked support; cross-service fulfillment and retention approval remain operational gates."
+            route["implementationScope"] = "Verified privacy requests, independent review, owner-scoped encrypted export and retention-aware resumable closure. Legal retention configuration and manual legacy/provider scope review remain operational gates."
         if route["path"] in {"/verify", "/forgot-password", "/reset-password"}:
             route["implementationScope"] = "Redirects to implemented passwordless contact verification; password login/reset tokens are not offered."
         if route["path"].startswith("/admin/restaurants"):

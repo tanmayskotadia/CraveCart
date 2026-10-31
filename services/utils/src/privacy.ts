@@ -6,6 +6,22 @@ export function installUtilsPrivacy(app: Express, ctx: DomainContext) {
   installPrivacyOwner(app, ctx, 'utils', {
     datasets: [
       {
+        name: 'verified_captures',
+        collection: 'captures',
+        subjectField: 'userId',
+        fields: [
+          'orderId',
+          'attemptId',
+          'gateway',
+          'mode',
+          'paymentRef',
+          'amountMinor',
+          'currency',
+          'refundedMinor',
+          'createdAt',
+        ],
+      },
+      {
         name: 'payments',
         collection: 'payment_attempts',
         subjectField: 'userId',

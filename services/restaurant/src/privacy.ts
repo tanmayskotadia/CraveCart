@@ -4,6 +4,24 @@ export function installRestaurantPrivacy(app: Express, ctx: DomainContext) {
   installPrivacyOwner(app, ctx, 'restaurant', {
     datasets: [
       {
+        name: 'cart',
+        collection: 'carts',
+        subjectField: '_id',
+        fields: ['restaurantId', 'lines', 'version', 'updatedAt'],
+      },
+      {
+        name: 'checkout_quotes',
+        collection: 'quotes',
+        subjectField: 'userId',
+        fields: ['address', 'restaurant', 'lines', 'totals', 'createdAt', 'expiresAt', 'policies'],
+      },
+      {
+        name: 'seller_applications',
+        collection: 'applications',
+        subjectField: 'userId',
+        fields: ['kind', 'status', 'profile', 'documentIds', 'createdAt', 'updatedAt', 'reason'],
+      },
+      {
         name: 'orders',
         collection: 'orders',
         subjectField: 'userId',
@@ -27,7 +45,7 @@ export function installRestaurantPrivacy(app: Express, ctx: DomainContext) {
         name: 'reviews',
         collection: 'reviews',
         subjectField: 'userId',
-        fields: ['orderId', 'restaurantId', 'rating', 'text', 'at', 'moderation', 'reply'],
+        fields: ['orderId', 'restaurantId', 'rating', 'text', 'at', 'moderation', 'response'],
       },
       {
         name: 'favorites',
@@ -87,50 +105,53 @@ export function installRestaurantPrivacy(app: Express, ctx: DomainContext) {
       await ctx.db.collection('carts').deleteMany({ _id: userId as never }, { session });
       for (const collection of ['favorites', 'reorder_previews'])
         await ctx.db.collection(collection).deleteMany({ userId }, { session });
-      await ctx.db
-        .collection('reviews')
-        .updateMany(
-          { userId },
-          {
-            $set: {
-              text: 'Review removed after account closure',
-              authorName: 'Deleted account',
-              moderation: 'HIDDEN',
-            },
-            $unset: { reply: '' },
+      await ctx.db.collection('reviews').updateMany(
+        { userId },
+        {
+          $set: {
+            text: 'Review removed after account closure',
+            moderation: 'HIDDEN',
+            response: null,
           },
+        },
+        { session },
+      );
+      await ctx.db.collection('restaurant_staff').deleteMany({ userId }, { session });
+      await ctx.db
+        .collection('applications')
+        .updateMany(
+          { userId, status: { $ne: 'APPROVED' } },
+          { $set: { status: 'REJECTED', reason: 'Account closure' }, $inc: { version: 1 } },
           { session },
         );
-      await ctx.db.collection('restaurant_staff').deleteMany({ userId }, { session });
       return [
         'Order/payment snapshots including delivery details, refund evidence, consent and legally relevant verification records',
       ];
     },
     minimizeRetained: async (userId, session) => {
       await ctx.db
-        .collection('orders')
-        .updateMany(
-          { userId, status: { $in: ['DELIVERED', 'CANCELLED', 'REJECTED', 'EXPIRED'] } },
-          {
-            $set: { privacyErased: true },
-            $unset: { 'quote.address': '', cancellationReason: '' },
+        .collection('quotes')
+        .updateMany({ userId }, { $unset: { address: '' } }, { session });
+      await ctx.db.collection('orders').updateMany(
+        { userId, status: { $in: ['DELIVERED', 'CANCELLED', 'REJECTED', 'EXPIRED'] } },
+        {
+          $set: { privacyErased: true },
+          $unset: { 'quote.address': '', cancellationReason: '' },
+        },
+        { session },
+      );
+      await ctx.db.collection('applications').updateMany(
+        { userId },
+        {
+          $set: {
+            'profile.fullName': 'Deleted account',
+            'profile.address': 'Removed after retention',
+            documentIds: [],
           },
-          { session },
-        );
-      await ctx.db
-        .collection('applications')
-        .updateMany(
-          { userId },
-          {
-            $set: {
-              'profile.fullName': 'Deleted account',
-              'profile.address': 'Removed after retention',
-              documentIds: [],
-            },
-            $unset: { 'profile.vehicleRegistration': '' },
-          },
-          { session },
-        );
+          $unset: { 'profile.vehicleRegistration': '' },
+        },
+        { session },
+      );
     },
   });
 }

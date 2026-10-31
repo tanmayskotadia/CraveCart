@@ -399,6 +399,10 @@ envVarGroups:
         value: 'false'
       - key: FINANCE_DUAL_APPROVAL_THRESHOLD_MINOR
         value: '0'
+      - key: PRIVACY_RETENTION_REVIEWED
+        value: 'false'
+      - key: PRIVACY_FINANCIAL_RETENTION_DAYS
+        sync: false
       - key: MONGO_DB_PREFIX
         value: cravecart_staging
       - key: UPLOAD_SCAN_MODE

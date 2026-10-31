@@ -93,6 +93,49 @@ test('dish search preserves the query through city selection', async ({ page }) 
   await expect(page).toHaveURL(/city=kochi&q=Biryani/);
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Biryani in Kochi');
 });
+test('filters preserve the dish search and recover from an empty page', async ({ page }) => {
+  await page.goto('/search?city=chennai&q=Biryani&diet=veg&maxMinutes=20&page=9');
+  await expect(
+    page.getByRole('heading', { name: 'No restaurants match this view.' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Return to first page' }).click();
+  await expect(page).not.toHaveURL(/page=/);
+  await expect(page).toHaveURL(/diet=veg/);
+  await page.getByRole('button', { name: 'Remove Vegetarian', exact: true }).click();
+  await expect(page).not.toHaveURL(/diet=/);
+  await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  await expect(page).toHaveURL(/city=chennai&q=Biryani$/);
+  await page.getByRole('button', { name: 'Adjust filters', exact: true }).click();
+  await expect(page.getByLabel('Dietary preference', { exact: true })).toBeVisible();
+  await page.getByLabel('Dietary preference', { exact: true }).selectOption('vegan');
+  await expect(page.getByRole('button', { name: 'Remove Vegan', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await page.getByRole('button', { name: 'Clear dish search' }).click();
+  await expect(page).not.toHaveURL(/q=/);
+  await expect(page).toHaveURL(/diet=vegan/);
+});
+
+test('header city selection keeps the current search and clear text restores focus', async ({
+  page,
+}) => {
+  await page.goto('/search?city=chennai&q=Biryani');
+  await page
+    .getByRole('button', { name: 'Change browsing city, currently Chennai', exact: true })
+    .click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('searchbox').fill('Kochi');
+  await dialog.getByRole('button', { name: 'Kochi Kerala' }).click();
+  await expect(page).toHaveURL(/city=kochi&q=Biryani/);
+  await page.getByRole('button', { name: 'Clear search text', exact: true }).click();
+  const search = page.getByRole('textbox', { name: 'Search for a dish or cuisine' });
+  await expect(search).toHaveValue('');
+  await expect(search).toBeFocused();
+  await page.getByRole('button', { name: 'Explore food', exact: true }).click();
+  await expect(page).not.toHaveURL(/q=/);
+});
+
 test('login validates contacts and labels development delivery explicitly', async ({ page }) => {
   await page.goto('/');
   await page
@@ -125,23 +168,23 @@ test('signup and modal deep-link refresh work', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Every craving.');
 });
 
-test('workspace access connects four distinct sign-ins without public admin registration', async ({
-  page,
-}) => {
-  await page.goto('/access');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText(
-    'A place for every appetite.',
-  );
-  await expect(page.locator('.access-card')).toHaveCount(4);
-  await expect(
-    page.getByRole('link', { name: /admin.*(register|create)|register.*admin/i }),
-  ).toHaveCount(0);
-  for (const [label, path, title] of [
-    ['Customer', '/login', 'Log in'],
-    ['Restaurant', '/seller/login', 'Restaurant partner login'],
-    ['Delivery partner', '/rider/login', 'Delivery partner login'],
-    ['Administration', '/admin/login', 'Team login'],
-  ]) {
+for (const [label, path, title] of [
+  ['Customer', '/login', 'Log in'],
+  ['Restaurant', '/seller/login', 'Restaurant partner login'],
+  ['Delivery partner', '/rider/login', 'Delivery partner login'],
+  ['Administration', '/admin/login', 'Team login'],
+]) {
+  test(`workspace access connects ${label} sign-in without public admin registration`, async ({
+    page,
+  }) => {
+    await page.goto('/access');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'A place for every appetite.',
+    );
+    await expect(page.locator('.access-card')).toHaveCount(4);
+    await expect(
+      page.getByRole('link', { name: /admin.*(register|create)|register.*admin/i }),
+    ).toHaveCount(0);
     await page
       .getByRole('main')
       .getByRole('link', { name: `${label} login`, exact: true })
@@ -151,12 +194,12 @@ test('workspace access connects four distinct sign-ins without public admin regi
     await expect(dialog).toHaveAccessibleName(title!);
     await dialog.getByRole('link', { name: 'Choose a different workspace' }).click();
     await expect(page).toHaveURL(/\/access$/);
-  }
-  await page.reload();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
-  );
-});
+    await page.reload();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+  });
+}
 test('workspace access has a responsive visual record', async ({ page }, testInfo) => {
   await page.goto('/access');
   await expect(page.locator('.access-card')).toHaveCount(4);

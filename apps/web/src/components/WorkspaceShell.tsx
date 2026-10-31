@@ -1,7 +1,8 @@
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useSession } from './SessionProvider';
 import { MfaDialog } from './Authenticator';
+import { Icon } from './Icon';
 
 export function RequireSession({
   children,
@@ -155,6 +156,10 @@ export function WorkspaceShell({
 }) {
   const { session } = useSession();
   const [mfa, setMfa] = useState(false);
+  const [menuPath, setMenuPath] = useState<string | null>(null);
+  const location = useLocation();
+  const navigationId = useId();
+  const menuOpen = menuPath === location.pathname;
   const active = role ?? session?.principal.workspace ?? 'customer';
   return (
     <div className="workspace-layout page-width">
@@ -170,7 +175,20 @@ export function WorkspaceShell({
                 : 'My account'}
         </h2>
         <p className="workspace-person">{session?.principal.name}</p>
-        <nav aria-label="Workspace navigation">
+        <button
+          className="workspace-menu-toggle"
+          aria-expanded={menuOpen}
+          aria-controls={navigationId}
+          onClick={() => setMenuPath(menuOpen ? null : location.pathname)}
+        >
+          <span>Workspace menu</span>
+          <Icon name={menuOpen ? 'close' : 'down'} size={18} />
+        </button>
+        <nav
+          id={navigationId}
+          className={menuOpen ? 'workspace-nav is-expanded' : 'workspace-nav'}
+          aria-label="Workspace navigation"
+        >
           {navigation[active]
             .filter(
               ([label]) =>
@@ -181,7 +199,12 @@ export function WorkspaceShell({
                 !(label === 'Rider profile' && !session?.principal.roles.includes('rider')),
             )
             .map(([label, path]) => (
-              <NavLink key={path} to={path} end>
+              <NavLink
+                key={path}
+                to={path}
+                end={path === '/settings'}
+                onClick={() => setMenuPath(null)}
+              >
                 {label}
               </NavLink>
             ))}

@@ -131,7 +131,10 @@ try {
       }
       await new Promise((r) => setTimeout(r, 500));
     }
-    if (!up) throw new Error('Test server did not start');
+    if (!up)
+      throw new Error(
+        `Isolated ${port === ports[7] ? 'frontend' : names[ports.indexOf(port)]} test server did not become live on its reserved port`,
+      );
   }
   const probe = await runProbe({
     url: `http://127.0.0.1:${ports[0]}/api/v1/platform`,

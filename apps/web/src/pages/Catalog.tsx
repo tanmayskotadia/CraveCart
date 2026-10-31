@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
@@ -14,6 +14,34 @@ import { useSession } from '../components/SessionProvider';
 import { ErrorNotice, WorkspaceShell } from '../components/WorkspaceShell';
 import { Modal } from '../components/Modal';
 import { Field, money, imageUrl } from '../components/CatalogFields';
+import { Icon } from '../components/Icon';
+const discoveryFilters = [
+  'cuisine',
+  'diet',
+  'open',
+  'maxPrice',
+  'maxMinutes',
+  'minRating',
+  'sort',
+] as const;
+function filterLabel(name: string, value: string) {
+  switch (name) {
+    case 'diet':
+      return { veg: 'Vegetarian', vegan: 'Vegan', 'non-veg': 'Non-vegetarian' }[value] ?? value;
+    case 'open':
+      return 'Open now';
+    case 'maxPrice':
+      return `Up to ${money(Number(value))} for two`;
+    case 'maxMinutes':
+      return `Prep under ${value} min`;
+    case 'minRating':
+      return `Rated ${value}+`;
+    case 'sort':
+      return value === 'price' ? 'Sort: price' : 'Sort: preparation';
+    default:
+      return value;
+  }
+}
 export interface CatalogData {
   restaurant: Restaurant;
   items: MenuItem[];
@@ -65,6 +93,11 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
 export function RestaurantResults({ city }: { city: string }) {
   const [params, setParams] = useSearchParams(),
     { session } = useSession();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersId = useId();
+  const activeFilters = discoveryFilters.filter(
+    (name) => params.get(name) && !(name === 'sort' && params.get(name) === 'name'),
+  );
   const key = new URLSearchParams({
     city,
     q: params.get('q') ?? '',
@@ -102,6 +135,12 @@ export function RestaurantResults({ city }: { city: string }) {
     next.delete('page');
     if (value) next.set(name, value);
     else next.delete(name);
+    setParams(next, { replace: name === 'cuisine' });
+  }
+  function clearFilters() {
+    const next = new URLSearchParams(params);
+    for (const name of discoveryFilters) next.delete(name);
+    next.delete('page');
     setParams(next);
   }
   return (
@@ -124,72 +163,107 @@ export function RestaurantResults({ city }: { city: string }) {
         </p>
       )}
       <ErrorNotice error={service.error} />
-      <div className="catalog-filters">
-        <Field label="Sort by">
-          <select
-            value={params.get('sort') ?? 'name'}
-            onChange={(e) => filter('sort', e.target.value)}
-          >
-            <option value="name">Name</option>
-            <option value="price">Price for two</option>
-            <option value="preparation">Preparation time</option>
-          </select>
-        </Field>
-        <Field label="Dietary preference">
-          <select value={params.get('diet') ?? ''} onChange={(e) => filter('diet', e.target.value)}>
-            <option value="">All food</option>
-            <option value="veg">Vegetarian</option>
-            <option value="vegan">Vegan</option>
-            <option value="non-veg">Non-vegetarian</option>
-          </select>
-        </Field>
-        <Field label="Cuisine">
-          <input
-            placeholder="e.g. Indian"
-            maxLength={40}
-            value={params.get('cuisine') ?? ''}
-            onChange={(e) => filter('cuisine', e.target.value)}
-          />
-        </Field>
-        <Field label="Budget for two">
-          <select
-            value={params.get('maxPrice') ?? ''}
-            onChange={(e) => filter('maxPrice', e.target.value)}
-          >
-            <option value="">Any budget</option>
-            <option value="30000">Up to ₹300</option>
-            <option value="60000">Up to ₹600</option>
-            <option value="100000">Up to ₹1,000</option>
-          </select>
-        </Field>
-        <Field label="Preparation time">
-          <select
-            value={params.get('maxMinutes') ?? ''}
-            onChange={(e) => filter('maxMinutes', e.target.value)}
-          >
-            <option value="">Any time</option>
-            <option value="20">Up to 20 minutes</option>
-            <option value="40">Up to 40 minutes</option>
-          </select>
-        </Field>
-        <Field label="Rating">
-          <select
-            value={params.get('minRating') ?? ''}
-            onChange={(e) => filter('minRating', e.target.value)}
-          >
-            <option value="">All ratings</option>
-            <option value="4">4 and above</option>
-            <option value="3">3 and above</option>
-          </select>
-        </Field>
-        <label className="filter-check">
-          <input
-            type="checkbox"
-            checked={params.get('open') === 'true'}
-            onChange={(e) => filter('open', e.target.checked ? 'true' : '')}
-          />{' '}
-          Open now
-        </label>
+      <div className="catalog-filter-toolbar">
+        <button
+          className="outline-button filter-toggle"
+          aria-expanded={filtersOpen}
+          aria-controls={filtersId}
+          onClick={() => setFiltersOpen(!filtersOpen)}
+        >
+          <Icon name="sliders" size={18} /> Filters{' '}
+          {activeFilters.length > 0 && <span className="filter-count">{activeFilters.length}</span>}
+          <Icon name="down" size={15} />
+        </button>
+        <div className="active-filters" role="group" aria-label="Applied filters">
+          {activeFilters.map((name) => (
+            <button
+              key={name}
+              className="filter-chip"
+              aria-label={`Remove ${filterLabel(name, params.get(name)!)}`}
+              onClick={() => filter(name, '')}
+            >
+              {filterLabel(name, params.get(name)!)}
+              <Icon name="close" size={14} />
+            </button>
+          ))}
+        </div>
+        {activeFilters.length > 0 && (
+          <button className="text-link" onClick={clearFilters}>
+            Clear filters
+          </button>
+        )}
+      </div>
+      <div id={filtersId} hidden={!filtersOpen}>
+        <div className="catalog-filters">
+          <Field label="Sort by">
+            <select
+              value={params.get('sort') ?? 'name'}
+              onChange={(e) => filter('sort', e.target.value)}
+            >
+              <option value="name">Name</option>
+              <option value="price">Price for two</option>
+              <option value="preparation">Preparation time</option>
+            </select>
+          </Field>
+          <Field label="Dietary preference">
+            <select
+              value={params.get('diet') ?? ''}
+              onChange={(e) => filter('diet', e.target.value)}
+            >
+              <option value="">All food</option>
+              <option value="veg">Vegetarian</option>
+              <option value="vegan">Vegan</option>
+              <option value="non-veg">Non-vegetarian</option>
+            </select>
+          </Field>
+          <Field label="Cuisine">
+            <input
+              placeholder="e.g. Indian"
+              maxLength={40}
+              value={params.get('cuisine') ?? ''}
+              onChange={(e) => filter('cuisine', e.target.value)}
+            />
+          </Field>
+          <Field label="Budget for two">
+            <select
+              value={params.get('maxPrice') ?? ''}
+              onChange={(e) => filter('maxPrice', e.target.value)}
+            >
+              <option value="">Any budget</option>
+              <option value="30000">Up to ₹300</option>
+              <option value="60000">Up to ₹600</option>
+              <option value="100000">Up to ₹1,000</option>
+            </select>
+          </Field>
+          <Field label="Preparation time">
+            <select
+              value={params.get('maxMinutes') ?? ''}
+              onChange={(e) => filter('maxMinutes', e.target.value)}
+            >
+              <option value="">Any time</option>
+              <option value="20">Up to 20 minutes</option>
+              <option value="40">Up to 40 minutes</option>
+            </select>
+          </Field>
+          <Field label="Rating">
+            <select
+              value={params.get('minRating') ?? ''}
+              onChange={(e) => filter('minRating', e.target.value)}
+            >
+              <option value="">All ratings</option>
+              <option value="4">4 and above</option>
+              <option value="3">3 and above</option>
+            </select>
+          </Field>
+          <label className="filter-check">
+            <input
+              type="checkbox"
+              checked={params.get('open') === 'true'}
+              onChange={(e) => filter('open', e.target.checked ? 'true' : '')}
+            />{' '}
+            Open now
+          </label>
+        </div>
       </div>
       <div className="section-title-row">
         <h2>Restaurants in your city</h2>
@@ -199,7 +273,20 @@ export function RestaurantResults({ city }: { city: string }) {
       </div>
       <ErrorNotice error={query.error} />
       {query.isPending ? (
-        <p role="status">Finding your next favourite…</p>
+        <div>
+          <p role="status" className="catalog-loading-label">
+            Finding your next favourite…
+          </p>
+          <div className="restaurant-grid catalog-skeletons" aria-hidden="true">
+            {[1, 2, 3].map((item) => (
+              <div className="restaurant-skeleton" key={item}>
+                <div />
+                <span />
+                <span />
+              </div>
+            ))}
+          </div>
+        </div>
       ) : query.error ? (
         <button className="outline-button" onClick={() => void query.refetch()}>
           Try again
@@ -215,42 +302,59 @@ export function RestaurantResults({ city }: { city: string }) {
               <RestaurantCard key={restaurant.id} restaurant={restaurant} />
             ))}
           </div>
-          <div className="pagination">
-            <button
-              className="outline-button"
-              disabled={query.data.page <= 1}
-              onClick={() => {
-                const next = new URLSearchParams(params);
-                next.set('page', String(query.data!.page - 1));
-                setParams(next);
-              }}
-            >
-              Previous
-            </button>
-            <span>Page {query.data.page}</span>
-            <button
-              className="outline-button"
-              disabled={query.data.page * query.data.pageSize >= query.data.total}
-              onClick={() => {
-                const next = new URLSearchParams(params);
-                next.set('page', String(query.data!.page + 1));
-                setParams(next);
-              }}
-            >
-              Next
-            </button>
-          </div>
+          {(query.data.total > query.data.pageSize || query.data.page > 1) && (
+            <div className="pagination">
+              <button
+                className="outline-button"
+                disabled={query.data.page <= 1}
+                onClick={() => {
+                  const next = new URLSearchParams(params);
+                  next.set('page', String(query.data!.page - 1));
+                  setParams(next);
+                }}
+              >
+                Previous
+              </button>
+              <span>Page {query.data.page}</span>
+              <button
+                className="outline-button"
+                disabled={query.data.page * query.data.pageSize >= query.data.total}
+                onClick={() => {
+                  const next = new URLSearchParams(params);
+                  next.set('page', String(query.data!.page + 1));
+                  setParams(next);
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </>
       ) : (
         <div className="catalog-empty">
+          <span className="empty-search-icon">
+            <Icon name="search" size={25} />
+          </span>
           <h3>No restaurants match this view.</h3>
           <p>
             Try another cuisine, fewer filters, or a different city. New restaurants appear after
             verification and publication.
           </p>
-          <button className="outline-button" onClick={() => setParams({ city })}>
-            Clear filters
-          </button>
+          <div className="empty-actions">
+            {Number(params.get('page')) > 1 && (
+              <button className="outline-button" onClick={() => filter('page', '')}>
+                Return to first page
+              </button>
+            )}
+            {params.get('q') && (
+              <button className="outline-button" onClick={() => filter('q', '')}>
+                Clear dish search
+              </button>
+            )}
+            <button className="outline-button" onClick={() => setFiltersOpen(true)}>
+              Adjust filters
+            </button>
+          </div>
         </div>
       )}
     </>
@@ -837,6 +941,7 @@ export function CartPage() {
   const query = useQuery({
       queryKey: ['cart', session?.principal.userId],
       queryFn: () => api<CartState>('/cart'),
+      refetchOnMount: 'always',
     }),
     addresses = useQuery({
       queryKey: ['addresses', session?.principal.userId],
