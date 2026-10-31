@@ -168,11 +168,79 @@ test('signup and modal deep-link refresh work', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Every craving.');
 });
 
+test('customer login keeps Home and refresh in discovery until explicit logout', async ({
+  page,
+}) => {
+  let signedIn = false;
+  const session = {
+    principal: {
+      userId: '88c27ad9-c409-4cee-a767-98037a4ee341',
+      sessionId: 'a0bbb917-72b6-4be6-80d7-31818a1abc59',
+      name: 'Local Customer',
+      contact: '9876543210',
+      roles: ['customer'],
+      permissions: [],
+      workspace: 'customer',
+      mfaEnabled: false,
+      mfaVerifiedAt: null,
+      authenticatedAt: new Date().toISOString(),
+    },
+    csrfToken: 'browser-session-fixture-csrf-token-1234567890',
+    accessExpiresAt: new Date(Date.now() + 900000).toISOString(),
+  };
+  await page.route('**/api/v1/auth/me', async (route) => {
+    // A slow session lookup must not flash the marketing landing page after refresh.
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await route.fulfill(
+      signedIn
+        ? { json: { data: session } }
+        : {
+            status: 401,
+            json: { error: { code: 'UNAUTHENTICATED', message: 'Sign in required' } },
+          },
+    );
+  });
+  await page.route('**/api/v1/auth/otp/verify', (route) => {
+    signedIn = true;
+    return route.fulfill({ json: { data: session } });
+  });
+  await page.route('**/api/v1/auth/logout', (route) => {
+    signedIn = false;
+    return route.fulfill({ json: { data: { success: true } } });
+  });
+  await page.goto('/search?city=chennai');
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Log in', exact: true })
+    .click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toHaveAccessibleName('Log in');
+  await dialog.getByLabel('Mobile number', { exact: true }).fill('9876543210');
+  await dialog.getByRole('button', { name: 'Send one-time password' }).click();
+  await dialog.getByLabel('Verification code', { exact: true }).fill('123456');
+  await dialog.getByRole('button', { name: 'Verify and continue' }).click();
+  await expect(page).toHaveURL(/\/search\?city=chennai$/);
+  await page.getByRole('link', { name: 'CraveCart home', exact: true }).click();
+  await expect(page).toHaveURL(/\/search\?city=chennai$/);
+  await page.goto('/');
+  await expect(page.locator('.hero')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/search\?city=chennai$/);
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Hello, Chennai.');
+  await page.goto('/login');
+  await expect(page).toHaveURL(/\/search\?city=chennai$/);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('.hero')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Every corner of India.');
+});
+
 for (const [label, path, title] of [
   ['Customer', '/login', 'Log in'],
   ['Restaurant', '/seller/login', 'Restaurant partner login'],
   ['Delivery partner', '/rider/login', 'Delivery partner login'],
-  ['Administration', '/admin/login', 'Team login'],
+  ['Administration', '/admin/login', 'Admin login'],
 ]) {
   test(`workspace access connects ${label} sign-in without public admin registration`, async ({
     page,
@@ -192,7 +260,19 @@ for (const [label, path, title] of [
     await expect(page).toHaveURL(new RegExp(`${path}$`));
     const dialog = page.getByRole('dialog');
     await expect(dialog).toHaveAccessibleName(title!);
-    await dialog.getByRole('link', { name: 'Choose a different workspace' }).click();
+    if (label === 'Customer') {
+      await expect(dialog.getByRole('link', { name: 'Choose a different workspace' })).toHaveCount(
+        0,
+      );
+      await expect(
+        page
+          .getByRole('navigation', { name: 'Main navigation' })
+          .getByRole('link', { name: /restaurant|partner|workspace/i }),
+      ).toHaveCount(0);
+      await page.goto('/access');
+    } else {
+      await dialog.getByRole('link', { name: 'Choose a different workspace' }).click();
+    }
     await expect(page).toHaveURL(/\/access$/);
     await page.reload();
     expect(
@@ -200,6 +280,63 @@ for (const [label, path, title] of [
     ).toBe(true);
   });
 }
+test('footer admin login accepts private credentials and still requires an authenticator', async ({
+  page,
+}, testInfo) => {
+  const loginId = `synthetic-admin-${testInfo.project.name}@example.test`;
+  const password = `synthetic-${Date.now()}-${testInfo.project.name}-password`;
+  await page.route('**/api/v1/auth/capabilities', (route) =>
+    route.fulfill({
+      json: {
+        data: {
+          methods: ['phone', 'email'],
+          developmentDelivery: true,
+          adminPasswordEnabled: true,
+        },
+      },
+    }),
+  );
+  await page.route('**/api/v1/auth/admin/password', async (route) => {
+    const body = route.request().postDataJSON();
+    expect(body.loginId).toBe(loginId);
+    await route.fulfill(
+      body.password === password
+        ? {
+            json: {
+              data: {
+                mfaChallengeId: 'synthetic-admin-mfa-challenge-1234567890',
+                enrollmentRequired: false,
+              },
+            },
+          }
+        : {
+            status: 401,
+            json: {
+              error: {
+                code: 'INVALID_ADMIN_CREDENTIALS',
+                message: 'Admin login ID or password is incorrect',
+              },
+            },
+          },
+    );
+  });
+  await page.goto('/');
+  await page.locator('footer').getByRole('link', { name: 'Admin login', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Admin login', exact: true });
+  await dialog.getByLabel('Admin login ID', { exact: true }).fill(loginId);
+  await expect(dialog.getByLabel('Password', { exact: true })).toHaveAttribute('type', 'password');
+  await dialog.getByLabel('Password', { exact: true }).fill('incorrect');
+  await dialog.getByRole('button', { name: 'Sign in as admin', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('incorrect');
+  await dialog.getByLabel('Password', { exact: true }).fill(password);
+  await dialog.getByRole('button', { name: 'Sign in as admin', exact: true }).click();
+  await expect(
+    page.getByRole('dialog').getByLabel('Authenticator or recovery code', { exact: true }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/login$/);
+  await expect(page.getByRole('dialog').getByLabel('Password', { exact: true })).toHaveCount(0);
+});
+
 test('workspace access has a responsive visual record', async ({ page }, testInfo) => {
   await page.goto('/access');
   await expect(page.locator('.access-card')).toHaveCount(4);
@@ -235,7 +372,7 @@ test('protected deep links and driver aliases cannot reveal private content', as
   await page.goto('/admin/dashboard');
   await expect(page.getByRole('heading', { name: 'Sign in to continue' })).toBeVisible();
   await page.getByRole('link', { name: 'Go to admin access' }).click();
-  await expect(page.getByRole('dialog', { name: 'Team login' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Admin login' })).toBeVisible();
   await page.goto('/driver/deliveries/delivery_001');
   await expect(page).toHaveURL(/\/rider\/deliveries\/delivery_001$/);
   await expect(page.getByRole('heading', { name: 'Sign in to continue' })).toBeVisible();
