@@ -1,0 +1,679 @@
+/* Customer food discovery: warm surfaces, generous photography, clear actions. */
+.site-header {
+  position: relative;
+  background: #fff;
+  color: #292229;
+}
+.site-header.header-overlay {
+  position: absolute;
+  background: transparent;
+  color: #fff;
+}
+.header-inner {
+  max-width: 1280px;
+  min-height: 88px;
+  gap: 28px;
+  padding: 16px 32px;
+}
+.header-inner .brand {
+  font-size: 31px;
+  letter-spacing: -1.8px;
+}
+.header-inner nav {
+  gap: 24px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.header-browse {
+  border: 0;
+  padding: 0;
+  min-height: 44px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.header-overlay .header-city {
+  color: #fff;
+}
+.header-city {
+  border-left: 1px solid #e7ddd9;
+  padding-left: 24px;
+}
+.header-city > svg:first-child {
+  color: #d62f49;
+}
+.header-inner .signup-link {
+  border: 0;
+  padding: 10px 19px;
+  border-radius: 12px;
+  background: #fff0ef;
+  color: #a72b3e;
+}
+.header-inner nav .header-cart {
+  width: auto;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 20px;
+  gap: 10px;
+  border-radius: 12px;
+  background: #d9324b;
+  color: white;
+  box-shadow: 0 5px 14px #d9324b20;
+}
+.header-inner nav .header-cart:hover {
+  opacity: 1;
+  background: #bb243c;
+}
+.header-logout {
+  font-size: 12px;
+}
+.partner-portal-label {
+  padding-left: 24px;
+  border-left: 1px solid #e7ddd9;
+  color: #8b3844;
+  font-size: 13px;
+  font-weight: 600;
+}
+.partner-header nav a {
+  gap: 10px;
+}
+.partner-entry {
+  min-height: 75vh;
+  padding-top: 120px;
+  background: #fff9f5;
+}
+.partner-entry h1 {
+  max-width: 600px;
+  font-size: 52px;
+  line-height: 1.15;
+  margin: 25px 0;
+}
+.discovery-v2.page-width {
+  max-width: 1280px;
+  padding: 24px 32px 60px;
+}
+.discovery-v2 .breadcrumbs {
+  margin-bottom: 22px;
+  font-size: 11px;
+  color: #716168;
+}
+.craving-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  align-items: center;
+  min-height: 365px;
+  padding: 42px 44px;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #fff2e8;
+}
+.craving-hero-copy {
+  z-index: 1;
+  min-width: 0;
+}
+.craving-hero-copy .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a74739;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+.craving-hero-copy .eyebrow > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d94342;
+}
+.craving-hero h1 {
+  font-size: clamp(30px, 3.4vw, 46px);
+  line-height: 1.18;
+  font-weight: 800;
+  letter-spacing: -1.8px;
+  margin: 16px 0;
+  color: #38272d;
+  max-width: 570px;
+}
+.craving-hero h1 > span:not(.sr-only) {
+  color: #d6384e;
+}
+.craving-hero-copy > p:not(.eyebrow) {
+  font-size: 13px;
+  color: #79676b;
+  max-width: 350px;
+  line-height: 1.9;
+}
+.craving-hero .search-bar {
+  min-height: 60px;
+  margin: 25px 0 0;
+  border: 1px solid #edddd3;
+  border-radius: 13px;
+  box-shadow: 0 6px 18px #7f3c2310;
+  width: calc(100% + 40px);
+}
+.craving-hero .location-button {
+  min-width: 145px;
+  padding-inline: 14px;
+  gap: 8px;
+}
+.craving-hero .search-input {
+  padding-left: 12px;
+  gap: 8px;
+}
+.craving-hero .search-input input {
+  font-size: 13px;
+}
+.craving-hero .search-submit {
+  border-radius: 10px;
+}
+.hero-search-hint {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #795344;
+  font-size: 10px;
+  margin-top: 15px;
+}
+.craving-hero-art {
+  position: relative;
+  height: 290px;
+  margin-right: -20px;
+}
+.food-orbit {
+  position: absolute;
+  width: 285px;
+  height: 285px;
+  right: 5px;
+  top: 0;
+  border: 1px dashed #e9c4aa;
+  border-radius: 50%;
+  background: #ffdfbc;
+}
+.hero-food-main {
+  position: absolute;
+  width: 270px;
+  height: 270px;
+  right: 12px;
+  top: 8px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 18px 32px #653b3426;
+  transform: rotate(-12deg);
+}
+.hero-food-small {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border: 7px solid #fff8ee;
+  bottom: -6px;
+  left: 15px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 8px 20px #69443415;
+  transform: rotate(12deg);
+}
+.food-note {
+  position: absolute;
+  right: -6px;
+  bottom: -1px;
+  padding: 13px 17px;
+  border-radius: 13px;
+  background: #fffef9;
+  color: #80634f;
+  box-shadow: 0 4px 20px #a16c3310;
+  font-size: 10px;
+  line-height: 1.7;
+  transform: rotate(-5deg);
+}
+.food-note strong {
+  color: #573d32;
+}
+.food-spark {
+  position: absolute;
+  font-size: 30px;
+  color: #cf523e;
+}
+.spark-one {
+  top: 14px;
+  left: 15px;
+}
+.spark-two {
+  right: -10px;
+  top: 130px;
+  color: #e3a74d;
+  font-size: 20px;
+}
+.discovery-v2 .delivery-tabs {
+  margin-top: 14px;
+  gap: 30px;
+}
+.discovery-v2 .delivery-tabs > * {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  padding: 20px 10px;
+  font-weight: 600;
+}
+.discovery-v2 .delivery-tabs .active {
+  border-bottom: 3px solid #d9324b;
+  color: #b2253c;
+}
+.craving-picks {
+  padding: 32px 0 24px;
+}
+.discovery-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 23px;
+}
+.discovery-section-heading .eyebrow {
+  color: #896048;
+  font-size: 9px;
+  letter-spacing: 1.8px;
+  margin-bottom: 7px;
+}
+.discovery-section-heading h2 {
+  color: #33262d;
+  font-size: 25px;
+  letter-spacing: -0.8px;
+}
+.discovery-section-heading > span {
+  color: #716168;
+  font-size: 11px;
+}
+.craving-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.craving-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 155px;
+  padding: 24px 20px;
+  border-radius: 20px;
+  background: #fff5e7;
+  overflow: hidden;
+  border: 1px solid transparent;
+  transition:
+    transform 180ms,
+    box-shadow 180ms;
+}
+.craving-card:nth-child(2) {
+  background: #fff0ee;
+}
+.craving-card:nth-child(3) {
+  background: #f0f5e9;
+}
+.craving-card.selected {
+  border-color: #db6b5e;
+}
+.craving-card > div {
+  z-index: 1;
+  width: 59%;
+}
+.craving-card h3 {
+  font-size: 18px;
+  letter-spacing: -0.6px;
+  color: #3d2d32;
+}
+.craving-card p {
+  font-size: 12px;
+  color: #725751;
+  margin-top: 4px;
+}
+.craving-card img {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  right: -16px;
+  bottom: -13px;
+  border-radius: 50%;
+  object-fit: cover;
+  transform: rotate(-12deg);
+  box-shadow: 0 7px 15px #46382c18;
+}
+.craving-card-arrow {
+  display: inline-flex;
+  margin-top: 14px;
+  color: #a33b43;
+}
+.craving-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px #57352d0d;
+}
+.discovery-v2 .discovery-address {
+  margin: 10px 0 20px;
+  padding: 15px 20px;
+  border: 1px solid #eee4df;
+  border-radius: 14px;
+  background: #fffdf9;
+  color: #715a52;
+  font-size: 11px;
+}
+.discovery-v2 .discovery-address .text-link {
+  white-space: nowrap;
+  font-weight: 700;
+}
+.discovery-v2 .catalog-filter-toolbar {
+  margin: 16px 0 27px;
+}
+.discovery-v2 .section-title-row h2 {
+  font-size: 26px;
+  letter-spacing: -0.8px;
+}
+.discovery-v2 .restaurant-grid {
+  gap: 25px;
+  margin-top: 25px;
+}
+.discovery-v2 .restaurant-card {
+  border: 1px solid #f0e7e4;
+  border-radius: 21px;
+  padding: 10px;
+  margin: 0;
+  background: #fff;
+}
+.discovery-v2 .restaurant-card:hover {
+  border-color: #eac7c1;
+  box-shadow: 0 12px 26px #5d383111;
+}
+.discovery-v2 .restaurant-photo {
+  aspect-ratio: 1.45;
+  border-radius: 13px;
+}
+.discovery-v2 .restaurant-card-copy {
+  padding: 15px 6px 9px;
+}
+.discovery-v2 .restaurant-card h2 {
+  font-size: 16px;
+}
+.discovery-v2 .restaurant-card-copy p {
+  font-size: 11px;
+}
+.discovery-v2 .restaurant-card-meta {
+  font-size: 10px;
+}
+.discovery-v2 .service-notice {
+  margin-top: 35px;
+  background: #faf7f2;
+  border: 1px solid #f0e8df;
+  border-radius: 17px;
+  padding: 23px;
+  align-items: center;
+}
+.discovery-v2 .service-notice h2 {
+  font-size: 15px;
+}
+.discovery-v2 .service-notice p {
+  font-size: 11px;
+}
+.discovery-v2 .service-notice > .text-link {
+  color: #b32740;
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+  font-size: 11px;
+}
+@media (max-width: 950px) {
+  .header-inner nav {
+    gap: 15px;
+  }
+  .header-inner {
+    gap: 18px;
+  }
+  .header-city {
+    padding-left: 16px;
+  }
+  .craving-hero {
+    padding: 30px;
+    grid-template-columns: 1.2fr 0.8fr;
+  }
+  .craving-hero-art {
+    transform: scale(0.83);
+    transform-origin: right center;
+    margin-left: -40px;
+  }
+  .craving-card {
+    padding: 18px 15px;
+  }
+  .craving-card img {
+    width: 110px;
+    height: 110px;
+  }
+  .craving-card p {
+    max-width: 95px;
+  }
+}
+@media (max-width: 640px) {
+  .header-inner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    padding: 12px 20px 0;
+    gap: 0 12px;
+    min-height: 100px;
+  }
+  .header-inner .brand {
+    font-size: 27px;
+  }
+  .header-inner nav {
+    grid-column: 2;
+    grid-row: 1;
+    gap: 14px;
+    margin: 0;
+    font-size: 12px;
+  }
+  .header-inner .header-city {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    border-left: 0;
+    border-top: 1px solid #eadfd8;
+    max-width: none;
+    width: 100%;
+    min-height: 42px;
+    padding: 5px 0;
+    font-size: 11px;
+    gap: 7px;
+  }
+  .header-city span {
+    max-width: none;
+  }
+  .header-city > svg:first-child {
+    display: block;
+    width: 15px;
+  }
+  .header-inner nav .header-cart {
+    width: 42px;
+    padding: 0;
+    border-radius: 11px;
+  }
+  .header-cart span {
+    display: none;
+  }
+  .header-inner nav .signup-link {
+    display: none;
+  }
+  .header-logout {
+    display: inline-block;
+    font-size: 10px;
+  }
+  .partner-header .header-inner {
+    min-height: 80px;
+    padding-bottom: 12px;
+  }
+  .partner-portal-label {
+    border: 0;
+    padding: 0 0 10px;
+    font-size: 10px;
+  }
+  .partner-header nav a {
+    font-size: 10px;
+  }
+  .partner-header .brand {
+    font-size: 24px;
+  }
+  .discovery-v2.page-width {
+    padding: 18px 20px 35px;
+  }
+  .discovery-v2 .breadcrumbs {
+    margin-bottom: 15px;
+  }
+  .craving-hero {
+    display: block;
+    padding: 26px 22px 145px;
+    min-height: 0;
+    border-radius: 22px;
+  }
+  .craving-hero h1 {
+    font-size: 31px;
+    letter-spacing: -1.2px;
+    max-width: 270px;
+  }
+  .craving-hero-copy > p:not(.eyebrow) {
+    max-width: 270px;
+    font-size: 12px;
+  }
+  .craving-hero .search-bar {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0 4px 5px;
+    margin-top: 20px;
+  }
+  .craving-hero .location-button {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    min-height: 43px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #f1e6df;
+  }
+  .craving-hero .search-divider {
+    display: none;
+  }
+  .craving-hero .search-input {
+    padding: 9px 5px;
+    width: 65%;
+  }
+  .craving-hero .search-input input {
+    font-size: 12px;
+    width: 90px;
+  }
+  .craving-hero .search-submit {
+    margin: 4px;
+    width: 38px;
+    height: 38px;
+  }
+  .craving-hero .hero-search-hint {
+    font-size: 9px;
+  }
+  .craving-hero-art {
+    position: absolute;
+    width: 220px;
+    height: 210px;
+    right: 8px;
+    bottom: -77px;
+    margin: 0;
+    transform: scale(0.7);
+    transform-origin: right top;
+    pointer-events: none;
+  }
+  .craving-hero-art .hero-food-small {
+    display: none;
+  }
+  .food-note {
+    right: 195px;
+    bottom: 85px;
+    white-space: nowrap;
+  }
+  .food-spark {
+    display: none;
+  }
+  .discovery-v2 .delivery-tabs {
+    gap: 10px;
+    justify-content: space-between;
+  }
+  .discovery-v2 .delivery-tabs > * {
+    font-size: 10px;
+    padding: 17px 0;
+    gap: 6px;
+  }
+  .discovery-v2 .delivery-tabs svg {
+    width: 16px;
+  }
+  .craving-picks {
+    padding: 25px 0 15px;
+  }
+  .discovery-section-heading h2 {
+    font-size: 23px;
+  }
+  .discovery-section-heading > span {
+    display: none;
+  }
+  .craving-cards {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 0 0 12px;
+    scroll-snap-type: x mandatory;
+  }
+  .craving-card {
+    flex: 0 0 210px;
+    min-height: 134px;
+    scroll-snap-align: start;
+  }
+  .craving-card img {
+    width: 115px;
+    height: 115px;
+  }
+  .craving-card h3 {
+    font-size: 16px;
+  }
+  .discovery-v2 .discovery-address {
+    padding: 13px;
+    gap: 14px;
+    font-size: 10px;
+  }
+  .discovery-v2 .section-title-row h2 {
+    font-size: 22px;
+  }
+  .discovery-v2 .restaurant-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .discovery-v2 .restaurant-card h2 {
+    font-size: 18px;
+  }
+  .discovery-v2 .restaurant-card-copy p {
+    font-size: 12px;
+  }
+  .discovery-v2 .restaurant-card-meta {
+    font-size: 11px;
+  }
+  .discovery-v2 .service-notice {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 18px;
+  }
+  .discovery-v2 .service-notice > div {
+    flex: 1;
+    min-width: 180px;
+  }
+  .discovery-v2 .service-notice > .text-link {
+    margin-left: 36px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .craving-card {
+    transition: none;
+  }
+  .craving-card:hover {
+    transform: none;
+  }
+}
