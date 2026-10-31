@@ -41,6 +41,8 @@ export function AuthModal() {
     [code, setCode] = useState(''),
     [message, setMessage] = useState(''),
     [pending, setPending] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [contactLogin, setContactLogin] = useState(false);
   const [challenge, setChallenge] = useState<Challenge>(),
     [mfa, setMfa] = useState<MfaChallenge>(),
     [setup, setSetup] = useState<{ secret: string; uri: string }>(),
@@ -51,9 +53,14 @@ export function AuthModal() {
   const { city } = useCity();
   const capabilities = useQuery({
     queryKey: ['auth-capabilities'],
-    queryFn: () => api<{ methods: string[]; developmentDelivery: boolean }>('/auth/capabilities'),
+    queryFn: () =>
+      api<{ methods: string[]; developmentDelivery: boolean; adminPasswordEnabled?: boolean }>(
+        '/auth/capabilities',
+      ),
     retry: false,
   });
+  const passwordLogin =
+    workspace === 'admin' && capabilities.data?.adminPasswordEnabled === true && !contactLogin;
   const mode =
     capabilities.data?.methods.length === 1
       ? capabilities.data.methods[0] === 'email'
@@ -121,6 +128,30 @@ export function AuthModal() {
       setPending(false);
     }
   }
+  async function adminSignIn() {
+    setPending(true);
+    setMessage('');
+    try {
+      const result = await api<MfaChallenge>('/auth/admin/password', {
+        method: 'POST',
+        body: { loginId: value, password: adminPassword },
+      });
+      setMfa(result);
+      setCode('');
+      if (result.enrollmentRequired)
+        setSetup(
+          await api('/auth/mfa/enroll', {
+            method: 'POST',
+            body: { mfaChallengeId: result.mfaChallengeId },
+          }),
+        );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Admin sign-in failed');
+    } finally {
+      setAdminPassword('');
+      setPending(false);
+    }
+  }
   async function verify() {
     setPending(true);
     setMessage('');
@@ -167,7 +198,7 @@ export function AuthModal() {
       : challenge
         ? 'Verify your contact'
         : workspace === 'admin'
-          ? 'Team login'
+          ? 'Admin login'
           : workspace === 'seller'
             ? 'Restaurant partner login'
             : workspace === 'rider'
@@ -189,7 +220,7 @@ export function AuthModal() {
           noValidate
           onSubmit={(event) => {
             event.preventDefault();
-            void (challenge || mfa ? verify() : requestCode());
+            void (challenge || mfa ? verify() : passwordLogin ? adminSignIn() : requestCode());
           }}
         >
           {!challenge && !mfa ? (
@@ -203,45 +234,79 @@ export function AuthModal() {
                       ? 'Authorized team members only. Review partner applications and manage operations within your assigned permissions.'
                       : 'Discover restaurants, place an order and follow your delivery.'}
               </p>
-              {signup && (
+              {passwordLogin ? (
                 <>
-                  <label className="field-label" htmlFor="auth-name">
-                    Full name
+                  <label className="field-label" htmlFor="admin-login-id">
+                    Admin login ID
                   </label>
                   <input
                     className="form-input spaced-field"
-                    id="auth-name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    autoComplete="name"
-                    maxLength={80}
+                    id="admin-login-id"
+                    autoComplete="username"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    maxLength={254}
                   />
+                  <label className="field-label" htmlFor="admin-password">
+                    Password
+                  </label>
+                  <input
+                    className="form-input spaced-field"
+                    id="admin-password"
+                    type="password"
+                    autoComplete="current-password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    maxLength={128}
+                  />
+                  <p className="small-help">
+                    Use your privately provisioned admin credentials. Authenticator verification
+                    follows.
+                  </p>
+                </>
+              ) : (
+                <>
+                  {signup && (
+                    <>
+                      <label className="field-label" htmlFor="auth-name">
+                        Full name
+                      </label>
+                      <input
+                        className="form-input spaced-field"
+                        id="auth-name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        autoComplete="name"
+                        maxLength={80}
+                      />
+                    </>
+                  )}
+                  <label className="field-label" htmlFor="auth-contact">
+                    {mode === 'phone' ? 'Mobile number' : 'Email address'}
+                  </label>
+                  <div className="contact-field">
+                    {mode === 'phone' && (
+                      <span className="phone-code">
+                        <span className="india-flag" aria-hidden="true" />
+                        +91
+                        <span className="contact-divider" />
+                      </span>
+                    )}
+                    <input
+                      id="auth-contact"
+                      type={mode === 'phone' ? 'tel' : 'email'}
+                      autoComplete={mode === 'phone' ? 'tel-national' : 'email'}
+                      placeholder={mode === 'phone' ? 'Phone number' : 'you@example.com'}
+                      value={value}
+                      onChange={(e) => {
+                        setValue(e.target.value);
+                        setMessage('');
+                      }}
+                      maxLength={mode === 'phone' ? 14 : 254}
+                    />
+                  </div>
                 </>
               )}
-              <label className="field-label" htmlFor="auth-contact">
-                {mode === 'phone' ? 'Mobile number' : 'Email address'}
-              </label>
-              <div className="contact-field">
-                {mode === 'phone' && (
-                  <span className="phone-code">
-                    <span className="india-flag" aria-hidden="true" />
-                    +91
-                    <span className="contact-divider" />
-                  </span>
-                )}
-                <input
-                  id="auth-contact"
-                  type={mode === 'phone' ? 'tel' : 'email'}
-                  autoComplete={mode === 'phone' ? 'tel-national' : 'email'}
-                  placeholder={mode === 'phone' ? 'Phone number' : 'you@example.com'}
-                  value={value}
-                  onChange={(e) => {
-                    setValue(e.target.value);
-                    setMessage('');
-                  }}
-                  maxLength={mode === 'phone' ? 14 : 254}
-                />
-              </div>
             </>
           ) : (
             <>
@@ -307,7 +372,10 @@ export function AuthModal() {
           <button
             className="red-button auth-submit"
             disabled={
-              pending || Boolean(!challenge && !mfa && capabilities.data?.methods.length === 0)
+              pending ||
+              Boolean(
+                !challenge && !mfa && !passwordLogin && capabilities.data?.methods.length === 0,
+              )
             }
             type="submit"
           >
@@ -315,9 +383,11 @@ export function AuthModal() {
               ? 'Please wait…'
               : challenge || mfa
                 ? 'Verify and continue'
-                : mode === 'phone'
-                  ? 'Send one-time password'
-                  : 'Continue with email'}
+                : passwordLogin
+                  ? 'Sign in as admin'
+                  : mode === 'phone'
+                    ? 'Send one-time password'
+                    : 'Continue with email'}
           </button>
           {challenge && !mfa && (
             <div className="otp-actions">
@@ -344,26 +414,41 @@ export function AuthModal() {
           )}
           {!challenge && !mfa && (
             <>
-              {Boolean(capabilities.data && capabilities.data.methods.length > 1) && (
-                <>
-                  <div className="or-divider">
-                    <span>or</span>
-                  </div>
-                  <button
-                    className="alternative-login"
-                    type="button"
-                    disabled={pending}
-                    onClick={() => {
-                      setMode(mode === 'phone' ? 'email' : 'phone');
-                      setValue('');
-                      setMessage('');
-                    }}
-                  >
-                    <Icon name={mode === 'phone' ? 'mail' : 'pin'} size={21} />
-                    Continue with {mode === 'phone' ? 'email' : 'phone'}
-                  </button>
-                </>
+              {workspace === 'admin' && capabilities.data?.adminPasswordEnabled && (
+                <button
+                  type="button"
+                  className="text-link"
+                  onClick={() => {
+                    setContactLogin(!contactLogin);
+                    setValue('');
+                    setAdminPassword('');
+                    setMessage('');
+                  }}
+                >
+                  {contactLogin ? 'Use admin ID and password' : 'Use contact verification instead'}
+                </button>
               )}
+              {!passwordLogin &&
+                Boolean(capabilities.data && capabilities.data.methods.length > 1) && (
+                  <>
+                    <div className="or-divider">
+                      <span>or</span>
+                    </div>
+                    <button
+                      className="alternative-login"
+                      type="button"
+                      disabled={pending}
+                      onClick={() => {
+                        setMode(mode === 'phone' ? 'email' : 'phone');
+                        setValue('');
+                        setMessage('');
+                      }}
+                    >
+                      <Icon name={mode === 'phone' ? 'mail' : 'pin'} size={21} />
+                      Continue with {mode === 'phone' ? 'email' : 'phone'}
+                    </button>
+                  </>
+                )}
               <p className="auth-policy">
                 By continuing, you agree to our <Link to="/legal/terms">Terms of Service</Link> and{' '}
                 <Link to="/legal/privacy">Privacy Policy</Link>.
@@ -385,9 +470,11 @@ export function AuthModal() {
                   </Link>
                 </p>
               )}
-              <p className="auth-access-link">
-                <Link to="/access">Choose a different workspace</Link>
-              </p>
+              {workspace !== 'customer' && (
+                <p className="auth-access-link">
+                  <Link to="/access">Choose a different workspace</Link>
+                </p>
+              )}
             </>
           )}
         </form>

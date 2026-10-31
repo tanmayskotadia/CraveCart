@@ -4,7 +4,15 @@ import './assistant.css';
 import './commerce.css';
 import './pages/access.css';
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { Link, Navigate, Route, Routes, matchPath, useLocation } from 'react-router-dom';
+import {
+  Link,
+  Navigate,
+  Route,
+  Routes,
+  matchPath,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import manifest from '../../../contracts/routes.json';
 import { CityProvider, useCity } from './components/CityProvider';
 import { AuthModal } from './components/LoginDialog';
@@ -13,6 +21,7 @@ import { Landing } from './pages/Landing';
 import { Explore } from './pages/Explore';
 import { useSession } from './components/SessionProvider';
 import { RequireSession } from './components/WorkspaceShell';
+import { workspaceHome } from './access';
 const AccountPage = lazy(() => import('./pages/Account').then((m) => ({ default: m.AccountPage })));
 const AccessPage = lazy(() => import('./pages/Access').then((m) => ({ default: m.AccessPage })));
 const SettingsPage = lazy(() =>
@@ -157,76 +166,100 @@ const authPaths = [
 ];
 function Header() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { session, logout } = useSession();
   const [logoutError, setLogoutError] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
-  const overlay = location.pathname === '/' || authPaths.includes(location.pathname);
+  const partnerArea = /^\/(seller|rider|admin)(\/|$)/.test(location.pathname);
+  const overlay =
+    !partnerArea && (location.pathname === '/' || authPaths.includes(location.pathname));
   const { city, openCities } = useCity();
   const authState = {
     from: authPaths.includes(location.pathname) ? '/' : location.pathname + location.search,
   };
   return (
-    <header className={`site-header ${overlay ? 'header-overlay' : 'header-solid'}`}>
+    <header
+      className={`site-header ${partnerArea ? 'partner-header' : ''} ${overlay ? 'header-overlay' : 'header-solid'}`}
+    >
       <div className="header-inner">
         <Link className="brand" to="/" aria-label="CraveCart home">
           CraveCart
         </Link>
-        <button
-          className="header-city"
-          aria-label={`Change browsing city, currently ${city?.name ?? 'India'}`}
-          onClick={() => openCities(new URLSearchParams(location.search).get('q') ?? '')}
-        >
-          <Icon name="pin" size={18} />
-          <span>{city?.name ?? 'India'}</span>
-          <Icon name="down" size={13} />
-        </button>
+        {partnerArea ? (
+          <span className="partner-portal-label">
+            {location.pathname.startsWith('/seller')
+              ? 'Restaurant partners'
+              : location.pathname.startsWith('/rider')
+                ? 'Delivery partners'
+                : 'Team portal'}
+          </span>
+        ) : (
+          <button
+            className="header-city"
+            aria-label={`Change browsing city, currently ${city?.name ?? 'India'}`}
+            onClick={() => openCities(new URLSearchParams(location.search).get('q') ?? '')}
+          >
+            <Icon name="pin" size={18} />
+            <span>{city?.name ?? 'India'}</span>
+            <Icon name="down" size={13} />
+          </button>
+        )}
         <nav aria-label="Main navigation">
-          <Link className="desktop-nav" to="/#cities">
-            Explore cities
-          </Link>
-          <Link className="desktop-nav" to="/seller/login" state={authState}>
-            Add restaurant
-          </Link>
-          {session ? (
-            <>
-              <Link className="header-cart" to="/cart" aria-label="Your cart">
-                <Icon name="bag" size={21} />
-              </Link>
-              <Link className="desktop-nav" to="/notifications">
-                Notifications
-              </Link>
-              <Link className="desktop-nav" to="/assistant">
-                Ask CraveCart
-              </Link>
-              <Link className="desktop-nav" to="/workspaces">
-                Workspaces
-              </Link>
-              <Link className="account-chip" to="/profile" aria-label="My account">
-                {session.principal.name.charAt(0).toUpperCase()}
-              </Link>
-              <button
-                className="header-logout"
-                disabled={loggingOut}
-                onClick={() => {
-                  setLoggingOut(true);
-                  setLogoutError('');
-                  void logout()
-                    .catch((error) =>
-                      setLogoutError(error instanceof Error ? error.message : 'Could not sign out'),
-                    )
-                    .finally(() => setLoggingOut(false));
-                }}
-              >
-                {loggingOut ? 'Signing out…' : 'Sign out'}
-              </button>
-            </>
+          {partnerArea ? (
+            <Link to={city ? `/search?city=${city.slug}` : '/search'}>
+              Back to food discovery <Icon name="arrow" size={16} />
+            </Link>
           ) : (
             <>
-              <Link to="/login" state={authState}>
-                Log in
-              </Link>
-              <Link className="signup-link" to="/signup" state={authState}>
-                Sign up
+              {session ? (
+                <button className="desktop-nav header-browse" onClick={() => openCities()}>
+                  Explore cities
+                </button>
+              ) : (
+                <Link className="desktop-nav" to="/#cities">
+                  Explore cities
+                </Link>
+              )}
+              {session ? (
+                <>
+                  <Link className="desktop-nav" to="/orders">
+                    Your orders
+                  </Link>
+                  <Link className="account-chip" to="/profile" aria-label="My account">
+                    {session.principal.name.charAt(0).toUpperCase()}
+                  </Link>
+                  <button
+                    className="header-logout"
+                    disabled={loggingOut}
+                    onClick={() => {
+                      setLoggingOut(true);
+                      setLogoutError('');
+                      void logout()
+                        .then(() => navigate('/', { replace: true }))
+                        .catch((error) =>
+                          setLogoutError(
+                            error instanceof Error ? error.message : 'Could not sign out',
+                          ),
+                        )
+                        .finally(() => setLoggingOut(false));
+                    }}
+                  >
+                    {loggingOut ? 'Signing out…' : 'Sign out'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" state={authState}>
+                    Log in
+                  </Link>
+                  <Link className="signup-link" to="/signup" state={authState}>
+                    Sign up
+                  </Link>
+                </>
+              )}
+              <Link className="header-cart" to="/cart" aria-label="Your cart">
+                <Icon name="bag" size={20} />
+                <span>Cart</span>
               </Link>
             </>
           )}
@@ -276,7 +309,7 @@ function Footer() {
             <Link to="/legal/privacy">Privacy</Link>
             <Link to="/legal/terms">Terms of service</Link>
             <Link to="/legal/cancellations">Cancellation policy</Link>
-            <Link to="/admin/login">Team access</Link>
+            <Link to="/admin/login">Admin login</Link>
           </div>
         </div>
         <div className="footer-bottom">
@@ -699,15 +732,65 @@ function RoutePage({
     return <RequireSession roles={['admin']}>{adminPages[path]}</RequireSession>;
   return route.sessionRequired ? <ProtectedPage roles={route.roles} /> : <PublicPage path={path} />;
 }
+function CustomerEntry({ authPath }: { authPath?: string }) {
+  const { session, loading, error, reload } = useSession();
+  const { city } = useCity();
+  if (loading)
+    return (
+      <section className="workspace-wait page-width" role="status">
+        Checking your account…
+      </section>
+    );
+  if (session) {
+    const workspace = session.principal.workspace;
+    const destination =
+      workspace === 'customer'
+        ? city
+          ? `/search?city=${city.slug}`
+          : '/search'
+        : workspaceHome(workspace, session.principal.permissions);
+    return <Navigate to={destination} replace />;
+  }
+  if (error)
+    return (
+      <section className="workspace-wait page-width">
+        <h1>We couldn’t check your account.</h1>
+        <button className="red-button" onClick={() => void reload()}>
+          Try again
+        </button>
+      </section>
+    );
+  return (
+    <>
+      <Landing />
+      {authPath && <AuthModal key={authPath} />}
+    </>
+  );
+}
 function PublicPage({ path }: { path: string }) {
-  if (path === '/') return <Landing />;
+  if (path === '/') return <CustomerEntry />;
+  if (path === '/login' || path === '/signup') return <CustomerEntry authPath={path} />;
   if (path === '/access') return <AccessPage />;
   if (['/verify', '/forgot-password', '/reset-password'].includes(path))
     return <Navigate to="/login" replace />;
   if (authPaths.includes(path))
     return (
       <>
-        <Landing />
+        {path.startsWith('/seller') || path.startsWith('/rider') || path.startsWith('/admin') ? (
+          <section className="partner-entry page-width">
+            <p className="eyebrow">CRAVECART PARTNERS</p>
+            <h1>
+              {path.startsWith('/seller')
+                ? 'Your kitchen. A world of possibilities.'
+                : path.startsWith('/rider')
+                  ? 'Good food. Delivered by you.'
+                  : 'Keep every order moving.'}
+            </h1>
+            <p>A dedicated space for the people behind every delivery.</p>
+          </section>
+        ) : (
+          <Landing />
+        )}
         <AuthModal key={path} />
       </>
     );
