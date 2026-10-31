@@ -592,7 +592,9 @@ test('customer, restaurant and rider complete a verified delivery', async ({
     await driver.getByLabel('Delivery code from customer', { exact: true }).fill(deliveryCode);
     await driver.getByRole('button', { name: 'Verify delivery completion', exact: true }).click();
     await expect(page.locator('.commerce-status')).toContainText('DELIVERED');
-    await expect(kitchen.locator('.status-badge')).toContainText('DELIVERED');
+    // Browser timers may pause in background tabs; verify the kitchen when its user returns.
+    await kitchen.bringToFront();
+    await expect(kitchen.locator('.status-badge')).toContainText('DELIVERED', { timeout: 15000 });
     await expect(
       page.getByText('Delivered. Rider-location sharing has ended.', { exact: true }),
     ).toBeVisible();
