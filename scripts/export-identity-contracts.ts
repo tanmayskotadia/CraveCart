@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   otpRequestSchema,
   otpVerifySchema,
+  adminPasswordLoginSchema,
   otpChallengeResponseSchema,
   loginResultSchema,
   sessionResponseSchema,
@@ -118,9 +119,25 @@ add(
   'auth',
   'get',
   '/auth/capabilities',
-  z.object({ methods: z.array(z.enum(['phone', 'email'])), developmentDelivery: z.boolean() }),
+  z.object({
+    methods: z.array(z.enum(['phone', 'email'])),
+    developmentDelivery: z.boolean(),
+    adminPasswordEnabled: z.boolean(),
+  }),
   undefined,
   { public: true },
+);
+add(
+  'auth',
+  'post',
+  '/auth/admin/password',
+  z.object({ mfaChallengeId: z.string().min(32), enrollmentRequired: z.boolean() }),
+  adminPasswordLoginSchema,
+  {
+    public: true,
+    policy:
+      'Provisioned administrator ID and salted scrypt password verification. Origin and IP/account rate limits enforced. Returns only a short-lived MFA challenge; never grants roles or issues a session without MFA.',
+  },
 );
 for (const path of ['/auth/login', '/auth/register', '/auth/otp/request'])
   add('auth', 'post', path, otpChallengeResponseSchema, otpRequestSchema, {

@@ -25,6 +25,12 @@ export const otpRequestSchema = z
 export const otpVerifySchema = z
   .object({ challengeId: z.string().min(32).max(128), code: z.string().regex(/^\d{6}$/) })
   .strict();
+export const adminPasswordLoginSchema = z
+  .object({
+    loginId: z.string().trim().toLowerCase().min(3).max(254),
+    password: z.string().min(1).max(128),
+  })
+  .strict();
 export const principalSchema = z
   .object({
     userId: z.string().uuid(),

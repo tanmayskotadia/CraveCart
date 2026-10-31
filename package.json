@@ -17,6 +17,7 @@
     "dev": "node scripts/dev.mjs",
     "dev:database": "node scripts/dev-database.mjs",
     "admin:bootstrap": "node scripts/bootstrap-admin.mjs",
+    "admin:setup-local": "node scripts/setup-local-admin.mjs",
     "seed:catalog": "node scripts/seed-catalog.mjs",
     "build": "tsc -b tsconfig.build.json && npm run build --workspace @cravecart/web && node scripts/write-build-identity.mjs",
     "typecheck": "tsc -b tsconfig.build.json && tsc -p apps/web/tsconfig.json --noEmit && tsc -p tests/tsconfig.json --noEmit",

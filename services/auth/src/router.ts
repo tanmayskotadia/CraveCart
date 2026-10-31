@@ -7,6 +7,7 @@ import {
   contactSchema,
   otpRequestSchema,
   otpVerifySchema,
+  adminPasswordLoginSchema,
   mfaEnrollSchema,
   mfaVerifySchema,
   type Principal,
@@ -36,6 +37,7 @@ import { enqueueEvent } from '@cravecart/persistence';
 import { newTotpSecret, matchingCounter } from './totp.js';
 import { installPrivacy } from './privacy.js';
 import { installAuthPrivacyData } from './privacy-data.js';
+import { verifyAdminPassword } from './admin-password.js';
 
 export interface IdentityUser {
   _id: string;
@@ -433,8 +435,39 @@ export function installAuth(app: Express, ctx: DomainContext) {
         ...(development || (config.SMTP_URL && config.SMTP_FROM) ? ['email'] : []),
       ],
       developmentDelivery: development,
+      adminPasswordEnabled: Boolean(config.ADMIN_LOGIN_ID && config.ADMIN_PASSWORD_HASH),
     }),
   );
+  router.post('/admin/password', async (req, res) => {
+    requireOrigin(req, config);
+    const body = adminPasswordLoginSchema.parse(req.body);
+    await limit('admin-password-ip', clientIp(req), 20, 15 * 60_000);
+    await limit('admin-password-id', body.loginId, 8, 15 * 60_000);
+    const verified = await verifyAdminPassword(body.password, config.ADMIN_PASSWORD_HASH);
+    const user = await users.findOne({
+      contact: config.ADMIN_LOGIN_ID,
+      status: 'ACTIVE',
+      roles: 'admin',
+    });
+    if (!verified || !user || !config.ADMIN_LOGIN_ID || !equal(body.loginId, config.ADMIN_LOGIN_ID))
+      throw new HttpError(
+        401,
+        'INVALID_ADMIN_CREDENTIALS',
+        'Admin login ID or password is incorrect',
+      );
+    // Password proof starts the existing MFA flow; it never issues an administrator session alone.
+    const id = opaque();
+    await mfaChallenges.insertOne({
+      _id: hash(id),
+      userId: user._id,
+      workspace: 'admin',
+      expiresAt: new Date(Date.now() + 300_000),
+      attempts: 0,
+      used: false,
+      enrollmentRequired: !user.mfaSecret,
+    });
+    json(res, { mfaChallengeId: id, enrollmentRequired: !user.mfaSecret });
+  });
   router.post(['/otp/request', '/register', '/login'], async (req, res) => {
     requireOrigin(req, config);
     const body = otpRequestSchema.parse({

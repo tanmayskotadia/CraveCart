@@ -27,6 +27,12 @@ For labelled fictional menus and cart-testing areas, run `npm run seed:catalog`.
 
 ## Ports and checks
 
+### Local administrator ID and password
+
+After building the app and starting the local development database, run `npm run admin:setup-local` once. It generates one administrator login ID and a strong random password, provisions that account only in the local database, and saves `ADMIN_LOGIN_ID` plus a salted scrypt `ADMIN_PASSWORD_HASH` in the Git-ignored `.env`. No credential is embedded in source or printed. The plaintext credentials are in the Git-ignored `.local/admin-login.txt`; keep that file private. Repeated setup preserves the existing configuration and password.
+
+Restart `npm run dev`, then use **Admin login** in the footer or `/admin/login`. Enter the private login ID/password and enroll an authenticator on first use. Save the displayed recovery codes. Password login starts the existing MFA flow and does not bypass it. Existing contact-verification login remains available. The setup helper rejects hosted MongoDB URLs and production mode. For hosting, provision the real operator with `admin:bootstrap` and configure the two admin settings on Auth only, using a separately generated strong password/hash; local generated accounts are not production operators.
+
 | Process | Host port | Purpose |
 |---|---|---|
 | React/Vite | 5173 | UI and API proxy |

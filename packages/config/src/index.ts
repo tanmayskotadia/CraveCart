@@ -39,6 +39,11 @@ const schema = z.object({
   SERVICE_NAME: z.string().default('unknown'),
   METRICS_TOKEN: z.string().min(32).default('development-only-metrics-token-change-me'),
   AUTH_SECRET: z.string().min(32).default('development-only-auth-secret-change-me'),
+  ADMIN_LOGIN_ID: z.string().trim().toLowerCase().max(254).default(''),
+  ADMIN_PASSWORD_HASH: z
+    .string()
+    .regex(/^(?:|scrypt:[a-f0-9]{32}:[a-f0-9]{128})$/)
+    .default(''),
   AUTH_ENCRYPTION_KEY: z.string().min(32).default('development-only-encryption-key-change-me'),
   UPLOAD_ENCRYPTION_KEY: z.string().min(32).default('development-only-upload-key-change-me'),
   UPLOAD_DIRECTORY: z.string().default('.local/uploads'),
@@ -80,6 +85,10 @@ export type Config = z.infer<typeof schema>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const config = schema.parse(env);
+  if (Boolean(config.ADMIN_LOGIN_ID) !== Boolean(config.ADMIN_PASSWORD_HASH))
+    throw new Error(
+      'Administrator password login requires both ADMIN_LOGIN_ID and ADMIN_PASSWORD_HASH',
+    );
   if (config.PRIVACY_RETENTION_REVIEWED === 'true' && !config.PRIVACY_FINANCIAL_RETENTION_DAYS)
     throw new Error('Reviewed privacy retention requires an explicit duration in days');
   if (config.ASSISTANT_PROVIDER === 'openai' && (!config.OPENAI_API_KEY || !config.ASSISTANT_MODEL))

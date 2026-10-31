@@ -36,11 +36,162 @@
                       },
                       "developmentDelivery": {
                         "type": "boolean"
+                      },
+                      "adminPasswordEnabled": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
                       "methods",
-                      "developmentDelivery"
+                      "developmentDelivery",
+                      "adminPasswordEnabled"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "meta": {
+                    "type": "object",
+                    "properties": {
+                      "requestId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      }
+                    },
+                    "required": [
+                      "requestId"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "data",
+                  "meta"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "default": {
+          "description": "Structured error including validation, auth, CSRF, conflict, rate limits and dependency unavailability.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "requestId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "retryable": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                      "requestId",
+                      "retryable"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "error"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/auth/admin/password": {
+    "post": {
+      "operationId": "identity_post__auth_admin_password",
+      "tags": [
+        "auth"
+      ],
+      "summary": "POST /auth/admin/password",
+      "x-owner": "auth",
+      "x-contract-status": "implementation-ready",
+      "x-client-generation-ready": true,
+      "x-authorization": "Provisioned administrator ID and salted scrypt password verification. Origin and IP/account rate limits enforced. Returns only a short-lived MFA challenge; never grants roles or issues a session without MFA.",
+      "security": [],
+      "parameters": [
+        {
+          "in": "header",
+          "name": "Origin",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Must match the configured app origin."
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "type": "object",
+              "properties": {
+                "loginId": {
+                  "type": "string",
+                  "minLength": 3,
+                  "maxLength": 254
+                },
+                "password": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "required": [
+                "loginId",
+                "password"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful response; 202 records acceptance, inspect operation state for completion.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "mfaChallengeId": {
+                        "type": "string",
+                        "minLength": 32
+                      },
+                      "enrollmentRequired": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "mfaChallengeId",
+                      "enrollmentRequired"
                     ],
                     "additionalProperties": false
                   },
